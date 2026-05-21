@@ -7,61 +7,135 @@
 {% endblock %}
 
 {% block content %}
-<div class="github-header">
+<!-- Hero Banner -->
+<div class="gh-hero">
     <h1>GitHub AI Watch</h1>
-    <p class="subtitle">Tracking AI open-source project updates</p>
+    <p class="gh-hero-sub">Tracking {{ repos|length }} AI repos across the open-source ecosystem</p>
+    <div class="gh-stats-bar">
+        <div class="gh-stat">
+            <span class="gh-stat-val">{{ "{:,}".format(total_stars) }}</span>
+            <span class="gh-stat-label">Stars Tracked</span>
+        </div>
+        <div class="gh-stat">
+            <span class="gh-stat-val">{{ updates_this_week }}</span>
+            <span class="gh-stat-label">Updates This Week</span>
+        </div>
+        <div class="gh-stat">
+            <span class="gh-stat-val">{{ breaking_count }}</span>
+            <span class="gh-stat-label">Breaking Changes</span>
+        </div>
+        <div class="gh-stat">
+            <span class="gh-stat-val">{{ trending_count }}</span>
+            <span class="gh-stat-label">Trending</span>
+        </div>
+    </div>
 </div>
 
-<div class="github-filters">
-    <form method="get" action="/github" class="filter-bar">
-        <select name="update_type" onchange="this.form.submit()">
-            <option value="">All Types</option>
-            <option value="release" {% if current_type == 'release' %}selected{% endif %}>Releases</option>
-            <option value="commit" {% if current_type == 'commit' %}selected{% endif %}>Commits</option>
+<!-- Weekly Digest -->
+{% if digest %}
+<div class="gh-digest">
+    <div class="gh-digest-header" onclick="this.parentElement.classList.toggle('open')">
+        <span class="gh-digest-title">Week of {{ digest.week_start.strftime('%b %d') }} &mdash; {{ digest.week_end.strftime('%b %d, %Y') }}</span>
+        <span class="gh-digest-toggle">&#9660;</span>
+    </div>
+    <div class="gh-digest-body">
+        <p>{{ digest.summary_text }}</p>
+        <div class="gh-digest-stats">
+            <span class="gh-digest-pill release">{{ digest.total_releases }} releases</span>
+            <span class="gh-digest-pill commit">{{ digest.total_commits }} commits</span>
+            <span class="gh-digest-pill pr">{{ digest.total_prs }} PRs</span>
+            {% if digest.breaking_changes %}<span class="gh-digest-pill breaking">{{ digest.breaking_changes }} breaking</span>{% endif %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Category Pills -->
+<div class="gh-cats">
+    <a href="/github?sort={{ current_sort }}" class="gh-pill {% if not current_category %}active{% endif %}">All <span class="gh-pill-count">{{ repos|length }}</span></a>
+    {% for cat, count in cat_counts.items() %}
+    <a href="/github?category={{ cat }}&sort={{ current_sort }}" class="gh-pill {% if current_category == cat %}active{% endif %}">{{ cat }} <span class="gh-pill-count">{{ count }}</span></a>
+    {% endfor %}
+</div>
+
+<!-- Sort/Filter Bar -->
+<div class="gh-toolbar">
+    <form method="get" action="/github" class="gh-toolbar-form">
+        {% if current_category %}<input type="hidden" name="category" value="{{ current_category }}">{% endif %}
+        <select name="sort" onchange="this.form.submit()">
+            <option value="stars" {% if current_sort == 'stars' %}selected{% endif %}>Stars</option>
+            <option value="trending" {% if current_sort == 'trending' %}selected{% endif %}>Trending</option>
+            <option value="recent" {% if current_sort == 'recent' %}selected{% endif %}>Recent Activity</option>
+            <option value="name" {% if current_sort == 'name' %}selected{% endif %}>Name</option>
         </select>
-        <select name="repo" onchange="this.form.submit()">
-            <option value="">All Repos</option>
-            {% for r in repos %}
-            <option value="{{ r }}" {% if current_repo == r %}selected{% endif %}>{{ r }}</option>
-            {% endfor %}
-        </select>
-        <a href="/github" class="btn btn-outline">Clear</a>
+        <input type="text" name="search" value="{{ current_search }}" placeholder="Search repos..." class="gh-search">
     </form>
 </div>
 
-{% if updates %}
-<div class="github-grid">
-    {% for u in updates %}
-    <div class="github-card">
-        <div class="github-card-header">
-            <span class="repo-name">{{ u.repo_name }}</span>
-            <span class="update-type type-{{ u.update_type }}">{{ u.update_type }}</span>
+<!-- Repo Cards Grid -->
+{% if repos %}
+<div class="gh-grid">
+    {% for r in repos %}
+    <div class="gh-card">
+        <div class="gh-card-top">
+            <a href="{{ r.repo_url }}" target="_blank" rel="noopener noreferrer" class="gh-card-label">{{ r.label or r.full_name }}</a>
+            {% if r.category %}<span class="gh-cat-badge cat-{{ r.category }}">{{ r.category }}</span>{% endif %}
         </div>
-        <h3><a href="{{ u.external_url }}" target="_blank" rel="noopener noreferrer">{{ u.title }}</a></h3>
-        {% if u.body %}
-        <p class="github-body">{{ u.body[:200] }}{% if u.body|length > 200 %}...{% endif %}</p>
+        {% if r.description %}
+        <p class="gh-card-desc">{{ r.description[:120] }}{% if r.description and r.description|length > 120 %}...{% endif %}</p>
         {% endif %}
-        <div class="github-card-footer">
-            {% if u.stars %}
-            <span class="stars">&#9733; {{ "{:,}".format(u.stars) }}</span>
-            {% endif %}
-            {% if u.language %}
-            <span class="language">{{ u.language }}</span>
-            {% endif %}
-            {% if u.published_at %}
-            <span class="date">{{ u.published_at.strftime('%b %d, %Y') }}</span>
-            {% endif %}
+        <div class="gh-card-metrics">
+            <span class="gh-metric stars">&#9733; {{ "{:,}".format(r.stars or 0) }}</span>
+            <span class="gh-metric forks">&#9270; {{ "{:,}".format(r.forks or 0) }}</span>
+            <span class="gh-metric issues">&#9888; {{ "{:,}".format(r.open_issues or 0) }}</span>
+            {% if r.language %}<span class="gh-metric lang">{{ r.language }}</span>{% endif %}
         </div>
+        {% if r.trending_score and r.trending_score > 0 %}
+        <div class="gh-growth">
+            <span class="gh-growth-positive">+{{ "%.1f"|format(r.trending_score) }}% / 7d</span>
+        </div>
+        {% endif %}
+        {% if r.tags %}
+        <div class="gh-tags">
+            {% for tag in r.tags.split(',')[:4] %}
+            <span class="gh-tag">{{ tag.strip() }}</span>
+            {% endfor %}
+        </div>
+        {% endif %}
     </div>
     {% endfor %}
 </div>
 {% else %}
-<div class="empty-state github-empty">
+<div class="empty-state gh-empty">
     <div class="terminal-cursor">
         <p>$ scanning github...</p>
         <span class="cursor">_</span>
     </div>
-    <p>No updates yet. Data will appear after the next scheduled scrape.</p>
+    <p>No repos found. Data will appear after the next scheduled scrape.</p>
+</div>
+{% endif %}
+
+<!-- Recent Updates Feed -->
+{% if recent_updates %}
+<div class="gh-feed">
+    <h2 class="gh-feed-title">Recent Updates</h2>
+    <div class="gh-feed-filters">
+        <a href="/github?sort={{ current_sort }}{% if current_category %}&category={{ current_category }}{% endif %}" class="gh-pill-sm {% if not current_type %}active{% endif %}">All</a>
+        <a href="/github?update_type=release&sort={{ current_sort }}{% if current_category %}&category={{ current_category }}{% endif %}" class="gh-pill-sm {% if current_type == 'release' %}active{% endif %}">Releases</a>
+        <a href="/github?update_type=commit&sort={{ current_sort }}{% if current_category %}&category={{ current_category }}{% endif %}" class="gh-pill-sm {% if current_type == 'commit' %}active{% endif %}">Commits</a>
+        <a href="/github?update_type=pr&sort={{ current_sort }}{% if current_category %}&category={{ current_category }}{% endif %}" class="gh-pill-sm {% if current_type == 'pr' %}active{% endif %}">PRs</a>
+    </div>
+    <div class="gh-feed-list">
+        {% for u in recent_updates %}
+        <div class="gh-feed-item {% if u.is_breaking %}gh-breaking{% endif %}">
+            <span class="gh-feed-repo">{{ u.label or u.repo_name }}</span>
+            <span class="gh-feed-type type-{{ u.update_type }}">{{ u.update_type }}</span>
+            {% if u.is_breaking %}<span class="gh-feed-breaking">BREAKING</span>{% endif %}
+            <a href="{{ u.external_url }}" target="_blank" rel="noopener noreferrer" class="gh-feed-link">{{ u.title }}</a>
+            {% if u.published_at %}<span class="gh-feed-date">{{ u.published_at.strftime('%b %d') }}</span>{% endif %}
+        </div>
+        {% endfor %}
+    </div>
 </div>
 {% endif %}
 {% endblock %}

@@ -3,7 +3,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
-from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, ForeignKey, Index, SmallInteger
+from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, Date, ForeignKey, Index, SmallInteger, Float
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.db.database import Base
@@ -117,21 +117,101 @@ class ScrapeLog(Base):
     scraped_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
+class GithubRepo(Base):
+    __tablename__ = "github_repos"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    owner = Column(String(100), nullable=False)
+    repo = Column(String(100), nullable=False)
+    label = Column(String(200))
+    full_name = Column(String(200), unique=True, nullable=False)  # owner/repo
+    repo_url = Column(String(500))
+    description = Column(Text)
+    homepage = Column(String(500))
+    language = Column(String(50))
+    license = Column(String(50))
+    stars = Column(Integer, default=0)
+    forks = Column(Integer, default=0)
+    open_issues = Column(Integer, default=0)
+    watchers = Column(Integer, default=0)
+    category = Column(String(50))  # llm, agent, infra, vision, data, tooling
+    tags = Column(String(300))  # comma-separated
+    trending_score = Column(Float, default=0.0)
+    is_archived = Column(Boolean, default=False)
+    stats_updated_at = Column(DateTime(timezone=True))
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    updates = relationship("GithubUpdate", back_populates="repo_obj")
+    snapshots = relationship("GithubRepoSnapshot", back_populates="repo_obj")
+
+
+class GithubRepoSnapshot(Base):
+    __tablename__ = "github_repo_snapshots"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    repo_id = Column(Integer, ForeignKey("github_repos.id"), nullable=False)
+    stars = Column(Integer)
+    forks = Column(Integer)
+    open_issues = Column(Integer)
+    watchers = Column(Integer)
+    snapshot_date = Column(Date, nullable=False)
+
+    repo_obj = relationship("GithubRepo", back_populates="snapshots")
+
+    __table_args__ = (
+        Index("idx_snapshot_repo_date", "repo_id", "snapshot_date", unique=True),
+    )
+
+
 class GithubUpdate(Base):
     __tablename__ = "github_updates"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
+    repo_id = Column(Integer, ForeignKey("github_repos.id"), nullable=True)
     repo_name = Column(String(200), nullable=False)
     repo_url = Column(String(500), nullable=False)
-    update_type = Column(String(30), nullable=False)  # release, commit, trending
+    update_type = Column(String(30), nullable=False)  # release, commit, pr
     title = Column(Text, nullable=False)
     body = Column(Text)
     external_url = Column(String(500), nullable=False)
     url_hash = Column(String(64), unique=True, nullable=False)
+    is_breaking = Column(Boolean, default=False)
+    label = Column(String(200))
     published_at = Column(DateTime(timezone=True))
     scraped_at = Column(DateTime(timezone=True), server_default=func.now())
     stars = Column(Integer)
     language = Column(String(50))
+
+    repo_obj = relationship("GithubRepo", back_populates="updates")
+
+
+class GithubWeeklyDigest(Base):
+    __tablename__ = "github_weekly_digests"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    week_start = Column(Date, unique=True, nullable=False)
+    week_end = Column(Date, nullable=False)
+    total_releases = Column(Integer, default=0)
+    total_commits = Column(Integer, default=0)
+    total_prs = Column(Integer, default=0)
+    breaking_changes = Column(Integer, default=0)
+    top_repos = Column(Text)  # JSON
+    summary_text = Column(Text)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class GithubScrapeLog(Base):
+    __tablename__ = "github_scrape_logs"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    repos_scraped = Column(Integer, default=0)
+    updates_found = Column(Integer, default=0)
+    updates_inserted = Column(Integer, default=0)
+    repos_updated = Column(Integer, default=0)
+    errors = Column(Text)
+    duration_seconds = Column(Integer)
+    scraped_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
 class FinanceResource(Base):

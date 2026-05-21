@@ -13,7 +13,8 @@ from sqlalchemy import desc, func
 from app.db.database import get_db
 from app.models import (
     Article, Source, ScrapeLog, Category, Tag, ArticleTag,
-    GithubUpdate, FinanceResource, FinanceQuizQuestion,
+    GithubUpdate, GithubRepo, GithubRepoSnapshot, GithubWeeklyDigest,
+    FinanceResource, FinanceQuizQuestion,
     PromptPattern, AIModelCard, AITool, AITip, OSSAlternative,
 )
 
@@ -229,35 +230,150 @@ async def scraper_health(db: Session = Depends(get_db)):
 # ── GitHub AI Watch ──────────────────────────────────────────────
 
 @router.get("/github", response_class=HTMLResponse)
-async def github_page(request: Request, update_type: str = "", repo: str = "", db: Session = Depends(get_db)):
-    query = db.query(GithubUpdate).order_by(desc(GithubUpdate.published_at))
+async def github_page(
+    request: Request,
+    category: str = "",
+    sort: str = "stars",
+    search: str = "",
+    update_type: str = "",
+    db: Session = Depends(get_db),
+):
+    # Repo query
+    repo_query = db.query(GithubRepo)
+    if category:
+        repo_query = repo_query.filter(GithubRepo.category == category)
+    if search:
+        repo_query = repo_query.filter(
+            GithubRepo.label.ilike(f"%{search}%")
+            | GithubRepo.description.ilike(f"%{search}%")
+            | GithubRepo.full_name.ilike(f"%{search}%")
+        )
+    if sort == "trending":
+        repo_query = repo_query.order_by(desc(GithubRepo.trending_score))
+    elif sort == "recent":
+        repo_query = repo_query.order_by(desc(GithubRepo.stats_updated_at))
+    elif sort == "name":
+        repo_query = repo_query.order_by(GithubRepo.label)
+    else:  # stars (default)
+        repo_query = repo_query.order_by(desc(GithubRepo.stars))
+    repos = repo_query.all()
+
+    # Category counts
+    cat_counts = {}
+    for r in db.query(GithubRepo.category, func.count()).group_by(GithubRepo.category).all():
+        if r[0]:
+            cat_counts[r[0]] = r[1]
+
+    # Latest weekly digest
+    digest = db.query(GithubWeeklyDigest).order_by(desc(GithubWeeklyDigest.week_start)).first()
+
+    # Recent updates (for feed section)
+    update_query = db.query(GithubUpdate).order_by(desc(GithubUpdate.published_at))
     if update_type:
-        query = query.filter(GithubUpdate.update_type == update_type)
-    if repo:
-        query = query.filter(GithubUpdate.repo_name == repo)
-    updates = query.limit(100).all()
-    repos = db.query(GithubUpdate.repo_name).distinct().all()
+        update_query = update_query.filter(GithubUpdate.update_type == update_type)
+    recent_updates = update_query.limit(30).all()
+
+    # Global stats
+    total_stars = db.query(func.sum(GithubRepo.stars)).scalar() or 0
+    updates_this_week = db.query(GithubUpdate).filter(
+        GithubUpdate.published_at >= datetime.now(timezone.utc) - __import__('datetime').timedelta(days=7)
+    ).count()
+    breaking_count = db.query(GithubUpdate).filter(GithubUpdate.is_breaking == True).count()
+    trending_count = db.query(GithubRepo).filter(GithubRepo.trending_score > 0).count()
+
     return templates.TemplateResponse("github_updates.html", {
-        "request": request, "updates": updates,
-        "repos": [r[0] for r in repos],
-        "current_type": update_type, "current_repo": repo,
+        "request": request, "repos": repos,
+        "cat_counts": cat_counts, "current_category": category,
+        "current_sort": sort, "current_search": search,
+        "current_type": update_type,
+        "digest": digest,
+        "recent_updates": recent_updates,
+        "total_stars": total_stars,
+        "updates_this_week": updates_this_week,
+        "breaking_count": breaking_count,
+        "trending_count": trending_count,
     })
 
 
+@router.get("/github/api/repos")
+async def github_api_repos(category: str = "", sort: str = "stars", db: Session = Depends(get_db)):
+    query = db.query(GithubRepo)
+    if category:
+        query = query.filter(GithubRepo.category == category)
+    if sort == "trending":
+        query = query.order_by(desc(GithubRepo.trending_score))
+    else:
+        query = query.order_by(desc(GithubRepo.stars))
+    repos = query.all()
+    return [{
+        "id": r.id, "full_name": r.full_name, "label": r.label,
+        "category": r.category, "description": r.description,
+        "stars": r.stars, "forks": r.forks, "open_issues": r.open_issues,
+        "language": r.language, "trending_score": r.trending_score,
+        "repo_url": r.repo_url,
+    } for r in repos]
+
+
+@router.get("/github/api/repos/{repo_id}/history")
+async def github_api_repo_history(repo_id: int, days: int = 30, db: Session = Depends(get_db)):
+    from datetime import date, timedelta
+    since = date.today() - timedelta(days=days)
+    snapshots = db.query(GithubRepoSnapshot).filter(
+        GithubRepoSnapshot.repo_id == repo_id,
+        GithubRepoSnapshot.snapshot_date >= since,
+    ).order_by(GithubRepoSnapshot.snapshot_date).all()
+    return [{
+        "date": str(s.snapshot_date), "stars": s.stars,
+        "forks": s.forks, "open_issues": s.open_issues,
+    } for s in snapshots]
+
+
+@router.get("/github/api/trending")
+async def github_api_trending(db: Session = Depends(get_db)):
+    repos = db.query(GithubRepo).filter(
+        GithubRepo.trending_score > 0
+    ).order_by(desc(GithubRepo.trending_score)).limit(10).all()
+    return [{
+        "id": r.id, "label": r.label, "full_name": r.full_name,
+        "stars": r.stars, "trending_score": r.trending_score,
+    } for r in repos]
+
+
+@router.get("/github/api/digest/latest")
+async def github_api_digest_latest(db: Session = Depends(get_db)):
+    digest = db.query(GithubWeeklyDigest).order_by(desc(GithubWeeklyDigest.week_start)).first()
+    if not digest:
+        return {"message": "No digest yet"}
+    return {
+        "week_start": str(digest.week_start), "week_end": str(digest.week_end),
+        "total_releases": digest.total_releases, "total_commits": digest.total_commits,
+        "total_prs": digest.total_prs, "breaking_changes": digest.breaking_changes,
+        "top_repos": digest.top_repos, "summary_text": digest.summary_text,
+    }
+
+
 @router.get("/github/api/updates")
-async def github_api_updates(update_type: str = "", repo: str = "", db: Session = Depends(get_db)):
-    query = db.query(GithubUpdate).order_by(desc(GithubUpdate.published_at))
+async def github_api_updates(
+    update_type: str = "", repo: str = "", page: int = 1, per_page: int = 20,
+    db: Session = Depends(get_db),
+):
+    query = db.query(GithubUpdate)
     if update_type:
         query = query.filter(GithubUpdate.update_type == update_type)
     if repo:
         query = query.filter(GithubUpdate.repo_name == repo)
-    updates = query.limit(100).all()
-    return [{
-        "id": u.id, "repo_name": u.repo_name, "update_type": u.update_type,
-        "title": u.title, "body": (u.body or "")[:500], "external_url": u.external_url,
-        "published_at": str(u.published_at) if u.published_at else None,
-        "stars": u.stars, "language": u.language,
-    } for u in updates]
+    total = query.count()
+    updates = query.order_by(desc(GithubUpdate.published_at)).offset((page - 1) * per_page).limit(per_page).all()
+    return {
+        "total": total, "page": page, "per_page": per_page,
+        "items": [{
+            "id": u.id, "repo_name": u.repo_name, "label": u.label,
+            "update_type": u.update_type, "title": u.title,
+            "body": (u.body or "")[:500], "external_url": u.external_url,
+            "published_at": str(u.published_at) if u.published_at else None,
+            "stars": u.stars, "language": u.language, "is_breaking": u.is_breaking,
+        } for u in updates],
+    }
 
 
 # ── Finance Learning Hub ─────────────────────────────────────────

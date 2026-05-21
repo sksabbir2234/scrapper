@@ -10,9 +10,10 @@ from fastapi.staticfiles import StaticFiles
 from app.api import routes
 from app.api import admin_routes
 from app.db.database import engine, SessionLocal
-from app.models import Base, Source
+from app.models import Base, Source, GithubRepo
 from app.scheduler import start_scheduler
 from config.source_loader import load_and_upsert_sources
+from config.github_repo_loader import load_and_upsert_github_repos
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -32,6 +33,10 @@ db = SessionLocal()
 try:
     inserted, updated, skipped = load_and_upsert_sources(db, Source)
     logger.info(f"Source sync: {inserted} inserted, {updated} updated, {skipped} skipped")
+
+    # Sync GitHub repos from YAML
+    gh_inserted, gh_updated = load_and_upsert_github_repos(db, GithubRepo)
+    logger.info(f"GitHub repo sync: {gh_inserted} inserted, {gh_updated} updated")
 finally:
     db.close()
 

@@ -1,61 +1,127 @@
 repos:
+  # ── LLMs & Foundation Models ──
   - owner: huggingface
     repo: transformers
     label: "HuggingFace Transformers"
-  - owner: huggingface
-    repo: diffusers
-    label: "Diffusers"
-  - owner: ollama
-    repo: ollama
-    label: "Ollama"
-  - owner: langchain-ai
-    repo: langchain
-    label: "LangChain"
-  - owner: microsoft
-    repo: autogen
-    label: "AutoGen"
-  - owner: openai
-    repo: openai-python
-    label: "OpenAI SDK"
-  - owner: anthropic
-    repo: anthropic-sdk-python
-    label: "Anthropic SDK"
-  - owner: BerriAI
-    repo: litellm
-    label: "LiteLLM"
-  - owner: vllm-project
-    repo: vllm
-    label: "vLLM"
-  - owner: ggerganov
-    repo: llama.cpp
-    label: "llama.cpp"
-  - owner: mlc-ai
-    repo: mlc-llm
-    label: "MLC LLM"
-  - owner: guidance-ai
-    repo: guidance
-    label: "Guidance"
-  - owner: deepset-ai
-    repo: haystack
-    label: "Haystack"
-  - owner: chroma-core
-    repo: chroma
-    label: "ChromaDB"
-  - owner: qdrant
-    repo: qdrant
-    label: "Qdrant"
-  - owner: deepseek-ai
-    repo: DeepSeek-V3
-    label: "DeepSeek V3"
-  - owner: QwenLM
-    repo: Qwen
-    label: "Qwen"
+    category: "llm"
+    tags: "python,nlp,transformer,pytorch"
+
   - owner: meta-llama
     repo: llama3
     label: "Meta Llama 3"
-  - owner: pytorch
-    repo: pytorch
-    label: "PyTorch"
+    category: "llm"
+    tags: "llama,meta,open-source"
+
+  - owner: deepseek-ai
+    repo: DeepSeek-V3
+    label: "DeepSeek V3"
+    category: "llm"
+    tags: "deepseek,reasoning,open-source"
+
+  - owner: QwenLM
+    repo: Qwen
+    label: "Qwen"
+    category: "llm"
+    tags: "qwen,alibaba,multilingual"
+
+  # ── Inference & Serving ──
+  - owner: ollama
+    repo: ollama
+    label: "Ollama"
+    category: "infra"
+    tags: "inference,local,docker"
+
+  - owner: vllm-project
+    repo: vllm
+    label: "vLLM"
+    category: "infra"
+    tags: "inference,serving,throughput"
+
+  - owner: ggerganov
+    repo: llama.cpp
+    label: "llama.cpp"
+    category: "infra"
+    tags: "inference,cpp,quantization"
+
+  - owner: mlc-ai
+    repo: mlc-llm
+    label: "MLC LLM"
+    category: "infra"
+    tags: "inference,compilation,edge"
+
+  - owner: BerriAI
+    repo: litellm
+    label: "LiteLLM"
+    category: "infra"
+    tags: "proxy,router,multi-provider"
+
+  # ── Agent Frameworks ──
+  - owner: langchain-ai
+    repo: langchain
+    label: "LangChain"
+    category: "agent"
+    tags: "python,agents,rag,chains"
+
+  - owner: microsoft
+    repo: autogen
+    label: "AutoGen"
+    category: "agent"
+    tags: "multi-agent,conversation,microsoft"
+
+  - owner: guidance-ai
+    repo: guidance
+    label: "Guidance"
+    category: "agent"
+    tags: "templating,structured-output,generation"
+
+  # ── Developer SDKs ──
+  - owner: openai
+    repo: openai-python
+    label: "OpenAI SDK"
+    category: "tooling"
+    tags: "python,sdk,api"
+
+  - owner: anthropic
+    repo: anthropic-sdk-python
+    label: "Anthropic SDK"
+    category: "tooling"
+    tags: "python,sdk,claude"
+
+  # ── RAG & Search ──
+  - owner: chroma-core
+    repo: chroma
+    label: "ChromaDB"
+    category: "data"
+    tags: "vector-db,embeddings,rag"
+
+  - owner: qdrant
+    repo: qdrant
+    label: "Qdrant"
+    category: "data"
+    tags: "vector-db,search,rust"
+
+  - owner: deepset-ai
+    repo: haystack
+    label: "Haystack"
+    category: "data"
+    tags: "rag,pipelines,nlp"
+
+  # ── Vision & Creative ──
+  - owner: huggingface
+    repo: diffusers
+    label: "Diffusers"
+    category: "vision"
+    tags: "diffusion,image-generation,stable-diffusion"
+
   - owner: Comfy-Org
     repo: ComfyUI
     label: "ComfyUI"
+    category: "vision"
+    tags: "workflow,image-generation,ui"
+
+  # ── Training & Infrastructure ──
+  - owner: pytorch
+    repo: pytorch
+    label: "PyTorch"
+    category: "infra"
+    tags: "training,deep-learning,gpu"

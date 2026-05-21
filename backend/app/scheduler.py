@@ -1,6 +1,7 @@
 import sys
 import time
 import threading
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
@@ -11,7 +12,7 @@ from apscheduler.triggers.interval import IntervalTrigger
 from sqlalchemy.orm import Session
 
 from app.db.database import SessionLocal
-from app.models import Source, Article, ScrapeLog, GithubUpdate
+from app.models import Source, Article, ScrapeLog, GithubUpdate, GithubRepo, GithubRepoSnapshot, GithubWeeklyDigest, GithubScrapeLog
 from app.scrapers.rss_scraper import scrape_rss_feed
 from app.scrapers.playwright_scraper import scrape_with_playwright
 from app.ai.summarizer import summarize_article
@@ -233,20 +234,38 @@ def schedule_source_jobs(scheduler: BackgroundScheduler):
 
 
 def run_github_scrape():
-    """Scrape GitHub repos and upsert updates."""
+    """Scrape GitHub repos: update metadata + insert new updates."""
     from app.scrapers.github_scraper import scrape_all_repos
     from config.settings import get_settings
+    import time as _time
 
     settings = get_settings()
     token = settings.github_token
+    start = _time.time()
+    errors = []
 
-    updates = scrape_all_repos(token)
-    if not updates:
-        logger.info("GitHub scrape returned 0 updates")
-        return
+    repo_metadata, updates = scrape_all_repos(token)
 
     db = SessionLocal()
     try:
+        # Phase 1: Update repo metadata
+        repos_updated = 0
+        for meta in repo_metadata:
+            repo = db.query(GithubRepo).filter(GithubRepo.full_name == meta["full_name"]).first()
+            if not repo:
+                continue
+            repo.stars = meta["stars"]
+            repo.forks = meta["forks"]
+            repo.open_issues = meta["open_issues"]
+            repo.watchers = meta["watchers"]
+            repo.description = meta.get("description") or repo.description
+            repo.language = meta.get("language") or repo.language
+            repo.license = meta.get("license") or repo.license
+            repo.is_archived = meta.get("is_archived", False)
+            repo.stats_updated_at = datetime.now(timezone.utc)
+            repos_updated += 1
+
+        # Phase 2: Insert new updates
         inserted = 0
         seen = set()
         for u in updates:
@@ -259,14 +278,39 @@ def run_github_scrape():
             if existing:
                 continue
 
+            # Resolve repo_id from repo_name
+            repo_name = u.get("repo_name")
+            repo_obj = db.query(GithubRepo).filter(GithubRepo.full_name == repo_name).first()
+            if repo_obj:
+                u["repo_id"] = repo_obj.id
+
             try:
-                db.add(GithubUpdate(**u))
+                # Remove label before creating if it's not a column we set directly
+                update_data = {k: v for k, v in u.items()}
+                db.add(GithubUpdate(**update_data))
                 inserted += 1
-            except Exception:
-                pass
+            except Exception as e:
+                errors.append(str(e))
 
         db.commit()
-        logger.info(f"GitHub scrape: {inserted} new updates from {len(updates)} total")
+
+        # Write scrape log
+        duration = int(_time.time() - start)
+        log = GithubScrapeLog(
+            repos_scraped=len(repo_metadata),
+            updates_found=len(updates),
+            updates_inserted=inserted,
+            repos_updated=repos_updated,
+            errors="\n".join(errors) if errors else None,
+            duration_seconds=duration,
+        )
+        db.add(log)
+        db.commit()
+
+        logger.info(
+            f"GitHub scrape: {inserted} new updates, {repos_updated} repos updated, "
+            f"{len(updates)} total, {duration}s"
+        )
     except Exception as e:
         db.rollback()
         logger.error(f"GitHub scrape failed: {e}")
@@ -274,12 +318,133 @@ def run_github_scrape():
         db.close()
 
 
-def schedule_github_job(scheduler: BackgroundScheduler):
-    """Schedule the GitHub watch job."""
+def run_github_daily_snapshot():
+    """Take a daily snapshot of all tracked GitHub repos for trend computation."""
+    from datetime import date
+
+    db = SessionLocal()
+    try:
+        today = date.today()
+        repos = db.query(GithubRepo).all()
+        snapshots_added = 0
+
+        for repo in repos:
+            existing = db.query(GithubRepoSnapshot).filter(
+                GithubRepoSnapshot.repo_id == repo.id,
+                GithubRepoSnapshot.snapshot_date == today,
+            ).first()
+            if existing:
+                continue
+
+            snapshot = GithubRepoSnapshot(
+                repo_id=repo.id,
+                stars=repo.stars,
+                forks=repo.forks,
+                open_issues=repo.open_issues,
+                watchers=repo.watchers,
+                snapshot_date=today,
+            )
+            db.add(snapshot)
+            snapshots_added += 1
+
+        # Compute trending scores
+        week_ago = today - timedelta(days=7)
+        for repo in repos:
+            old_snap = db.query(GithubRepoSnapshot).filter(
+                GithubRepoSnapshot.repo_id == repo.id,
+                GithubRepoSnapshot.snapshot_date == week_ago,
+            ).first()
+            if old_snap and old_snap.stars and old_snap.stars > 0:
+                growth = (repo.stars - old_snap.stars) / old_snap.stars * 100
+                repo.trending_score = round(growth, 2)
+            else:
+                repo.trending_score = 0.0
+
+        db.commit()
+        logger.info(f"GitHub daily snapshot: {snapshots_added} snapshots added")
+    except Exception as e:
+        db.rollback()
+        logger.error(f"GitHub daily snapshot failed: {e}")
+    finally:
+        db.close()
+
+
+def run_github_weekly_digest():
+    """Generate a weekly digest of GitHub activity."""
+    from datetime import date, timedelta
+    import json
+
+    db = SessionLocal()
+    try:
+        today = date.today()
+        week_start = today - timedelta(days=today.weekday())  # Monday
+        week_end = week_start + timedelta(days=6)
+
+        # Check if digest already exists
+        existing = db.query(GithubWeeklyDigest).filter(
+            GithubWeeklyDigest.week_start == week_start
+        ).first()
+        if existing:
+            logger.info(f"Weekly digest for {week_start} already exists, skipping")
+            return
+
+        # Count updates from this week
+        week_updates = db.query(GithubUpdate).filter(
+            GithubUpdate.published_at >= datetime.combine(week_start, datetime.min.time().replace(tzinfo=timezone.utc)),
+            GithubUpdate.published_at <= datetime.combine(week_end + timedelta(days=1), datetime.min.time().replace(tzinfo=timezone.utc)),
+        ).all()
+
+        total_releases = sum(1 for u in week_updates if u.update_type == "release")
+        total_commits = sum(1 for u in week_updates if u.update_type == "commit")
+        total_prs = sum(1 for u in week_updates if u.update_type == "pr")
+        breaking = sum(1 for u in week_updates if u.is_breaking)
+
+        # Top repos by activity
+        from collections import Counter
+        repo_counts = Counter(u.repo_name for u in week_updates)
+        top_repos = [{"repo": name, "updates": count} for name, count in repo_counts.most_common(5)]
+
+        # Top growers
+        repos = db.query(GithubRepo).order_by(GithubRepo.trending_score.desc()).limit(3).all()
+        growers = [{"label": r.label, "score": r.trending_score} for r in repos if r.trending_score > 0]
+
+        # Build summary
+        summary_parts = [f"This week: {total_releases} releases, {total_commits} commits, {total_prs} PRs across {len(set(u.repo_name for u in week_updates))} repos."]
+        if breaking:
+            summary_parts.append(f"{breaking} breaking change{'s' if breaking > 1 else ''} detected.")
+        if top_repos:
+            summary_parts.append(f"Most active: {', '.join(r['repo'] for r in top_repos[:3])}.")
+        if growers:
+            summary_parts.append(f"Top growers: {', '.join(f'{g['label']} (+{g['score']}%)' for g in growers)}.")
+
+        digest = GithubWeeklyDigest(
+            week_start=week_start,
+            week_end=week_end,
+            total_releases=total_releases,
+            total_commits=total_commits,
+            total_prs=total_prs,
+            breaking_changes=breaking,
+            top_repos=json.dumps(top_repos),
+            summary_text=" ".join(summary_parts),
+        )
+        db.add(digest)
+        db.commit()
+        logger.info(f"Weekly digest generated for {week_start}")
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Weekly digest failed: {e}")
+    finally:
+        db.close()
+
+
+def schedule_github_jobs(scheduler: BackgroundScheduler):
+    """Schedule all GitHub watch jobs."""
+    from apscheduler.triggers.cron import CronTrigger
     from config.settings import get_settings
     settings = get_settings()
     interval = settings.github_watch_interval_minutes
 
+    # Main scrape job
     scheduler.add_job(
         run_github_scrape,
         trigger=IntervalTrigger(minutes=interval),
@@ -288,6 +453,26 @@ def schedule_github_job(scheduler: BackgroundScheduler):
         replace_existing=True,
     )
     logger.info(f"Scheduled GitHub watch job every {interval} min")
+
+    # Daily snapshot at 2 AM
+    scheduler.add_job(
+        run_github_daily_snapshot,
+        trigger=CronTrigger(hour=2, minute=0),
+        id="github_daily_snapshot",
+        name="GitHub Daily Snapshot",
+        replace_existing=True,
+    )
+    logger.info("Scheduled GitHub daily snapshot at 2:00 AM")
+
+    # Weekly digest on Sunday at midnight
+    scheduler.add_job(
+        run_github_weekly_digest,
+        trigger=CronTrigger(day_of_week="sun", hour=0, minute=0),
+        id="github_weekly_digest",
+        name="GitHub Weekly Digest",
+        replace_existing=True,
+    )
+    logger.info("Scheduled GitHub weekly digest on Sunday 00:00")
 
 
 def start_scheduler(interval_minutes: int = 30, cron_expression: str = None):
@@ -298,7 +483,7 @@ def start_scheduler(interval_minutes: int = 30, cron_expression: str = None):
     """
     scheduler = BackgroundScheduler()
     schedule_source_jobs(scheduler)
-    schedule_github_job(scheduler)
+    schedule_github_jobs(scheduler)
     scheduler.start()
     logger.info("Scheduler started with per-source intervals")
     return scheduler
