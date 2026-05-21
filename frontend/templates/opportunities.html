@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+
+{% block title %}GitHub Opportunity Finder{% endblock %}
+
+{% block extra_css %}
+<style>
+.opp-hero {
+    text-align: center;
+    padding: 2.5rem 1rem 2rem;
+}
+.opp-hero h1 {
+    color: #e6edf3;
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 2rem;
+    margin: 0 0 0.5rem;
+}
+.opp-hero p {
+    color: #8b949e;
+    margin: 0 0 1.5rem;
+}
+.opp-search-form {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+    max-width: 600px;
+    margin: 0 auto;
+}
+.opp-search-input {
+    flex: 1;
+    background: #161b22;
+    color: #e6edf3;
+    border: 1px solid #30363d;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+}
+.opp-search-input::placeholder { color: #484f58; }
+.opp-search-input:focus { outline: none; border-color: #58a6ff; }
+.opp-btn {
+    background: #238636;
+    color: #fff;
+    border: 1px solid #2ea043;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.opp-btn:hover { background: #2ea043; }
+.opp-btn-outline {
+    background: transparent;
+    color: #58a6ff;
+    border: 1px solid #30363d;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    text-decoration: none;
+}
+.opp-btn-outline:hover { background: #161b22; }
+
+.opp-results {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+.opp-results-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+.opp-results-header h2 {
+    color: #e6edf3;
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 1.1rem;
+}
+.opp-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+}
+.opp-table th {
+    background: #161b22;
+    color: #8b949e;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    letter-spacing: 0.05em;
+    padding: 0.6rem 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid #30363d;
+}
+.opp-table td {
+    padding: 0.6rem 0.75rem;
+    border-bottom: 1px solid #21262d;
+    color: #e6edf3;
+}
+.opp-table tr:hover td {
+    background: #161b22;
+}
+.opp-rank {
+    color: #8b949e;
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    font-weight: 700;
+    width: 40px;
+}
+.opp-rank-1 { color: #d29922; }
+.opp-rank-2 { color: #8b949e; }
+.opp-rank-3 { color: #a37237; }
+.opp-name a {
+    color: #58a6ff;
+    text-decoration: none;
+    font-weight: 600;
+}
+.opp-name a:hover { text-decoration: underline; }
+.opp-desc {
+    color: #8b949e;
+    font-size: 0.8rem;
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.opp-stars {
+    color: #d29922;
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+}
+.opp-issues {
+    color: #f85149;
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+}
+.opp-lang {
+    color: #8b949e;
+}
+.opp-contribs {
+    color: #8b949e;
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+}
+.opp-date {
+    color: #484f58;
+    font-size: 0.8rem;
+}
+.opp-score {
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    font-weight: 700;
+    font-size: 0.95rem;
+}
+.opp-score-high { color: #3fb950; }
+.opp-score-mid { color: #d29922; }
+.opp-score-low { color: #f85149; }
+.opp-topics {
+    display: flex;
+    gap: 0.25rem;
+    flex-wrap: wrap;
+    max-width: 200px;
+}
+.opp-topic {
+    background: #161b22;
+    color: #8b949e;
+    font-size: 0.65rem;
+    padding: 0.1rem 0.4rem;
+    border-radius: 8px;
+    border: 1px solid #21262d;
+}
+
+.opp-empty {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #8b949e;
+}
+.opp-loading {
+    text-align: center;
+    padding: 2rem;
+    color: #58a6ff;
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+}
+
+@media (max-width: 768px) {
+    .opp-table { font-size: 0.8rem; }
+    .opp-desc { display: none; }
+    .opp-topics { display: none; }
+    .opp-search-form { flex-direction: column; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="opp-hero">
+    <h1>GitHub Opportunity Finder</h1>
+    <p>Search GitHub repos by keyword and rank by opportunity signals</p>
+    <form class="opp-search-form" action="/opportunities/search" method="get">
+        <input type="text" name="q" value="{{ query }}" placeholder="e.g. laravel billing, react pdf, rust cli" class="opp-search-input" autofocus>
+        <button type="submit" class="opp-btn">Search</button>
+        {% if results %}
+        <a href="/opportunities/export?q={{ query }}" class="opp-btn-outline">Export CSV</a>
+        {% endif %}
+    </form>
+</div>
+
+{% if results %}
+<div class="opp-results">
+    <div class="opp-results-header">
+        <h2>{{ results|length }} repos ranked by opportunity score</h2>
+    </div>
+    <table class="opp-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Repository</th>
+                <th>Description</th>
+                <th>Stars</th>
+                <th>Issues</th>
+                <th>Language</th>
+                <th>Contributors</th>
+                <th>Last Commit</th>
+                <th>Score</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in results %}
+            <tr>
+                <td class="opp-rank opp-rank-{{ r.rank if r.rank <= 3 else '' }}">{{ r.rank }}</td>
+                <td class="opp-name">
+                    <a href="{{ r.url }}" target="_blank" rel="noopener noreferrer">{{ r.name }}</a>
+                    {% if r.topics %}
+                    <div class="opp-topics">
+                        {% for t in r.topics[:3] %}
+                        <span class="opp-topic">{{ t }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </td>
+                <td class="opp-desc" title="{{ r.description }}">{{ r.description }}</td>
+                <td class="opp-stars">{{ "{:,}".format(r.stars) }}</td>
+                <td class="opp-issues">{{ r.open_issues }}</td>
+                <td class="opp-lang">{{ r.language }}</td>
+                <td class="opp-contribs">{{ r.contributors }}</td>
+                <td class="opp-date">{{ r.last_commit[:10] if r.last_commit else '' }}</td>
+                <td class="opp-score {% if r.score >= 70 %}opp-score-high{% elif r.score >= 40 %}opp-score-mid{% else %}opp-score-low{% endif %}">{{ r.score }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% elif query %}
+<div class="opp-empty">
+    <p>No results found for "{{ query }}"</p>
+</div>
+{% else %}
+<div class="opp-empty">
+    <p>Enter a keyword to find contribution opportunities</p>
+    <p style="font-size: 0.85rem; color: #484f58; margin-top: 0.5rem;">Examples: "fastapi auth", "react native camera", "rust web framework"</p>
+</div>
+{% endif %}
+{% endblock %}

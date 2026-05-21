@@ -376,6 +376,70 @@ async def github_api_updates(
     }
 
 
+# ── Opportunity Finder ───────────────────────────────────────────
+
+@router.get("/opportunities", response_class=HTMLResponse)
+async def opportunities_page(request: Request, q: str = ""):
+    return templates.TemplateResponse("opportunities.html", {
+        "request": request, "query": q, "results": [],
+    })
+
+
+@router.get("/opportunities/search", response_class=HTMLResponse)
+async def opportunities_search(request: Request, q: str = ""):
+    from app.scrapers.opportunity_finder import find_opportunities
+    from config.settings import get_settings
+    settings = get_settings()
+    results = []
+    if q.strip():
+        results = find_opportunities(q.strip(), settings.github_token)
+    return templates.TemplateResponse("opportunities.html", {
+        "request": request, "query": q, "results": results,
+    })
+
+
+@router.get("/opportunities/api/search")
+async def opportunities_api(q: str = "", limit: int = 30):
+    from app.scrapers.opportunity_finder import find_opportunities
+    from config.settings import get_settings
+    settings = get_settings()
+    if not q.strip():
+        return {"results": []}
+    results = find_opportunities(q.strip(), settings.github_token, limit)
+    return {"results": results}
+
+
+@router.get("/opportunities/export")
+async def opportunities_export(q: str = ""):
+    import csv
+    import io
+    from fastapi.responses import StreamingResponse
+    from app.scrapers.opportunity_finder import find_opportunities
+    from config.settings import get_settings
+
+    settings = get_settings()
+    if not q.strip():
+        return {"error": "No query provided"}
+
+    results = find_opportunities(q.strip(), settings.github_token)
+
+    output = io.StringIO()
+    writer = csv.DictWriter(output, fieldnames=[
+        "rank", "name", "url", "stars", "open_issues", "language",
+        "last_commit", "contributors", "score"
+    ])
+    writer.writeheader()
+    for r in results:
+        writer.writerow({k: r[k] for k in writer.fieldnames})
+
+    output.seek(0)
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=opportunities_{q.replace(' ', '_')}.csv"},
+    )
+
+
 # ── Finance Learning Hub ─────────────────────────────────────────
 
 @router.get("/finance", response_class=HTMLResponse)
