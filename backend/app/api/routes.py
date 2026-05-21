@@ -154,22 +154,29 @@ async def search(request: Request, q: str = Query(default=""), page: int = 1, db
 @router.get("/trending", response_class=HTMLResponse)
 async def trending(request: Request, db: Session = Depends(get_db)):
     now = datetime.now(timezone.utc)
-    articles = db.query(Article).filter(Article.deleted_at.is_(None)).all()
+    hours_since_epoch = (now - datetime(1970, 1, 1, tzinfo=timezone.utc)).total_seconds() / 3600
 
-    scored = []
-    for a in articles:
-        if not a.published_at:
-            continue
-        hours_old = max((now - a.published_at).total_seconds() / 3600, 0.1)
-        source = db.query(Source).filter(Source.id == a.source_id).first()
-        credibility = (source.credibility_score or 50) / 100.0
-        score = ((a.view_count or 0) * credibility) / ((hours_old + 2) ** 1.5)
-        scored.append((a, score))
+    # Score in SQL: (view_count * credibility/100) / (hours_old + 2)^1.5
+    hours_old = func.greatest(
+        (func.extract('epoch', now) - func.extract('epoch', Article.published_at)) / 3600.0,
+        0.1
+    )
+    score_expr = (
+        (func.coalesce(Article.view_count, 0) * (func.coalesce(Source.credibility_score, 50) / 100.0))
+        / func.power(hours_old + 2, 1.5)
+    ).label("trend_score")
 
-    scored.sort(key=lambda x: x[1], reverse=True)
-    top_articles = [a for a, s in scored[:30]]
+    top_articles = (
+        db.query(Article, score_expr)
+        .join(Source, Article.source_id == Source.id)
+        .filter(Article.deleted_at.is_(None), Article.published_at.isnot(None))
+        .order_by(desc("trend_score"))
+        .limit(30)
+        .all()
+    )
+    articles = [a for a, _ in top_articles]
 
-    return templates.TemplateResponse("trending.html", {"request": request, "articles": top_articles})
+    return templates.TemplateResponse("trending.html", {"request": request, "articles": articles})
 
 
 @router.get("/tags", response_class=HTMLResponse)

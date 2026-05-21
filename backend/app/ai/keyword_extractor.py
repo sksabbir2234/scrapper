@@ -45,6 +45,7 @@ def extract_and_store_tags(db, article, Tag, ArticleTag):
     Also stores as array on article.tags column.
     """
     from slugify import slugify
+    from sqlalchemy import text
 
     keywords = extract_keywords(article.title, article.content_text)
     if not keywords:

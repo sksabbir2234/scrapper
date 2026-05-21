@@ -17,7 +17,7 @@ repos:
   - owner: openai
     repo: openai-python
     label: "OpenAI SDK"
-  - owner: anthropics
+  - owner: anthropic
     repo: anthropic-sdk-python
     label: "Anthropic SDK"
   - owner: BerriAI

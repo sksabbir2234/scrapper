@@ -385,14 +385,6 @@ sources:
     credibility_score: 80
     scrape_interval_min: 30
 
-  - name: "Financial Times"
-    domain: "ft.com"
-    rss: "https://www.ft.com/rss/home"
-    category: "finance"
-    country: "GB"
-    credibility_score: 90
-    scrape_interval_min: 30
-
   - name: "The Economist Finance"
     domain: "economist.com"
     rss: "https://www.economist.com/finance-and-economics/rss.xml"
