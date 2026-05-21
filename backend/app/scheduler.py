@@ -415,7 +415,8 @@ def run_github_weekly_digest():
         if top_repos:
             summary_parts.append(f"Most active: {', '.join(r['repo'] for r in top_repos[:3])}.")
         if growers:
-            summary_parts.append(f"Top growers: {', '.join(f'{g['label']} (+{g['score']}%)' for g in growers)}.")
+            grower_strs = [f"{g['label']} (+{g['score']}%)" for g in growers]
+            summary_parts.append(f"Top growers: {', '.join(grower_strs)}.")
 
         digest = GithubWeeklyDigest(
             week_start=week_start,
