@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}Trending - Global News Aggregator{% endblock %}
+
+{% block content %}
+<h1>Trending News</h1>
+<p class="subtitle">Most recent articles across all sources</p>
+
+<div class="article-grid">
+    {% for article in articles %}
+    <article class="article-card trending">
+        <span class="trending-badge">#{{ loop.index }}</span>
+        <a href="/articles/{{ article.slug }}" class="article-link">
+            <h2>{{ article.title }}</h2>
+            <div class="article-meta">
+                <span class="source">{{ article.source.name if article.source else 'Unknown' }}</span>
+                <span class="date">{{ article.published_at.strftime('%b %d, %Y %H:%M') if article.published_at else 'Unknown date' }}</span>
+            </div>
+        </a>
+    </article>
+    {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}Categories - Global News Aggregator{% endblock %}
+
+{% block content %}
+<h1>Categories</h1>
+<div class="category-grid">
+    {% for item in category_counts %}
+    <a href="/categories/{{ item.category.slug }}" class="category-card">
+        <h3>{{ item.category.name }}</h3>
+        <span class="count">{{ item.count }} articles</span>
+    </a>
+    {% endfor %}
+</div>
+{% endblock %}

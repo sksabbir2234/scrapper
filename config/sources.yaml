@@ -1,0 +1,450 @@
+sources:
+  # ── World News ──
+  - name: "BBC News"
+    domain: "bbc.com"
+    rss: "http://feeds.bbci.co.uk/news/rss.xml"
+    category: "world"
+    country: "GB"
+    credibility_score: 95
+    scrape_interval_min: 15
+
+  - name: "Al Jazeera"
+    domain: "aljazeera.com"
+    rss: "https://www.aljazeera.com/xml/rss/all.xml"
+    category: "world"
+    country: "QA"
+    credibility_score: 85
+    scrape_interval_min: 20
+
+  - name: "New York Times World"
+    domain: "nytimes.com"
+    rss: "https://rss.nytimes.com/services/xml/rss/nyt/World.xml"
+    category: "world"
+    country: "US"
+    credibility_score: 95
+    scrape_interval_min: 15
+
+  - name: "Google News World"
+    domain: "news.google.com"
+    rss: "https://news.google.com/rss/search?q=world+news&hl=en-US&gl=US&ceid=US:en"
+    category: "world"
+    country: "US"
+    credibility_score: 70
+    scrape_interval_min: 30
+
+  # ── Technology ──
+  - name: "TechCrunch"
+    domain: "techcrunch.com"
+    rss: "https://techcrunch.com/feed/"
+    category: "tech"
+    country: "US"
+    credibility_score: 80
+    scrape_interval_min: 30
+
+  - name: "The Verge"
+    domain: "theverge.com"
+    rss: "https://www.theverge.com/rss/index.xml"
+    category: "tech"
+    country: "US"
+    credibility_score: 80
+    scrape_interval_min: 30
+
+  - name: "Ars Technica"
+    domain: "arstechnica.com"
+    rss: "https://feeds.arstechnica.com/arstechnica/index"
+    category: "tech"
+    country: "US"
+    credibility_score: 85
+    scrape_interval_min: 30
+
+  - name: "Wired"
+    domain: "wired.com"
+    rss: "https://www.wired.com/feed/rss"
+    category: "tech"
+    country: "US"
+    credibility_score: 80
+    scrape_interval_min: 30
+
+  # ── Business ──
+  - name: "Bloomberg"
+    domain: "bloomberg.com"
+    rss: "https://feeds.bloomberg.com/markets/news.rss"
+    category: "business"
+    country: "US"
+    credibility_score: 90
+    scrape_interval_min: 20
+
+  - name: "CNBC"
+    domain: "cnbc.com"
+    rss: "https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=10001147"
+    category: "business"
+    country: "US"
+    credibility_score: 85
+    scrape_interval_min: 20
+
+  - name: "Financial Times"
+    domain: "ft.com"
+    rss: "https://www.ft.com/rss/home"
+    category: "business"
+    country: "GB"
+    credibility_score: 90
+    scrape_interval_min: 20
+
+  # ── Science ──
+  - name: "NASA"
+    domain: "nasa.gov"
+    rss: "https://www.nasa.gov/news-release/feed/"
+    category: "science"
+    country: "US"
+    credibility_score: 95
+    scrape_interval_min: 60
+
+  - name: "Nature"
+    domain: "nature.com"
+    rss: "https://www.nature.com/nature.rss"
+    category: "science"
+    country: "GB"
+    credibility_score: 95
+    scrape_interval_min: 60
+
+  - name: "Science Daily"
+    domain: "sciencedaily.com"
+    rss: "https://www.sciencedaily.com/rss/all.xml"
+    category: "science"
+    country: "US"
+    credibility_score: 85
+    scrape_interval_min: 60
+
+  # ── Health ──
+  - name: "WHO"
+    domain: "who.int"
+    rss: "https://www.who.int/rss-feeds/news-english.xml"
+    category: "health"
+    country: "CH"
+    credibility_score: 95
+    scrape_interval_min: 60
+
+  - name: "ScienceDaily Health"
+    domain: "sciencedaily.com"
+    rss: "https://www.sciencedaily.com/rss/health_medicine.xml"
+    category: "health"
+    country: "US"
+    credibility_score: 85
+    scrape_interval_min: 60
+
+  # ── Sports ──
+  - name: "ESPN"
+    domain: "espn.com"
+    rss: "https://www.espn.com/espn/rss/news"
+    category: "sports"
+    country: "US"
+    credibility_score: 80
+    scrape_interval_min: 30
+
+  - name: "BBC Sport"
+    domain: "bbc.co.uk"
+    rss: "http://feeds.bbci.co.uk/sport/rss.xml"
+    category: "sports"
+    country: "GB"
+    credibility_score: 90
+    scrape_interval_min: 30
+
+  # ── Politics ──
+  - name: "Politico"
+    domain: "politico.com"
+    rss: "https://rss.politico.com/politics-news.xml"
+    category: "politics"
+    country: "US"
+    credibility_score: 80
+    scrape_interval_min: 30
+
+  - name: "The Guardian Politics"
+    domain: "theguardian.com"
+    rss: "https://www.theguardian.com/politics/rss"
+    category: "politics"
+    country: "GB"
+    credibility_score: 85
+    scrape_interval_min: 30
+
+  # ── Entertainment ──
+  - name: "Variety"
+    domain: "variety.com"
+    rss: "https://variety.com/feed/"
+    category: "entertainment"
+    country: "US"
+    credibility_score: 80
+    scrape_interval_min: 60
+
+  - name: "Rolling Stone"
+    domain: "rollingstone.com"
+    rss: "https://www.rollingstone.com/feed/"
+    category: "entertainment"
+    country: "US"
+    credibility_score: 75
+    scrape_interval_min: 60
+
+  # ── AI Updates (for AI Tips digest) ──
+  - name: "Hugging Face Blog"
+    domain: "huggingface.co"
+    rss: "https://huggingface.co/blog/feed.xml"
+    category: "ai_updates"
+    country: "US"
+    credibility_score: 90
+    scrape_interval_min: 60
+
+  - name: "Towards Data Science"
+    domain: "towardsdatascience.com"
+    rss: "https://towardsdatascience.com/feed"
+    category: "ai_updates"
+    country: "US"
+    credibility_score: 80
+    scrape_interval_min: 60
+
+  - name: "The Batch (DeepLearning.AI)"
+    domain: "deeplearning.ai"
+    rss: "https://www.deeplearning.ai/the-batch/feed/"
+    category: "ai_updates"
+    country: "US"
+    credibility_score: 90
+    scrape_interval_min: 120
+
+  - name: "Last Week in AI"
+    domain: "lastweekin.ai"
+    rss: "https://lastweekin.ai/feed"
+    category: "ai_updates"
+    country: "US"
+    credibility_score: 85
+    scrape_interval_min: 120
+
+  - name: "Import AI"
+    domain: "jack-clark.net"
+    rss: "https://jack-clark.net/feed/"
+    category: "ai_updates"
+    country: "US"
+    credibility_score: 85
+    scrape_interval_min: 120
+
+  - name: "Sebastian Raschka"
+    domain: "sebastianraschka.com"
+    rss: "https://magazine.sebastianraschka.com/feed"
+    category: "ai_updates"
+    country: "US"
+    credibility_score: 85
+    scrape_interval_min: 120
+
+  - name: "AI Snake Oil"
+    domain: "aisnakeoil.com"
+    rss: "https://www.aisnakeoil.com/feed"
+    category: "ai_updates"
+    country: "US"
+    credibility_score: 80
+    scrape_interval_min: 120
+
+  - name: "r/MachineLearning"
+    domain: "reddit.com"
+    rss: "https://www.reddit.com/r/MachineLearning/top/.rss?t=week"
+    category: "ai_updates"
+    country: "US"
+    credibility_score: 70
+    scrape_interval_min: 60
+
+  - name: "r/LocalLLaMA"
+    domain: "reddit.com"
+    rss: "https://www.reddit.com/r/LocalLLaMA/top/.rss?t=week"
+    category: "ai_updates"
+    country: "US"
+    credibility_score: 70
+    scrape_interval_min: 60
+
+  - name: "r/artificial"
+    domain: "reddit.com"
+    rss: "https://www.reddit.com/r/artificial/top/.rss?t=week"
+    category: "ai_updates"
+    country: "US"
+    credibility_score: 65
+    scrape_interval_min: 60
+
+  - name: "Simon Willison"
+    domain: "simonwillison.net"
+    rss: "https://simonwillison.net/atom/everything/"
+    category: "ai_updates"
+    country: "GB"
+    credibility_score: 85
+    scrape_interval_min: 120
+
+  - name: "Lilian Weng"
+    domain: "lilianweng.github.io"
+    rss: "https://lilianweng.github.io/index.xml"
+    category: "ai_updates"
+    country: "US"
+    credibility_score: 90
+    scrape_interval_min: 240
+
+  - name: "Google AI Blog"
+    domain: "blog.google"
+    rss: "https://blog.google/technology/ai/rss/"
+    category: "ai_updates"
+    country: "US"
+    credibility_score: 90
+    scrape_interval_min: 120
+
+  - name: "OpenAI Blog"
+    domain: "openai.com"
+    rss: "https://openai.com/blog/rss.xml"
+    category: "ai_updates"
+    country: "US"
+    credibility_score: 90
+    scrape_interval_min: 120
+
+  - name: "Anthropic Blog"
+    domain: "anthropic.com"
+    rss: "https://www.anthropic.com/feed.xml"
+    category: "ai_updates"
+    country: "US"
+    credibility_score: 90
+    scrape_interval_min: 120
+
+  - name: "Meta AI Blog"
+    domain: "ai.meta.com"
+    rss: "https://ai.meta.com/blog/rss/"
+    category: "ai_updates"
+    country: "US"
+    credibility_score: 85
+    scrape_interval_min: 120
+
+  - name: "GitHub Blog"
+    domain: "github.blog"
+    rss: "https://github.blog/feed/"
+    category: "ai_updates"
+    country: "US"
+    credibility_score: 85
+    scrape_interval_min: 120
+
+  - name: "Gradient Flow"
+    domain: "gradientflow.com"
+    rss: "https://gradientflow.com/feed/"
+    category: "ai_updates"
+    country: "US"
+    credibility_score: 80
+    scrape_interval_min: 120
+
+  - name: "Jay Alammar"
+    domain: "jalammar.github.io"
+    rss: "https://jalammar.github.io/feed.xml"
+    category: "ai_updates"
+    country: "US"
+    credibility_score: 85
+    scrape_interval_min: 240
+
+  # ── Finance Learning (for Finance Hub digest) ──
+  - name: "Investopedia"
+    domain: "investopedia.com"
+    rss: "https://www.investopedia.com/feedbuilder/feed/getfeed/?feedName=rss_headline"
+    category: "finance"
+    country: "US"
+    credibility_score: 85
+    scrape_interval_min: 60
+
+  - name: "Morning Brew"
+    domain: "morningbrew.com"
+    rss: "https://www.morningbrew.com/feed"
+    category: "finance"
+    country: "US"
+    credibility_score: 75
+    scrape_interval_min: 120
+
+  - name: "Finimize"
+    domain: "finimize.com"
+    rss: "https://www.finimize.com/feed"
+    category: "finance"
+    country: "US"
+    credibility_score: 75
+    scrape_interval_min: 120
+
+  - name: "Yahoo Finance"
+    domain: "finance.yahoo.com"
+    rss: "https://finance.yahoo.com/news/rssindex"
+    category: "finance"
+    country: "US"
+    credibility_score: 80
+    scrape_interval_min: 30
+
+  - name: "CNBC Markets"
+    domain: "cnbc.com"
+    rss: "https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=20910258"
+    category: "finance"
+    country: "US"
+    credibility_score: 85
+    scrape_interval_min: 30
+
+  - name: "MarketWatch"
+    domain: "marketwatch.com"
+    rss: "https://feeds.content.dowjones.io/public/rss/mw_topstories"
+    category: "finance"
+    country: "US"
+    credibility_score: 80
+    scrape_interval_min: 30
+
+  - name: "Financial Times"
+    domain: "ft.com"
+    rss: "https://www.ft.com/rss/home"
+    category: "finance"
+    country: "GB"
+    credibility_score: 90
+    scrape_interval_min: 30
+
+  - name: "The Economist Finance"
+    domain: "economist.com"
+    rss: "https://www.economist.com/finance-and-economics/rss.xml"
+    category: "finance"
+    country: "GB"
+    credibility_score: 90
+    scrape_interval_min: 120
+
+  - name: "r/personalfinance"
+    domain: "reddit.com"
+    rss: "https://www.reddit.com/r/personalfinance/top/.rss?t=week"
+    category: "finance"
+    country: "US"
+    credibility_score: 65
+    scrape_interval_min: 60
+
+  - name: "r/investing"
+    domain: "reddit.com"
+    rss: "https://www.reddit.com/r/investing/top/.rss?t=week"
+    category: "finance"
+    country: "US"
+    credibility_score: 65
+    scrape_interval_min: 60
+
+  - name: "r/stocks"
+    domain: "reddit.com"
+    rss: "https://www.reddit.com/r/stocks/top/.rss?t=week"
+    category: "finance"
+    country: "US"
+    credibility_score: 60
+    scrape_interval_min: 60
+
+  - name: "r/CryptoCurrency"
+    domain: "reddit.com"
+    rss: "https://www.reddit.com/r/CryptoCurrency/top/.rss?t=week"
+    category: "finance"
+    country: "US"
+    credibility_score: 55
+    scrape_interval_min: 60
+
+  - name: "Motley Fool"
+    domain: "fool.com"
+    rss: "https://www.fool.com/feeds/index.aspx"
+    category: "finance"
+    country: "US"
+    credibility_score: 70
+    scrape_interval_min: 120
+
+  - name: "Seeking Alpha"
+    domain: "seekingalpha.com"
+    rss: "https://seekingalpha.com/market_currents.xml"
+    category: "finance"
+    country: "US"
+    credibility_score: 75
+    scrape_interval_min: 60

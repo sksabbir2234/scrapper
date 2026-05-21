@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Global News Aggregator{% endblock %}</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <header>
+        <nav>
+            <a href="/" class="logo">GlobalNews</a>
+            <div class="nav-links">
+                <a href="/">Home</a>
+                <a href="/articles">Articles</a>
+                <a href="/categories">Categories</a>
+                <a href="/tags">Tags</a>
+                <a href="/trending">Trending</a>
+                <a href="/search">Search</a>
+                <a href="/github">GitHub Watch</a>
+                <a href="/oss">OSS Alternatives</a>
+                <a href="/finance">Finance</a>
+                <a href="/ai-tips">AI Tips</a>
+                <a href="/admin">Admin</a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="{% block main_class %}container{% endblock %}">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer>
+        <p>Global News Aggregator</p>
+    </footer>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

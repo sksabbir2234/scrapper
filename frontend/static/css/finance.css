@@ -1,0 +1,422 @@
+/* Finance Learning Hub — Editorial Magazine Aesthetic */
+.finance-header h1 {
+    font-family: Georgia, 'Times New Roman', serif;
+    color: #1a2332;
+    font-size: 2.2rem;
+}
+.finance-header .subtitle {
+    color: #5a6978;
+    font-family: Georgia, serif;
+    font-style: italic;
+}
+
+/* Tabs */
+.finance-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 2px solid #e0e4e8;
+    margin-bottom: 1.5rem;
+    overflow-x: auto;
+}
+.finance-tab {
+    background: none;
+    border: none;
+    padding: 0.75rem 1.25rem;
+    font-size: 0.95rem;
+    color: #5a6978;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    white-space: nowrap;
+    font-family: Georgia, serif;
+}
+.finance-tab:hover {
+    color: #1a2332;
+}
+.finance-tab.active {
+    color: #1a2332;
+    border-bottom-color: #c9a227;
+    font-weight: 600;
+}
+
+.finance-content {
+    display: none;
+}
+.finance-content.active {
+    display: block;
+}
+
+/* Concept of the Day */
+.concept-card {
+    background: #fafaf7;
+    border: 1px solid #e0e4e8;
+    border-radius: 8px;
+    padding: 2rem;
+    max-width: 800px;
+}
+.concept-key-stat {
+    font-family: Georgia, serif;
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #c9a227;
+    margin-bottom: 0.5rem;
+}
+.concept-card h2 {
+    font-family: Georgia, serif;
+    color: #1a2332;
+    margin-bottom: 1rem;
+}
+.concept-definition {
+    font-size: 1.1rem;
+    line-height: 1.7;
+    color: #2d3748;
+    margin-bottom: 1.5rem;
+}
+.formula-block {
+    background: #1a2332;
+    color: #c9a227;
+    font-family: 'SF Mono', 'Consolas', monospace;
+    padding: 1rem 1.5rem;
+    border-radius: 6px;
+    font-size: 1.1rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+.concept-example, .concept-why {
+    margin-bottom: 1.5rem;
+}
+.concept-example h4, .concept-why h4 {
+    font-family: Georgia, serif;
+    color: #5a6978;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+}
+
+/* Market */
+.market-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+}
+.market-card {
+    background: #fff;
+    border: 1px solid #e0e4e8;
+    border-radius: 8px;
+    padding: 1.25rem;
+    text-align: center;
+}
+.market-card.error {
+    opacity: 0.5;
+}
+.market-symbol {
+    font-family: 'SF Mono', monospace;
+    font-weight: 700;
+    color: #1a2332;
+    font-size: 1.1rem;
+}
+.market-label {
+    color: #5a6978;
+    font-size: 0.85rem;
+    margin-bottom: 0.5rem;
+}
+.market-price {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #1a2332;
+}
+.market-change {
+    font-size: 1rem;
+    font-weight: 600;
+}
+.sparkline {
+    margin-top: 0.5rem;
+}
+
+/* Resources */
+.resource-filters {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+.resource-filters select {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #e0e4e8;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    background: #fff;
+}
+.resource-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1rem;
+}
+.resource-card {
+    background: #fff;
+    border: 1px solid #e0e4e8;
+    border-radius: 8px;
+    padding: 1.25rem;
+}
+.resource-card h3 {
+    margin: 0.5rem 0;
+}
+.resource-card h3 a {
+    color: #1a2332;
+    text-decoration: none;
+}
+.resource-card h3 a:hover {
+    color: #c9a227;
+}
+.resource-card p {
+    color: #5a6978;
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+.resource-type, .resource-level {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    background: #f0f0ec;
+    color: #5a6978;
+    margin-right: 0.5rem;
+}
+.level-beginner { background: #e8f5e9; color: #2e7d32; }
+.level-intermediate { background: #fff3e0; color: #e65100; }
+.level-advanced { background: #fce4ec; color: #c62828; }
+
+/* Calculators */
+.calculator-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.25rem;
+}
+.calculator-card {
+    background: #fff;
+    border: 1px solid #e0e4e8;
+    border-radius: 8px;
+    padding: 1.5rem;
+}
+.calculator-card h3 {
+    font-family: Georgia, serif;
+    color: #1a2332;
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+}
+.calc-inputs {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+.calc-inputs label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9rem;
+    color: #2d3748;
+}
+.calc-inputs input, .calc-inputs select {
+    width: 140px;
+    padding: 0.4rem 0.6rem;
+    border: 1px solid #e0e4e8;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    text-align: right;
+}
+.calc-btn {
+    background: #1a2332;
+    color: #fff;
+    border: none;
+    padding: 0.6rem 1.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    width: 100%;
+}
+.calc-btn:hover {
+    background: #2d3748;
+}
+.calc-result {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e0e4e8;
+}
+.result-main {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #1a2332;
+    margin-bottom: 0.25rem;
+}
+.result-detail {
+    font-size: 0.9rem;
+    color: #5a6978;
+}
+
+/* Quiz */
+.quiz-question {
+    background: #fff;
+    border: 1px solid #e0e4e8;
+    border-radius: 8px;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+}
+.quiz-question h4 {
+    color: #1a2332;
+    margin-bottom: 0.75rem;
+}
+.quiz-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+.quiz-options label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.95rem;
+}
+.quiz-options label:hover {
+    background: #f5f5f2;
+}
+.quiz-explanation {
+    margin-top: 0.75rem;
+    padding: 0.75rem;
+    background: #fafaf7;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    color: #5a6978;
+}
+.quiz-result {
+    background: #fafaf7;
+    border: 2px solid #c9a227;
+    border-radius: 8px;
+    padding: 1.5rem;
+    text-align: center;
+    margin-top: 1.5rem;
+}
+.quiz-result h3 {
+    color: #1a2332;
+    font-size: 1.5rem;
+}
+
+/* Glossary */
+#glossary-search {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid #e0e4e8;
+    border-radius: 6px;
+    font-size: 1rem;
+    margin-bottom: 1.5rem;
+}
+.glossary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1rem;
+}
+.glossary-item {
+    background: #fff;
+    border: 1px solid #e0e4e8;
+    border-radius: 8px;
+    padding: 1.25rem;
+}
+.glossary-item h4 {
+    color: #1a2332;
+    margin-bottom: 0.5rem;
+}
+.glossary-item p {
+    color: #5a6978;
+    font-size: 0.9rem;
+}
+
+/* Finance News */
+.finance-news-header {
+    margin-bottom: 1.5rem;
+}
+.finance-news-header h2 {
+    font-family: Georgia, serif;
+    color: #1a2332;
+}
+.finance-news-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    max-width: 800px;
+}
+.finance-news-card {
+    background: #fff;
+    border: 1px solid #e0e4e8;
+    border-radius: 8px;
+    padding: 1.25rem;
+    transition: border-color 0.2s;
+}
+.finance-news-card:hover {
+    border-color: #c9a227;
+}
+.news-source {
+    font-size: 0.75rem;
+    color: #c9a227;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+.finance-news-card h3 {
+    margin: 0 0 0.5rem;
+}
+.finance-news-card h3 a {
+    color: #1a2332;
+    text-decoration: none;
+    font-size: 1rem;
+}
+.finance-news-card h3 a:hover {
+    color: #c9a227;
+}
+.news-summary {
+    color: #5a6978;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    font-style: italic;
+    margin-bottom: 0.5rem;
+}
+.news-excerpt {
+    color: #8b949e;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    margin-bottom: 0.75rem;
+}
+.news-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.8rem;
+}
+.news-date {
+    color: #8b949e;
+}
+.news-link {
+    color: #c9a227;
+    text-decoration: none;
+}
+.news-link:hover {
+    text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+    .finance-tabs {
+        gap: 0;
+    }
+    .finance-tab {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.85rem;
+    }
+    .calculator-grid, .resource-grid, .market-grid, .glossary-grid {
+        grid-template-columns: 1fr;
+    }
+}

@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}OSS Alternatives - Free & Open Source Tools{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="/static/css/oss.css">
+{% endblock %}
+
+{% block content %}
+<div class="oss-hero">
+    <h1>Free & Open Source Alternatives</h1>
+    <p class="subtitle">Stop paying for tools you can self-host</p>
+    <div class="oss-stats">
+        <span class="oss-count">{{ total }} alternatives tracked</span>
+    </div>
+</div>
+
+<div class="oss-controls">
+    <form method="get" action="/oss" class="oss-search-form">
+        <input type="text" name="search" value="{{ current_search }}" placeholder="Search alternatives..." class="oss-search-input">
+        <input type="hidden" name="category" value="{{ current_category }}">
+        <input type="hidden" name="sort" value="{{ current_sort }}">
+        <button type="submit" class="oss-search-btn">Search</button>
+    </form>
+
+    <div class="oss-categories">
+        <a href="/oss?sort={{ current_sort }}" class="oss-cat-pill {% if not current_category %}active{% endif %}">All</a>
+        {% for cat, count in categories %}
+        <a href="/oss?category={{ cat }}&sort={{ current_sort }}" class="oss-cat-pill {% if current_category == cat %}active{% endif %}">
+            {{ cat.replace('-', ' ').title() }} ({{ count }})
+        </a>
+        {% endfor %}
+    </div>
+
+    <div class="oss-sort">
+        <a href="/oss?category={{ current_category }}&search={{ current_search }}&sort=stars" class="oss-sort-btn {% if current_sort == 'stars' %}active{% endif %}">Stars</a>
+        <a href="/oss?category={{ current_category }}&search={{ current_search }}&sort=upvotes" class="oss-sort-btn {% if current_sort == 'upvotes' %}active{% endif %}">Upvotes</a>
+        <a href="/oss?category={{ current_category }}&search={{ current_search }}&sort=newest" class="oss-sort-btn {% if current_sort == 'newest' %}active{% endif %}">Newest</a>
+    </div>
+</div>
+
+{% if alternatives %}
+<div class="oss-grid">
+    {% for alt in alternatives %}
+    <div class="oss-card {% if alt.featured %}oss-featured{% endif %}">
+        {% if alt.featured %}<div class="oss-badge">Featured</div>{% endif %}
+        <div class="oss-card-header">
+            <div class="oss-names">
+                <h3><a href="/oss/{{ alt.slug }}">{{ alt.oss_name }}</a></h3>
+                <span class="oss-replaces">replaces {{ alt.paid_name }}</span>
+            </div>
+        </div>
+        <div class="oss-stats-row">
+            {% if alt.gh_stars %}
+            <span class="oss-stat">&#9733; {{ "{:,}".format(alt.gh_stars) }}</span>
+            {% endif %}
+            {% if alt.gh_forks %}
+            <span class="oss-stat">&#9741; {{ "{:,}".format(alt.gh_forks) }}</span>
+            {% endif %}
+            <span class="oss-cat-tag">{{ alt.category.replace('-', ' ') }}</span>
+        </div>
+        {% if alt.why_better %}
+        <p class="oss-desc">{{ alt.why_better[:150] }}{% if alt.why_better|length > 150 %}...{% endif %}</p>
+        {% endif %}
+        <div class="oss-badges">
+            {% if alt.self_hostable %}<span class="oss-badge-sm">Self-hostable</span>{% endif %}
+            {% if alt.has_free_tier %}<span class="oss-badge-sm">Free tier</span>{% endif %}
+            {% if alt.difficulty %}<span class="oss-badge-sm diff-{{ alt.difficulty }}">{{ alt.difficulty }}</span>{% endif %}
+        </div>
+        <div class="oss-card-footer">
+            <button class="oss-upvote" onclick="upvoteOSS('{{ alt.slug }}', this)">&#9829; {{ alt.upvotes or 0 }}</button>
+            <a href="/oss/{{ alt.slug }}" class="oss-detail-link">Details &rarr;</a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <p>No alternatives found. Try a different search or category.</p>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function upvoteOSS(slug, btn) {
+    try {
+        const resp = await fetch(`/oss/api/${slug}/upvote`, {method: 'POST'});
+        const data = await resp.json();
+        btn.innerHTML = `&#9829; ${data.upvotes}`;
+        btn.classList.add('upvoted');
+    } catch(e) {}
+}
+</script>
+{% endblock %}

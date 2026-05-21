@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Global News Aggregator{% endblock %}
+
+{% block content %}
+<h1>Latest News</h1>
+
+{% if articles %}
+<div class="article-grid">
+    {% for article in articles %}
+    <article class="article-card">
+        <a href="/articles/{{ article.slug }}" class="article-link">
+            {% if article.image_url %}
+            <img src="{{ article.image_url }}" alt="" class="article-thumb" loading="lazy">
+            {% endif %}
+            <h2>{{ article.title }}</h2>
+            <div class="article-meta">
+                <span class="source">{{ article.source.name if article.source else 'Unknown' }}</span>
+                <span class="date">{{ article.published_at.strftime('%b %d, %Y') if article.published_at else 'Unknown date' }}</span>
+            </div>
+            {% if article.content_text %}
+            <p class="excerpt">{{ article.content_text[:200] }}...</p>
+            {% endif %}
+        </a>
+    </article>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <p>No articles yet. Run the scraper to fetch news!</p>
+    <code>python scripts/run_scraper.py</code>
+</div>
+{% endif %}
+{% endblock %}

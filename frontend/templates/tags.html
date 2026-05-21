@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}Tags - Global News Aggregator{% endblock %}
+
+{% block content %}
+<h1>Tags</h1>
+<p class="subtitle">{{ tags|length }} tags</p>
+
+<div class="tag-cloud">
+    {% for item in tags %}
+    <a href="/tags/{{ item.tag.slug }}" class="tag-pill">
+        {{ item.tag.name }}
+        <span class="tag-count">{{ item.count }}</span>
+    </a>
+    {% endfor %}
+</div>
+{% endblock %}

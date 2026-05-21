@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}{{ tag.name }} - Global News Aggregator{% endblock %}
+
+{% block content %}
+<h1>{{ tag.name }}</h1>
+<p class="subtitle">{{ total }} articles</p>
+
+{% if articles %}
+<div class="article-grid">
+    {% for article in articles %}
+    <article class="article-card">
+        <a href="/articles/{{ article.slug }}" class="article-link">
+            {% if article.image_url %}
+            <img src="{{ article.image_url }}" alt="" class="article-thumb" loading="lazy">
+            {% endif %}
+            <h2>{{ article.title }}</h2>
+            <div class="article-meta">
+                <span class="source">{{ article.source.name if article.source else 'Unknown' }}</span>
+                <span class="date">{{ article.published_at.strftime('%b %d, %Y') if article.published_at else '' }}</span>
+            </div>
+            {% if article.content_text %}
+            <p class="excerpt">{{ article.content_text[:200] }}...</p>
+            {% endif %}
+        </a>
+    </article>
+    {% endfor %}
+</div>
+
+{% if total_pages > 1 %}
+<div class="pagination">
+    {% if page > 1 %}
+    <a href="/tags/{{ tag.slug }}?page={{ page - 1 }}" class="btn">&laquo; Previous</a>
+    {% endif %}
+    <span>Page {{ page }} of {{ total_pages }}</span>
+    {% if page < total_pages %}
+    <a href="/tags/{{ tag.slug }}?page={{ page + 1 }}" class="btn">Next &raquo;</a>
+    {% endif %}
+</div>
+{% endif %}
+{% else %}
+<div class="empty-state">
+    <p>No articles with this tag yet.</p>
+</div>
+{% endif %}
+{% endblock %}

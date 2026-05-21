@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+
+{% block title %}AI Tips & Tricks - Global News Aggregator{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="/static/css/ai-tips.css">
+{% endblock %}
+
+{% block content %}
+<div class="ai-header">
+    <h1>AI Tips & Tricks</h1>
+    <p class="subtitle">Actionable AI knowledge — prompt patterns, tools, and techniques</p>
+</div>
+
+<div class="ai-tabs">
+    <button class="ai-tab active" onclick="switchAITab('patterns')">Prompt Patterns</button>
+    <button class="ai-tab" onclick="switchAITab('models')">Model Comparison</button>
+    <button class="ai-tab" onclick="switchAITab('tools')">Tools</button>
+    <button class="ai-tab" onclick="switchAITab('tips')">Quick Tips</button>
+    <button class="ai-tab" onclick="switchAITab('digest')">Weekly Digest</button>
+</div>
+
+<!-- Prompt Patterns -->
+<div id="tab-patterns" class="ai-content active">
+    <div class="pattern-filters">
+        <select id="pattern-category" onchange="loadPatterns()">
+            <option value="">All Categories</option>
+            <option value="reasoning">Reasoning</option>
+            <option value="coding">Coding</option>
+            <option value="writing">Writing</option>
+            <option value="analysis">Analysis</option>
+            <option value="creative">Creative</option>
+            <option value="general">General</option>
+            <option value="system">System</option>
+            <option value="debugging">Debugging</option>
+        </select>
+        <input type="text" id="pattern-search" placeholder="Search patterns..." oninput="loadPatterns()">
+    </div>
+    <div id="pattern-list" class="pattern-grid">
+        <p>Loading patterns...</p>
+    </div>
+</div>
+
+<!-- Model Comparison -->
+<div id="tab-models" class="ai-content">
+    <div id="model-list" class="model-grid">
+        <p>Loading models...</p>
+    </div>
+</div>
+
+<!-- Tools -->
+<div id="tab-tools" class="ai-content">
+    <div id="tool-list" class="tool-grid">
+        <p>Loading tools...</p>
+    </div>
+</div>
+
+<!-- Quick Tips -->
+<div id="tab-tips" class="ai-content">
+    <div id="tip-list" class="tip-feed">
+        <p>Loading tips...</p>
+    </div>
+</div>
+
+<!-- Weekly Digest -->
+<div id="tab-digest" class="ai-content">
+    <div class="digest-header">
+        <h2>AI Weekly Digest</h2>
+        <p class="subtitle">Latest from AI blogs, research, Reddit, and GitHub</p>
+    </div>
+    <div id="digest-list" class="digest-grid">
+        <p>Loading digest...</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function switchAITab(name) {
+    document.querySelectorAll('.ai-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.ai-tab').forEach(el => el.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    event.target.classList.add('active');
+    if (name === 'patterns') loadPatterns();
+    if (name === 'models') loadModels();
+    if (name === 'tools') loadTools();
+    if (name === 'tips') loadTips();
+    if (name === 'digest') loadDigest();
+}
+
+// Prompt Patterns
+async function loadPatterns() {
+    const category = document.getElementById('pattern-category').value;
+    const search = document.getElementById('pattern-search').value;
+    try {
+        const resp = await fetch(`/ai-tips/api/patterns?category=${category}&search=${encodeURIComponent(search)}`);
+        const data = await resp.json();
+        let html = '';
+        data.forEach(p => {
+            html += `<div class="pattern-card">
+                <div class="pattern-header">
+                    <span class="pattern-cat cat-${p.category}">${p.category}</span>
+                    <span class="pattern-diff">${p.difficulty}</span>
+                </div>
+                <h3>${p.name}</h3>
+                <div class="pattern-text"><pre>${escapeHtml(p.pattern_text)}</pre></div>
+                <details>
+                    <summary>Example</summary>
+                    <div class="pattern-example">
+                        <p><strong>Input:</strong> ${escapeHtml(p.example_input || '')}</p>
+                        <p><strong>Output:</strong> ${escapeHtml(p.example_output || '')}</p>
+                    </div>
+                </details>
+                ${p.tips ? `<div class="pattern-tips"><strong>Tip:</strong> ${escapeHtml(p.tips)}</div>` : ''}
+            </div>`;
+        });
+        document.getElementById('pattern-list').innerHTML = html || '<p>No patterns found.</p>';
+    } catch(e) { document.getElementById('pattern-list').innerHTML = '<p>Error loading patterns.</p>'; }
+}
+loadPatterns();
+
+// Models
+async function loadModels() {
+    try {
+        const resp = await fetch('/ai-tips/api/models');
+        const data = await resp.json();
+        let html = '<div class="model-table-wrap"><table class="model-table"><thead><tr><th>Model</th><th>Provider</th><th>Context</th><th>Pricing</th><th>Best For</th></tr></thead><tbody>';
+        data.forEach(m => {
+            const ctx = m.context_window ? (m.context_window >= 1000000 ? (m.context_window/1000000)+'M' : (m.context_window/1000)+'K') : '—';
+            html += `<tr>
+                <td><strong>${m.name}</strong></td>
+                <td>${m.provider || '—'}</td>
+                <td>${ctx}</td>
+                <td>${m.pricing_note || '—'}</td>
+                <td>${m.best_for || '—'}</td>
+            </tr>`;
+        });
+        html += '</tbody></table></div>';
+        document.getElementById('model-list').innerHTML = data.length ? html : '<p>No model cards yet.</p>';
+    } catch(e) { document.getElementById('model-list').innerHTML = '<p>Error loading models.</p>'; }
+}
+
+// Tools
+async function loadTools() {
+    try {
+        const resp = await fetch('/ai-tips/api/tools');
+        const data = await resp.json();
+        let html = '';
+        data.forEach(t => {
+            html += `<div class="tool-card ${t.is_tool_of_week ? 'tool-featured' : ''}">
+                ${t.is_tool_of_week ? '<div class="tool-badge">Tool of the Week</div>' : ''}
+                <span class="tool-cat">${t.category}</span>
+                <h3><a href="${t.url}" target="_blank" rel="noopener noreferrer">${t.name}</a></h3>
+                <p>${t.description}</p>
+            </div>`;
+        });
+        document.getElementById('tool-list').innerHTML = data.length ? html : '<p>No tools yet.</p>';
+    } catch(e) { document.getElementById('tool-list').innerHTML = '<p>Error loading tools.</p>'; }
+}
+
+// Tips
+async function loadTips() {
+    try {
+        const resp = await fetch('/ai-tips/api/feed');
+        const data = await resp.json();
+        let html = '';
+        data.forEach(t => {
+            html += `<div class="tip-card ${t.is_featured ? 'tip-featured' : ''}">
+                <div class="tip-header">
+                    <span class="tip-cat">${t.category}</span>
+                    <button class="like-btn" onclick="likeTip(${t.id}, this)">&#9829; ${t.likes || 0}</button>
+                </div>
+                <h3>${escapeHtml(t.title)}</h3>
+                <p>${escapeHtml(t.content)}</p>
+            </div>`;
+        });
+        document.getElementById('tip-list').innerHTML = data.length ? html : '<p>No tips yet.</p>';
+    } catch(e) { document.getElementById('tip-list').innerHTML = '<p>Error loading tips.</p>'; }
+}
+
+async function likeTip(id, btn) {
+    try {
+        const resp = await fetch(`/ai-tips/api/tips/${id}/like`, {method: 'POST'});
+        const data = await resp.json();
+        btn.innerHTML = `&#9829; ${data.likes}`;
+        btn.classList.add('liked');
+    } catch(e) {}
+}
+
+// Digest
+async function loadDigest() {
+    try {
+        const resp = await fetch('/ai-tips/api/digest?limit=30');
+        const data = await resp.json();
+        let html = '';
+        data.forEach(a => {
+            html += `<div class="digest-card">
+                <div class="digest-source">${escapeHtml(a.source)}</div>
+                <h3><a href="/articles/${a.slug}">${escapeHtml(a.title)}</a></h3>
+                ${a.summary_ai ? `<p class="digest-summary">${escapeHtml(a.summary_ai)}</p>` : ''}
+                ${a.content ? `<p class="digest-excerpt">${escapeHtml(a.content)}...</p>` : ''}
+                <div class="digest-footer">
+                    <span class="digest-date">${a.published_at}</span>
+                    <a href="${a.original_url}" target="_blank" rel="noopener noreferrer" class="digest-link">Read original</a>
+                </div>
+            </div>`;
+        });
+        document.getElementById('digest-list').innerHTML = html || '<p>No AI articles yet. Run the scraper to fetch content from AI sources.</p>';
+    } catch(e) { document.getElementById('digest-list').innerHTML = '<p>Error loading digest.</p>'; }
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+</script>
+{% endblock %}

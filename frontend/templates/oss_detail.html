@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}{{ alt.oss_name }} vs {{ alt.paid_name }} - OSS Alternatives{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="/static/css/oss.css">
+{% endblock %}
+
+{% block content %}
+<div class="oss-detail">
+    <div class="oss-detail-main">
+        <div class="oss-detail-header">
+            <h1>{{ alt.oss_name }}</h1>
+            <span class="oss-replaces-badge">Replaces {{ alt.paid_name }}</span>
+        </div>
+
+        {% if alt.oss_github %}
+        <a href="https://github.com/{{ alt.oss_github }}" target="_blank" rel="noopener noreferrer" class="oss-github-link">
+            View on GitHub &rarr;
+        </a>
+        {% endif %}
+
+        {% if alt.oss_description %}
+        <div class="oss-section">
+            <h3>About</h3>
+            <p>{{ alt.oss_description }}</p>
+        </div>
+        {% endif %}
+
+        {% if alt.why_better %}
+        <div class="oss-section">
+            <h3>Why it's better than {{ alt.paid_name }}</h3>
+            <p>{{ alt.why_better }}</p>
+        </div>
+        {% endif %}
+
+        {% if alt.quick_tip %}
+        <div class="oss-section">
+            <h3>Quick Start</h3>
+            <pre class="oss-code"><code>{{ alt.quick_tip }}</code></pre>
+        </div>
+        {% endif %}
+
+        {% if alt.tags %}
+        <div class="oss-tags">
+            {% for tag in alt.tags.split(',') %}
+            <span class="oss-tag">{{ tag.strip() }}</span>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="oss-github-stats">
+            {% if alt.gh_stars %}<span>&#9733; {{ "{:,}".format(alt.gh_stars) }} stars</span>{% endif %}
+            {% if alt.gh_forks %}<span>&#9741; {{ "{:,}".format(alt.gh_forks) }} forks</span>{% endif %}
+            {% if alt.gh_open_issues %}<span>{{ alt.gh_open_issues }} issues</span>{% endif %}
+            {% if alt.gh_language %}<span>{{ alt.gh_language }}</span>{% endif %}
+            {% if alt.gh_license %}<span>{{ alt.gh_license }}</span>{% endif %}
+        </div>
+    </div>
+
+    <div class="oss-detail-sidebar">
+        <div class="oss-replaces-box">
+            <h4>Replaces</h4>
+            <div class="oss-replace-name">{{ alt.paid_name }}</div>
+            {% if alt.paid_price_hint %}<div class="oss-price-hint">{{ alt.paid_price_hint }}</div>{% endif %}
+        </div>
+
+        <div class="oss-meta-box">
+            {% if alt.difficulty %}<div><strong>Difficulty:</strong> <span class="diff-{{ alt.difficulty }}">{{ alt.difficulty|title }}</span></div>{% endif %}
+            {% if alt.self_hostable %}<div>&#10003; Self-hostable</div>{% endif %}
+            {% if alt.has_free_tier %}<div>&#10003; Free tier available</div>{% endif %}
+        </div>
+
+        <div class="oss-upvote-box">
+            <button class="oss-upvote-lg" onclick="upvoteOSS('{{ alt.slug }}', this)">&#9829; {{ alt.upvotes or 0 }} upvotes</button>
+        </div>
+
+        {% if related %}
+        <div class="oss-related">
+            <h4>Other alternatives to {{ alt.paid_name }}</h4>
+            {% for r in related %}
+            <a href="/oss/{{ r.slug }}" class="oss-related-link">{{ r.oss_name }}</a>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if same_cat %}
+        <div class="oss-related">
+            <h4>More {{ alt.category.replace('-', ' ') }} tools</h4>
+            {% for s in same_cat %}
+            <a href="/oss/{{ s.slug }}" class="oss-related-link">{{ s.oss_name }}</a>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function upvoteOSS(slug, btn) {
+    try {
+        const resp = await fetch(`/oss/api/${slug}/upvote`, {method: 'POST'});
+        const data = await resp.json();
+        btn.innerHTML = `&#9829; ${data.upvotes} upvotes`;
+        btn.classList.add('upvoted');
+    } catch(e) {}
+}
+</script>
+{% endblock %}

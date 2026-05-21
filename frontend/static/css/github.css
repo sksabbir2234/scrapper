@@ -1,0 +1,146 @@
+/* GitHub AI Watch — Dark Terminal Aesthetic */
+.github-header h1 {
+    color: #e6edf3;
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+}
+.github-header .subtitle {
+    color: #8b949e;
+}
+
+.github-filters {
+    margin-bottom: 1.5rem;
+}
+.filter-bar {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+.filter-bar select {
+    background: #161b22;
+    color: #e6edf3;
+    border: 1px solid #30363d;
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+}
+.filter-bar .btn-outline {
+    color: #58a6ff;
+    border-color: #30363d;
+}
+.filter-bar .btn-outline:hover {
+    background: #161b22;
+}
+
+.github-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 1rem;
+}
+
+.github-card {
+    background: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 1.25rem;
+    transition: border-color 0.2s;
+}
+.github-card:hover {
+    border-color: #58a6ff;
+}
+
+.github-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+.repo-name {
+    color: #58a6ff;
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+.update-type {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    padding: 0.2rem 0.6rem;
+    border-radius: 12px;
+    letter-spacing: 0.05em;
+}
+.type-release {
+    background: #1a3a1a;
+    color: #3fb950;
+    border: 1px solid #238636;
+}
+.type-commit {
+    background: #1a2a3a;
+    color: #58a6ff;
+    border: 1px solid #1f6feb;
+}
+.type-trending {
+    background: #3a2a0a;
+    color: #d29922;
+    border: 1px solid #9e6a03;
+}
+
+.github-card h3 {
+    margin: 0 0 0.5rem;
+    font-size: 1rem;
+}
+.github-card h3 a {
+    color: #e6edf3;
+    text-decoration: none;
+}
+.github-card h3 a:hover {
+    color: #58a6ff;
+    text-decoration: underline;
+}
+
+.github-body {
+    color: #8b949e;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    margin-bottom: 0.75rem;
+}
+
+.github-card-footer {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.8rem;
+    color: #8b949e;
+}
+.stars {
+    color: #d29922;
+}
+.language {
+    color: #8b949e;
+}
+.date {
+    margin-left: auto;
+}
+
+/* Empty state */
+.github-empty {
+    text-align: center;
+    padding: 4rem 2rem;
+}
+.terminal-cursor {
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    color: #3fb950;
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+}
+.cursor {
+    animation: blink 1s step-end infinite;
+}
+@keyframes blink {
+    50% { opacity: 0; }
+}
+
+@media (max-width: 768px) {
+    .github-grid {
+        grid-template-columns: 1fr;
+    }
+}

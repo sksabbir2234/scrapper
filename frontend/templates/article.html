@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}{{ article.title }} - GlobalNews{% endblock %}
+
+{% block main_class %}page-content{% endblock %}
+
+{% block content %}
+<article class="article-detail">
+    {% if article.image_url %}
+    <div class="article-hero">
+        <img src="{{ article.image_url }}" alt="">
+    </div>
+    {% endif %}
+
+    <div class="article-body">
+        <h1>{{ article.title }}</h1>
+
+        <div class="article-meta">
+            <span class="source">{{ article.source.name if article.source else 'Unknown Source' }}</span>
+            <span class="date">{{ article.published_at.strftime('%B %d, %Y') if article.published_at else '' }}</span>
+            {% if article.author %}
+            <span class="author">By {{ article.author }}</span>
+            {% endif %}
+        </div>
+
+        {% if article_tags %}
+        <div class="article-tags">
+            {% for tag in article_tags %}
+            <a href="/tags/{{ tag.slug }}" class="article-tag">{{ tag.name }}</a>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if article.summary_ai %}
+        <div class="article-summary">
+            <strong>Summary:</strong> {{ article.summary_ai }}
+        </div>
+        {% endif %}
+
+        <div class="article-content">
+            {% if article.content_text %}
+            {{ article.content_text | replace('\n', '<br>') | safe }}
+            {% else %}
+            <p>No content available. Visit the original article for full details.</p>
+            {% endif %}
+        </div>
+
+        <div class="article-footer">
+            <a href="{{ article.original_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-primary">
+                Read Original Article
+            </a>
+            <a href="/" class="btn btn-outline">Back to Home</a>
+        </div>
+    </div>
+</article>
+{% endblock %}

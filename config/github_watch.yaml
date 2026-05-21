@@ -1,0 +1,61 @@
+repos:
+  - owner: huggingface
+    repo: transformers
+    label: "HuggingFace Transformers"
+  - owner: huggingface
+    repo: diffusers
+    label: "Diffusers"
+  - owner: ollama
+    repo: ollama
+    label: "Ollama"
+  - owner: langchain-ai
+    repo: langchain
+    label: "LangChain"
+  - owner: microsoft
+    repo: autogen
+    label: "AutoGen"
+  - owner: openai
+    repo: openai-python
+    label: "OpenAI SDK"
+  - owner: anthropics
+    repo: anthropic-sdk-python
+    label: "Anthropic SDK"
+  - owner: BerriAI
+    repo: litellm
+    label: "LiteLLM"
+  - owner: vllm-project
+    repo: vllm
+    label: "vLLM"
+  - owner: ggerganov
+    repo: llama.cpp
+    label: "llama.cpp"
+  - owner: mlc-ai
+    repo: mlc-llm
+    label: "MLC LLM"
+  - owner: guidance-ai
+    repo: guidance
+    label: "Guidance"
+  - owner: deepset-ai
+    repo: haystack
+    label: "Haystack"
+  - owner: chroma-core
+    repo: chroma
+    label: "ChromaDB"
+  - owner: qdrant
+    repo: qdrant
+    label: "Qdrant"
+  - owner: deepseek-ai
+    repo: DeepSeek-V3
+    label: "DeepSeek V3"
+  - owner: QwenLM
+    repo: Qwen
+    label: "Qwen"
+  - owner: meta-llama
+    repo: llama3
+    label: "Meta Llama 3"
+  - owner: pytorch
+    repo: pytorch
+    label: "PyTorch"
+  - owner: Comfy-Org
+    repo: ComfyUI
+    label: "ComfyUI"

@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - GlobalNews</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        .admin-tabs { display: flex; gap: 0; border-bottom: 2px solid var(--border); margin-bottom: 1.5rem; }
+        .admin-tab { padding: 0.7rem 1.5rem; cursor: pointer; border: none; background: none; font-size: 1rem; color: var(--text-light); border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 0.2s; }
+        .admin-tab:hover { color: var(--text); }
+        .admin-tab.active { color: var(--highlight); border-bottom-color: var(--highlight); font-weight: 600; }
+        .tab-content { display: none; } .tab-content.active { display: block; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+        .stat-card { background: var(--white); border: 1px solid var(--border); border-radius: 10px; padding: 1.2rem; text-align: center; }
+        .stat-card .number { font-size: 2rem; font-weight: 700; color: var(--highlight); }
+        .stat-card .label { font-size: 0.85rem; color: var(--text-light); margin-top: 0.3rem; }
+        .stat-card .trend { font-size: 0.8rem; color: #27ae60; margin-top: 0.2rem; }
+        .health-badge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
+        .health-healthy { background: #d4edda; color: #155724; }
+        .health-stale { background: #fff3cd; color: #856404; }
+        .health-failing { background: #f8d7da; color: #721c24; }
+        .health-never { background: #e2e3e5; color: #383d41; }
+        .toolbar { display: flex; gap: 0.8rem; align-items: center; flex-wrap: wrap; margin-bottom: 1rem; }
+        .toolbar input, .toolbar select { padding: 0.5rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.9rem; }
+        .toolbar input[type="text"] { min-width: 250px; }
+        .btn { padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 500; transition: all 0.2s; }
+        .btn-primary { background: var(--highlight); color: white; }
+        .btn-primary:hover { background: #d63050; }
+        .btn-secondary { background: var(--accent); color: white; }
+        .btn-secondary:hover { background: #2d6a9f; }
+        .btn-danger { background: #e74c3c; color: white; }
+        .btn-danger:hover { background: #c0392b; }
+        .btn-sm { padding: 0.3rem 0.7rem; font-size: 0.8rem; }
+        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+        .btn-outline:hover { background: #f5f5f5; }
+        table.admin-table { width: 100%; border-collapse: collapse; background: var(--white); border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
+        table.admin-table th { background: #f8f9fa; padding: 0.7rem 1rem; text-align: left; font-size: 0.85rem; color: var(--text-light); border-bottom: 2px solid var(--border); }
+        table.admin-table td { padding: 0.7rem 1rem; border-bottom: 1px solid #f0f0f0; font-size: 0.9rem; }
+        table.admin-table tr:hover { background: #fafafa; }
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; justify-content: center; align-items: center; }
+        .modal-overlay.show { display: flex; }
+        .modal { background: white; border-radius: 12px; padding: 2rem; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto; }
+        .modal h2 { margin-bottom: 1.5rem; }
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; font-weight: 500; margin-bottom: 0.3rem; font-size: 0.9rem; }
+        .form-group input, .form-group select { width: 100%; padding: 0.5rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.9rem; box-sizing: border-box; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .log-detail { background: #f8f9fa; padding: 0.5rem; border-radius: 4px; font-size: 0.8rem; font-family: monospace; white-space: pre-wrap; max-height: 150px; overflow-y: auto; margin-top: 0.5rem; display: none; }
+        .log-detail.show { display: block; }
+        .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 0.3rem; }
+        .status-active { background: #27ae60; } .status-inactive { background: #e74c3c; }
+        .actions-cell { display: flex; gap: 0.4rem; }
+        .checkbox-col { width: 30px; }
+        .pause-btn { background: #f39c12; color: white; border: none; padding: 0.3rem 0.8rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem; }
+        .pause-btn.paused { background: #27ae60; }
+        .category-chart { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem; }
+        .cat-bar { display: flex; align-items: center; gap: 0.3rem; background: #f0f0f0; padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.85rem; }
+        .cat-bar .count { font-weight: 700; color: var(--highlight); }
+    </style>
+</head>
+<body>
+    <header>
+        <nav>
+            <a href="/" class="logo">GlobalNews</a>
+            <div class="nav-links">
+                <a href="/">Home</a>
+                <a href="/articles">Articles</a>
+                <a href="/categories">Categories</a>
+                <a href="/tags">Tags</a>
+                <a href="/trending">Trending</a>
+                <a href="/search">Search</a>
+                <a href="/admin" style="color:var(--highlight)">Admin</a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container">
+        <h1>Admin Dashboard</h1>
+
+        <div class="admin-tabs">
+            <button class="admin-tab active" onclick="switchTab('dashboard')">Dashboard</button>
+            <button class="admin-tab" onclick="switchTab('sources')">Sources</button>
+            <button class="admin-tab" onclick="switchTab('articles')">Articles</button>
+            <button class="admin-tab" onclick="switchTab('tags')">Tags</button>
+            <button class="admin-tab" onclick="switchTab('logs')">Logs</button>
+        </div>
+
+        <!-- ═══ DASHBOARD TAB ═══ -->
+        <div id="tab-dashboard" class="tab-content active">
+            <div class="stats-grid">
+                <div class="stat-card"><div class="number" id="stat-articles">-</div><div class="label">Total Articles</div><div class="trend" id="stat-articles-trend"></div></div>
+                <div class="stat-card"><div class="number" id="stat-sources">-</div><div class="label">Sources</div><div class="trend" id="stat-sources-active"></div></div>
+                <div class="stat-card"><div class="number" id="stat-tags">-</div><div class="label">Tags</div></div>
+                <div class="stat-card"><div class="number" id="stat-rate">-</div><div class="label">Success Rate</div></div>
+            </div>
+            <h3>Articles by Category</h3>
+            <div class="category-chart" id="category-chart"></div>
+            <div style="margin-top:2rem">
+                <h3>Quick Actions</h3>
+                <p style="color:var(--text-light);font-size:0.9rem;margin-bottom:0.5rem">Scrape all sources and optionally run AI features on new articles</p>
+                <div class="toolbar">
+                    <button class="btn btn-primary" onclick="triggerFullScrape()">Scrape All Sources</button>
+                    <label title="Generate AI summary using Groq"><input type="checkbox" id="q-summarize"> AI Summary</label>
+                    <label title="Auto-categorize articles using zero-shot classification"><input type="checkbox" id="q-classify"> Auto Category</label>
+                    <label title="Extract keyword tags using YAKE"><input type="checkbox" id="q-tags"> Extract Tags</label>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ SOURCES TAB ═══ -->
+        <div id="tab-sources" class="tab-content">
+            <div class="toolbar">
+                <button class="btn btn-primary" onclick="openAddSourceModal()">+ Add Source</button>
+                <button class="btn btn-outline" onclick="bulkSources('enable')">Enable All</button>
+                <button class="btn btn-outline" onclick="bulkSources('disable')">Disable All</button>
+            </div>
+            <table class="admin-table">
+                <thead><tr>
+                    <th>Source Name</th><th>Category</th><th>Credibility</th><th>Scrape Every</th><th>Total Articles</th><th>Health</th><th>Status</th><th>Actions</th>
+                </tr></thead>
+                <tbody id="sources-body"></tbody>
+            </table>
+        </div>
+
+        <!-- ═══ ARTICLES TAB ═══ -->
+        <div id="tab-articles" class="tab-content">
+            <div class="toolbar">
+                <input type="text" id="art-search" placeholder="Search articles..." oninput="debounce(loadArticles, 300)()">
+                <select id="art-category" onchange="loadArticles()"><option value="">All Categories</option></select>
+                <button class="btn btn-danger btn-sm" onclick="bulkDeleteArticles()" id="bulk-delete-btn" style="display:none">Delete Selected</button>
+            </div>
+            <table class="admin-table">
+                <thead><tr>
+                    <th class="checkbox-col"><input type="checkbox" id="art-select-all" onchange="toggleSelectAll()"></th>
+                    <th>Title</th><th>Source</th><th>Category</th><th>Date</th><th>Actions</th>
+                </tr></thead>
+                <tbody id="articles-body"></tbody>
+            </table>
+            <div id="articles-pagination" style="margin-top:1rem;text-align:center"></div>
+        </div>
+
+        <!-- ═══ TAGS TAB ═══ -->
+        <div id="tab-tags" class="tab-content">
+            <table class="admin-table">
+                <thead><tr><th>Tag</th><th>Articles</th><th>Actions</th></tr></thead>
+                <tbody id="tags-body"></tbody>
+            </table>
+        </div>
+
+        <!-- ═══ LOGS TAB ═══ -->
+        <div id="tab-logs" class="tab-content">
+            <div class="toolbar">
+                <button class="pause-btn" id="pause-btn" onclick="togglePause()">Auto-refresh: ON</button>
+                <select id="log-limit" onchange="loadLogs()"><option value="20">20</option><option value="50" selected>50</option><option value="100">100</option></select>
+            </div>
+            <table class="admin-table">
+                <thead><tr>
+                    <th>Source</th><th>Articles Found</th><th>New Added</th><th>Duplicates Skipped</th><th>Time Taken</th><th>Last Scraped</th><th>Result</th><th>Error Details</th>
+                </tr></thead>
+                <tbody id="logs-body"></tbody>
+            </table>
+        </div>
+    </main>
+
+    <!-- ═══ MODALS ═══ -->
+    <div class="modal-overlay" id="source-modal">
+        <div class="modal">
+            <h2 id="source-modal-title">Add Source</h2>
+            <form id="source-form" onsubmit="saveSource(event)">
+                <input type="hidden" id="src-id">
+                <div class="form-row">
+                    <div class="form-group"><label>Name</label><input type="text" id="src-name" required></div>
+                    <div class="form-group"><label>Domain</label><input type="text" id="src-domain" required></div>
+                </div>
+                <div class="form-group"><label>RSS URL</label><input type="text" id="src-rss" required></div>
+                <div class="form-row">
+                    <div class="form-group"><label>Category</label>
+                        <select id="src-category"><option value="">None</option><option value="world">World</option><option value="tech">Tech</option><option value="business">Business</option><option value="science">Science</option><option value="health">Health</option><option value="sports">Sports</option><option value="politics">Politics</option><option value="entertainment">Entertainment</option></select>
+                    </div>
+                    <div class="form-group"><label>Country Code</label><input type="text" id="src-country" maxlength="2" placeholder="US"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Credibility (0-100)</label><input type="number" id="src-credibility" value="50" min="0" max="100"></div>
+                    <div class="form-group"><label>Scrape Interval (min)</label><input type="number" id="src-interval" value="30" min="1"></div>
+                </div>
+                <div class="form-group"><label>Scrape Type</label>
+                    <select id="src-type"><option value="rss">RSS</option><option value="playwright">Playwright</option></select>
+                </div>
+                <div style="display:flex;gap:0.5rem;justify-content:flex-end;margin-top:1.5rem">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('source-modal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="confirm-modal">
+        <div class="modal" style="max-width:400px">
+            <h2>Confirm</h2>
+            <p id="confirm-message"></p>
+            <div style="display:flex;gap:0.5rem;justify-content:flex-end;margin-top:1.5rem">
+                <button class="btn btn-outline" onclick="closeModal('confirm-modal')">Cancel</button>
+                <button class="btn btn-danger" id="confirm-action">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <footer><p>Global News Admin v2</p></footer>
+
+    <script>
+    const API = '';
+    let logsPaused = false;
+    let logInterval = null;
+    let currentArticlePage = 1;
+
+    // ─── Auth ───
+    function getAuth() {
+        return 'Basic ' + btoa('admin:newsadmin2026');
+    }
+    function apiFetch(url, opts = {}) {
+        opts.headers = opts.headers || {};
+        opts.headers['Authorization'] = getAuth();
+        if (opts.body && typeof opts.body === 'object') {
+            opts.headers['Content-Type'] = 'application/json';
+            opts.body = JSON.stringify(opts.body);
+        }
+        return fetch(url, opts);
+    }
+
+    // ─── Tabs ───
+    function switchTab(tab) {
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+        document.getElementById('tab-' + tab).classList.add('active');
+        event.target.classList.add('active');
+        if (tab === 'dashboard') loadStats();
+        if (tab === 'sources') loadSources();
+        if (tab === 'articles') loadArticles();
+        if (tab === 'tags') loadTags();
+        if (tab === 'logs') { loadLogs(); startLogRefresh(); }
+        else { stopLogRefresh(); }
+    }
+
+    // ─── Dashboard ───
+    async function loadStats() {
+        const r = await apiFetch('/admin/stats');
+        if (!r.ok) return;
+        const d = await r.json();
+        document.getElementById('stat-articles').textContent = d.total_articles;
+        document.getElementById('stat-articles-trend').textContent = `+${d.articles_today} today`;
+        document.getElementById('stat-sources').textContent = d.active_sources + '/' + d.total_sources;
+        document.getElementById('stat-sources-active').textContent = d.active_sources + ' active';
+        document.getElementById('stat-tags').textContent = d.total_tags;
+        document.getElementById('stat-rate').textContent = d.success_rate + '%';
+
+        const chart = document.getElementById('category-chart');
+        chart.innerHTML = '';
+        for (const [cat, count] of Object.entries(d.category_counts || {})) {
+            chart.innerHTML += `<div class="cat-bar"><span>${cat}</span><span class="count">${count}</span></div>`;
+        }
+    }
+
+    async function triggerFullScrape() {
+        const opts = {
+            summarize: document.getElementById('q-summarize').checked,
+            classify: document.getElementById('q-classify').checked,
+            tags: document.getElementById('q-tags').checked,
+        };
+        const r = await apiFetch('/admin/scrape/trigger', { method: 'POST', body: opts });
+        const d = await r.json();
+        alert(d.message + '\n\nCheck the Logs tab to see results.');
+    }
+
+    // ─── Sources ───
+    async function loadSources() {
+        const r = await apiFetch('/admin/sources');
+        if (!r.ok) return;
+        const sources = await r.json();
+        const tbody = document.getElementById('sources-body');
+        tbody.innerHTML = sources.map(s => `<tr>
+            <td><strong>${esc(s.name)}</strong><br><small style="color:#999">${esc(s.rss_url)}</small></td>
+            <td>${s.category || '-'}</td>
+            <td>${s.credibility_score}</td>
+            <td>${s.scrape_interval_min}m</td>
+            <td>${s.article_count}</td>
+            <td><span class="health-badge health-${s.health}">${s.health}</span></td>
+            <td><span class="status-dot ${s.is_active ? 'status-active' : 'status-inactive'}"></span>${s.is_active ? 'Active' : 'Off'}</td>
+            <td class="actions-cell">
+                <button class="btn btn-sm btn-secondary" onclick="scrapeSource(${s.id})">Scrape</button>
+                <button class="btn btn-sm btn-outline" onclick="toggleSource(${s.id})">${s.is_active ? 'Off' : 'On'}</button>
+                <button class="btn btn-sm btn-outline" onclick="editSource(${s.id})">Edit</button>
+                <button class="btn btn-sm btn-danger" onclick="confirmDeleteSource(${s.id},'${esc(s.name)}',${s.article_count})">Del</button>
+            </td>
+        </tr>`).join('');
+    }
+
+    function openAddSourceModal() {
+        document.getElementById('source-modal-title').textContent = 'Add Source';
+        document.getElementById('source-form').reset();
+        document.getElementById('src-id').value = '';
+        document.getElementById('source-modal').classList.add('show');
+    }
+
+    async function editSource(id) {
+        const r = await apiFetch('/admin/sources');
+        const sources = await r.json();
+        const s = sources.find(x => x.id === id);
+        if (!s) return;
+        document.getElementById('source-modal-title').textContent = 'Edit Source';
+        document.getElementById('src-id').value = s.id;
+        document.getElementById('src-name').value = s.name;
+        document.getElementById('src-domain').value = s.domain;
+        document.getElementById('src-rss').value = s.rss_url;
+        document.getElementById('src-category').value = s.category || '';
+        document.getElementById('src-country').value = s.country_code || '';
+        document.getElementById('src-credibility').value = s.credibility_score;
+        document.getElementById('src-interval').value = s.scrape_interval_min;
+        document.getElementById('src-type').value = s.scrape_type;
+        document.getElementById('source-modal').classList.add('show');
+    }
+
+    async function saveSource(e) {
+        e.preventDefault();
+        const id = document.getElementById('src-id').value;
+        const data = {
+            name: document.getElementById('src-name').value,
+            domain: document.getElementById('src-domain').value,
+            rss_url: document.getElementById('src-rss').value,
+            category: document.getElementById('src-category').value || null,
+            country_code: document.getElementById('src-country').value || null,
+            credibility_score: parseInt(document.getElementById('src-credibility').value),
+            scrape_interval_min: parseInt(document.getElementById('src-interval').value),
+            scrape_type: document.getElementById('src-type').value,
+        };
+        const method = id ? 'PUT' : 'POST';
+        const url = id ? `/admin/sources/${id}` : '/admin/sources';
+        const r = await apiFetch(url, { method, body: data });
+        if (r.ok) { closeModal('source-modal'); loadSources(); } else { alert('Error saving source'); }
+    }
+
+    async function toggleSource(id) {
+        await apiFetch(`/admin/sources/${id}/toggle`, { method: 'POST' });
+        loadSources();
+    }
+
+    async function scrapeSource(id) {
+        const r = await apiFetch(`/admin/sources/${id}/scrape`, { method: 'POST' });
+        const d = await r.json();
+        alert(d.message);
+    }
+
+    async function bulkSources(action) {
+        await apiFetch('/admin/sources/bulk', { method: 'POST', body: { action } });
+        loadSources();
+    }
+
+    function confirmDeleteSource(id, name, articleCount) {
+        document.getElementById('confirm-message').innerHTML =
+            `Delete <strong>${name}</strong>?<br>This will remove ${articleCount} articles and cancel its scrape job.`;
+        document.getElementById('confirm-action').onclick = async () => {
+            await apiFetch(`/admin/sources/${id}`, { method: 'DELETE' });
+            closeModal('confirm-modal');
+            loadSources();
+        };
+        document.getElementById('confirm-modal').classList.add('show');
+    }
+
+    // ─── Articles ───
+    async function loadArticles(page) {
+        currentArticlePage = page || 1;
+        const search = document.getElementById('art-search').value;
+        const category = document.getElementById('art-category').value;
+        const params = new URLSearchParams({ page: currentArticlePage, search, category });
+        const r = await apiFetch(`/admin/articles?${params}`);
+        if (!r.ok) return;
+        const d = await r.json();
+        const tbody = document.getElementById('articles-body');
+        tbody.innerHTML = d.articles.map(a => `<tr>
+            <td><input type="checkbox" class="art-check" value="${a.id}" onchange="updateBulkBtn()"></td>
+            <td><a href="/articles/${a.slug}" target="_blank">${esc(a.title)}</a></td>
+            <td>${esc(a.source_name)}</td>
+            <td>${a.category || '-'}</td>
+            <td>${a.published_at ? new Date(a.published_at).toLocaleDateString() : '-'}</td>
+            <td><button class="btn btn-sm btn-danger" onclick="deleteArticle(${a.id})">Delete</button></td>
+        </tr>`).join('');
+
+        let pag = '';
+        for (let i = 1; i <= d.total_pages; i++) {
+            pag += `<button class="btn btn-sm ${i === currentArticlePage ? 'btn-primary' : 'btn-outline'}" onclick="loadArticles(${i})">${i}</button> `;
+        }
+        document.getElementById('articles-pagination').innerHTML = pag;
+    }
+
+    async function deleteArticle(id) {
+        await apiFetch(`/admin/articles/${id}`, { method: 'DELETE' });
+        loadArticles(currentArticlePage);
+    }
+
+    function toggleSelectAll() {
+        const checked = document.getElementById('art-select-all').checked;
+        document.querySelectorAll('.art-check').forEach(c => c.checked = checked);
+        updateBulkBtn();
+    }
+
+    function updateBulkBtn() {
+        const checked = document.querySelectorAll('.art-check:checked');
+        document.getElementById('bulk-delete-btn').style.display = checked.length > 0 ? 'inline-block' : 'none';
+    }
+
+    async function bulkDeleteArticles() {
+        const ids = [...document.querySelectorAll('.art-check:checked')].map(c => parseInt(c.value));
+        if (!ids.length) return;
+        if (!confirm(`Delete ${ids.length} articles?`)) return;
+        await apiFetch('/admin/articles/bulk-delete', { method: 'POST', body: { article_ids: ids } });
+        loadArticles(currentArticlePage);
+    }
+
+    // ─── Tags ───
+    async function loadTags() {
+        const r = await apiFetch('/admin/tags');
+        if (!r.ok) return;
+        const tags = await r.json();
+        document.getElementById('tags-body').innerHTML = tags.map(t => `<tr>
+            <td><a href="/tags/${t.slug}" target="_blank">${esc(t.name)}</a></td>
+            <td>${t.count}</td>
+            <td><button class="btn btn-sm btn-danger" onclick="deleteTag(${t.id})">Delete</button></td>
+        </tr>`).join('');
+    }
+
+    async function deleteTag(id) {
+        if (!confirm('Delete this tag?')) return;
+        await apiFetch(`/admin/tags/${id}`, { method: 'DELETE' });
+        loadTags();
+    }
+
+    // ─── Logs ───
+    async function loadLogs() {
+        const limit = document.getElementById('log-limit').value;
+        const r = await apiFetch(`/admin/logs?limit=${limit}`);
+        if (!r.ok) return;
+        const logs = await r.json();
+        document.getElementById('logs-body').innerHTML = logs.map(l => `<tr>
+            <td>${esc(l.source_name)}</td>
+            <td>${l.articles_found}</td>
+            <td>${l.articles_inserted}</td>
+            <td>${l.articles_skipped}</td>
+            <td>${l.duration_seconds || 0}s</td>
+            <td>${l.scraped_at ? new Date(l.scraped_at).toLocaleString() : '-'}</td>
+            <td>${l.errors ? '<span class="health-badge health-failing">Error</span>' : '<span class="health-badge health-healthy">OK</span>'}</td>
+            <td>${l.errors ? `<button class="btn btn-sm btn-outline" onclick="this.nextElementSibling.classList.toggle('show')">Errors<div class="log-detail">${esc(l.errors)}</div></button>` : '-'}</td>
+        </tr>`).join('');
+    }
+
+    function startLogRefresh() {
+        stopLogRefresh();
+        logInterval = setInterval(() => { if (!logsPaused) loadLogs(); }, 10000);
+    }
+    function stopLogRefresh() { if (logInterval) { clearInterval(logInterval); logInterval = null; } }
+    function togglePause() {
+        logsPaused = !logsPaused;
+        const btn = document.getElementById('pause-btn');
+        btn.textContent = logsPaused ? 'Auto-refresh: PAUSED' : 'Auto-refresh: ON';
+        btn.classList.toggle('paused', logsPaused);
+    }
+
+    // ─── Helpers ───
+    function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+    function esc(s) { if (!s) return ''; const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+    function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
+
+    // Init
+    loadStats();
+    </script>
+</body>
+</html>

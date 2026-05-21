@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}GitHub AI Watch - Global News Aggregator{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="/static/css/github.css">
+{% endblock %}
+
+{% block content %}
+<div class="github-header">
+    <h1>GitHub AI Watch</h1>
+    <p class="subtitle">Tracking AI open-source project updates</p>
+</div>
+
+<div class="github-filters">
+    <form method="get" action="/github" class="filter-bar">
+        <select name="update_type" onchange="this.form.submit()">
+            <option value="">All Types</option>
+            <option value="release" {% if current_type == 'release' %}selected{% endif %}>Releases</option>
+            <option value="commit" {% if current_type == 'commit' %}selected{% endif %}>Commits</option>
+        </select>
+        <select name="repo" onchange="this.form.submit()">
+            <option value="">All Repos</option>
+            {% for r in repos %}
+            <option value="{{ r }}" {% if current_repo == r %}selected{% endif %}>{{ r }}</option>
+            {% endfor %}
+        </select>
+        <a href="/github" class="btn btn-outline">Clear</a>
+    </form>
+</div>
+
+{% if updates %}
+<div class="github-grid">
+    {% for u in updates %}
+    <div class="github-card">
+        <div class="github-card-header">
+            <span class="repo-name">{{ u.repo_name }}</span>
+            <span class="update-type type-{{ u.update_type }}">{{ u.update_type }}</span>
+        </div>
+        <h3><a href="{{ u.external_url }}" target="_blank" rel="noopener noreferrer">{{ u.title }}</a></h3>
+        {% if u.body %}
+        <p class="github-body">{{ u.body[:200] }}{% if u.body|length > 200 %}...{% endif %}</p>
+        {% endif %}
+        <div class="github-card-footer">
+            {% if u.stars %}
+            <span class="stars">&#9733; {{ "{:,}".format(u.stars) }}</span>
+            {% endif %}
+            {% if u.language %}
+            <span class="language">{{ u.language }}</span>
+            {% endif %}
+            {% if u.published_at %}
+            <span class="date">{{ u.published_at.strftime('%b %d, %Y') }}</span>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state github-empty">
+    <div class="terminal-cursor">
+        <p>$ scanning github...</p>
+        <span class="cursor">_</span>
+    </div>
+    <p>No updates yet. Data will appear after the next scheduled scrape.</p>
+</div>
+{% endif %}
+{% endblock %}

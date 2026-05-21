@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Search - Global News Aggregator{% endblock %}
+
+{% block content %}
+<h1>Search Articles</h1>
+<form action="/search" method="get" class="search-form" onsubmit="if(!this.q.value.trim()){return false;}">
+    <input type="text" name="q" value="{{ query }}" placeholder="Search articles..." class="search-input" autofocus>
+    <button type="submit" class="btn">Search</button>
+</form>
+
+{% if query %}
+<p class="subtitle">{{ total }} results for "{{ query }}"</p>
+{% endif %}
+
+{% if articles %}
+<div class="article-grid">
+    {% for article in articles %}
+    <article class="article-card">
+        <a href="/articles/{{ article.slug }}" class="article-link">
+            <h2>{{ article.title }}</h2>
+            <div class="article-meta">
+                <span class="source">{{ article.source.name if article.source else 'Unknown' }}</span>
+                <span class="date">{{ article.published_at.strftime('%b %d, %Y') if article.published_at else '' }}</span>
+            </div>
+            {% if article.content_text %}
+            <p class="excerpt">{{ article.content_text[:200] }}...</p>
+            {% endif %}
+        </a>
+    </article>
+    {% endfor %}
+</div>
+
+{% if total_pages > 1 %}
+<div class="pagination">
+    {% if page > 1 %}
+    <a href="/search?q={{ query }}&page={{ page - 1 }}" class="btn">&laquo; Previous</a>
+    {% endif %}
+    <span>Page {{ page }} of {{ total_pages }}</span>
+    {% if page < total_pages %}
+    <a href="/search?q={{ query }}&page={{ page + 1 }}" class="btn">Next &raquo;</a>
+    {% endif %}
+</div>
+{% endif %}
+{% elif query %}
+<div class="empty-state">
+    <p>No articles found matching your search.</p>
+</div>
+{% endif %}
+{% endblock %}

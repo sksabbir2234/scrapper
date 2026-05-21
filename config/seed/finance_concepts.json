@@ -1,0 +1,208 @@
+[
+  {
+    "title": "Compound Interest",
+    "definition": "Interest calculated on both the initial principal and the accumulated interest from previous periods. Often called the eighth wonder of the world.",
+    "formula": "A = P(1 + r/n)^(nt)",
+    "example": "Invest $1,000 at 8% annual interest compounded monthly for 10 years: A = 1000(1 + 0.08/12)^(12*10) = $2,219.64",
+    "key_stat": "8% over 30 years = 10x your money",
+    "why_it_matters": "Starting early matters more than investing more later. A 25-year-old investing $200/month at 8% will have more at 65 than a 35-year-old investing $400/month.",
+    "calculator_type": "compound_interest",
+    "difficulty": "beginner",
+    "topic": "basics"
+  },
+  {
+    "title": "P/E Ratio",
+    "definition": "Price-to-Earnings ratio measures how much investors are willing to pay per dollar of earnings. It's the stock price divided by earnings per share.",
+    "formula": "P/E = Stock Price / EPS",
+    "example": "A stock trading at $150 with EPS of $5 has a P/E of 30. Investors pay $30 for every $1 of earnings.",
+    "key_stat": "S&P 500 avg P/E: ~20-25 historically",
+    "why_it_matters": "A high P/E could mean overvaluation OR high growth expectations. Compare P/E within the same industry, not across sectors.",
+    "calculator_type": "pe_ratio",
+    "difficulty": "beginner",
+    "topic": "stocks"
+  },
+  {
+    "title": "Dollar-Cost Averaging (DCA)",
+    "definition": "Investing a fixed amount at regular intervals regardless of market price. You buy more shares when prices are low and fewer when prices are high.",
+    "formula": "Shares bought = Fixed Amount / Current Price",
+    "example": "Investing $500/month: Month 1 at $50 = 10 shares, Month 2 at $40 = 12.5 shares, Month 3 at $60 = 8.33 shares. Average cost: $48.33/share vs avg price $50.",
+    "key_stat": "Reduces avg cost by 5-15% in volatile markets",
+    "why_it_matters": "Removes the need to time the market. Psychologically easier than lump-sum investing during downturns.",
+    "calculator_type": "sip",
+    "difficulty": "beginner",
+    "topic": "investing"
+  },
+  {
+    "title": "Rule of 72",
+    "definition": "A quick shortcut to estimate how long it takes for an investment to double. Divide 72 by the annual return rate.",
+    "formula": "Years to Double = 72 / Annual Return %",
+    "example": "At 8% annual return: 72/8 = 9 years to double. At 12%: 72/12 = 6 years.",
+    "key_stat": "At 7%: ~10 years to double",
+    "why_it_matters": "Quick mental math for comparing investments. Helps set realistic expectations for long-term growth.",
+    "calculator_type": "rule_of_72",
+    "difficulty": "beginner",
+    "topic": "basics"
+  },
+  {
+    "title": "EMI (Equated Monthly Installment)",
+    "definition": "A fixed monthly payment made by a borrower to a lender. Each payment covers both interest and principal repayment.",
+    "formula": "EMI = P * r * (1+r)^n / ((1+r)^n - 1)",
+    "example": "A $200,000 loan at 6% for 30 years: EMI = $1,199.10/month. Total payment: $431,676. Total interest: $231,676.",
+    "key_stat": "At 6% over 30 years, you pay 116% of loan as interest",
+    "why_it_matters": "Understanding EMI helps you evaluate whether to take a loan, compare lenders, and decide on tenure.",
+    "calculator_type": "emi",
+    "difficulty": "intermediate",
+    "topic": "personal_finance"
+  },
+  {
+    "title": "Position Sizing",
+    "definition": "Determining how much capital to allocate to a single trade or investment. The 1-2% rule says never risk more than 1-2% of your total capital on one trade.",
+    "formula": "Max Position = (Account Size * Risk %) / (Entry - Stop Loss)",
+    "example": "Account: $50,000, Risk 2%, Entry: $100, Stop Loss: $95. Max position = ($50,000 * 0.02) / $5 = 200 shares.",
+    "key_stat": "2% rule: survive 10 consecutive losses and still have 82% capital",
+    "why_it_matters": "Prevents catastrophic losses. A 50% loss requires a 100% gain to break even.",
+    "calculator_type": "position_sizing",
+    "difficulty": "intermediate",
+    "topic": "trading"
+  },
+  {
+    "title": "Inflation",
+    "definition": "The rate at which the general level of prices for goods and services rises, eroding purchasing power over time.",
+    "formula": "Real Return = Nominal Return - Inflation Rate",
+    "example": "If your savings account earns 4% and inflation is 3%, your real return is only 1%.",
+    "key_stat": "3% inflation halves purchasing power in 24 years",
+    "why_it_matters": "Cash loses value over time. Investments must beat inflation to grow real wealth.",
+    "difficulty": "beginner",
+    "topic": "macro"
+  },
+  {
+    "title": "Diversification",
+    "definition": "Spreading investments across different asset classes, sectors, and geographies to reduce risk. Don't put all your eggs in one basket.",
+    "formula": "Portfolio Risk < Weighted Avg of Individual Risks (when correlations < 1)",
+    "example": "A portfolio of 60% stocks / 40% bonds had lower max drawdown (-35%) than 100% stocks (-50%) in 2008.",
+    "key_stat": "30 uncorrelated stocks eliminate ~90% of unsystematic risk",
+    "why_it_matters": "The only free lunch in finance. Reduces risk without necessarily reducing expected returns.",
+    "difficulty": "beginner",
+    "topic": "investing"
+  },
+  {
+    "title": "Dividend Yield",
+    "definition": "Annual dividends per share divided by the stock price. Measures the cash return from dividends alone.",
+    "formula": "Dividend Yield = Annual Dividend / Stock Price",
+    "example": "A stock at $100 paying $3/year in dividends has a 3% yield.",
+    "key_stat": "S&P 500 avg yield: ~1.5-2%",
+    "why_it_matters": "Dividend stocks provide income regardless of price movements. Reinvested dividends account for ~40% of total stock returns historically.",
+    "difficulty": "beginner",
+    "topic": "stocks"
+  },
+  {
+    "title": "Market Capitalization",
+    "definition": "Total market value of a company's outstanding shares. Calculated by multiplying share price by total shares outstanding.",
+    "formula": "Market Cap = Share Price * Shares Outstanding",
+    "example": "Apple with ~15.5 billion shares at $180 = $2.79 trillion market cap.",
+    "key_stat": "Mega-cap: >$200B, Mid-cap: $10-200B, Small-cap: <$10B",
+    "why_it_matters": "Determines company size classification, index inclusion, and risk profile. Larger caps tend to be more stable.",
+    "difficulty": "beginner",
+    "topic": "stocks"
+  },
+  {
+    "title": "Volatility (VIX)",
+    "definition": "A statistical measure of the dispersion of returns. The VIX measures expected 30-day volatility of the S&P 500 based on options prices.",
+    "formula": "Standard Deviation of Returns * sqrt(252) for annualized",
+    "example": "VIX at 15 = market expects ~15% annualized volatility. VIX above 30 = high fear.",
+    "key_stat": "VIX historical avg: ~19. Above 30 = extreme fear.",
+    "why_it_matters": "High volatility = higher risk AND higher potential returns. VIX spikes often mark market bottoms.",
+    "difficulty": "intermediate",
+    "topic": "trading"
+  },
+  {
+    "title": "Opportunity Cost",
+    "definition": "The value of the next best alternative you give up when making a choice. Every dollar invested in A is a dollar not invested in B.",
+    "formula": "Opportunity Cost = Return of Best Foregone Option - Return of Chosen Option",
+    "example": "Keeping $10,000 in a 4% savings account instead of an index fund returning 10% costs you $600/year.",
+    "key_stat": "$10K in mattress vs 8% index fund: $46K lost over 30 years",
+    "why_it_matters": "Cash drag is real. Understanding opportunity cost helps optimize capital allocation.",
+    "difficulty": "intermediate",
+    "topic": "basics"
+  },
+  {
+    "title": "Sharpe Ratio",
+    "definition": "Measures risk-adjusted return. How much excess return you get for each unit of risk taken.",
+    "formula": "Sharpe = (Return - Risk-Free Rate) / Std Dev of Returns",
+    "example": "Portfolio returns 12%, risk-free rate 4%, std dev 15%. Sharpe = (12-4)/15 = 0.53",
+    "key_stat": "Sharpe > 1 is good, > 2 is excellent",
+    "why_it_matters": "A high return with high volatility may be worse than moderate return with low volatility. Sharpe tells you which.",
+    "difficulty": "advanced",
+    "topic": "investing"
+  },
+  {
+    "title": "Bull vs Bear Market",
+    "definition": "A bull market is when prices rise 20%+ from recent lows. A bear market is when prices fall 20%+ from recent highs.",
+    "formula": "Bull: +20% from low. Bear: -20% from high.",
+    "example": "S&P 500 went from 666 (Mar 2009) to 3,386 (Feb 2020) — a 409% bull run lasting 11 years.",
+    "key_stat": "Avg bull market lasts 4.4 years, avg bear lasts 1.1 years",
+    "why_it_matters": "Bulls historically last much longer than bears. Time in the market beats timing the market.",
+    "difficulty": "beginner",
+    "topic": "macro"
+  },
+  {
+    "title": "Liquidity",
+    "definition": "How quickly an asset can be converted to cash without significantly affecting its price. Cash is the most liquid asset.",
+    "formula": "Current Ratio = Current Assets / Current Liabilities",
+    "example": "Large-cap stocks like Apple are highly liquid (millions of shares daily). Real estate is illiquid (takes months to sell).",
+    "key_stat": "Bid-ask spread < 0.1% = highly liquid",
+    "why_it_matters": "Illiquid assets may need to be sold at a discount in emergencies. Liquidity premium compensates for this risk.",
+    "difficulty": "intermediate",
+    "topic": "basics"
+  },
+  {
+    "title": "Diversification Ratio",
+    "definition": "The weighted average volatility of individual assets divided by portfolio volatility. Measures how much diversification benefit you're getting.",
+    "formula": "DR = Weighted Avg Individual Vol / Portfolio Vol",
+    "example": "If individual assets avg 20% vol but portfolio is 14% vol, DR = 1.43. You've reduced risk by 30%.",
+    "key_stat": "DR > 1 means diversification is working",
+    "why_it_matters": "Just owning many assets doesn't mean you're diversified. Correlations matter.",
+    "difficulty": "advanced",
+    "topic": "investing"
+  },
+  {
+    "title": "Cost Averaging vs Lump Sum",
+    "definition": "Lump sum investing puts all money in at once. Cost averaging spreads it over time. Historically, lump sum wins ~68% of the time because markets trend upward.",
+    "formula": "Lump Sum wins when market goes up. DCA wins when market goes down initially.",
+    "example": "$120K invested lump sum in Jan 2020 vs $10K/month. By Dec 2021, lump sum won by ~15%.",
+    "key_stat": "Lump sum beats DCA 68% of the time (Vanguard study)",
+    "why_it_matters": "DCA is psychologically easier but mathematically inferior most of the time. Know the trade-off.",
+    "difficulty": "intermediate",
+    "topic": "investing"
+  },
+  {
+    "title": "Expense Ratio",
+    "definition": "Annual fee charged by mutual funds and ETFs, expressed as a percentage of assets. Deducted from returns.",
+    "formula": "Annual Fee = Expense Ratio * Assets Under Management",
+    "example": "A 0.03% expense ratio on $100K costs $30/year. A 1% ratio costs $1,000/year.",
+    "key_stat": "Over 30 years, 1% fee eats ~25% of your returns",
+    "why_it_matters": "Fees are the single best predictor of future fund returns. Lower is almost always better for index funds.",
+    "difficulty": "beginner",
+    "topic": "investing"
+  },
+  {
+    "title": "Credit Score",
+    "definition": "A numerical rating (300-850) representing your creditworthiness. Based on payment history, credit utilization, length of history, types of credit, and new inquiries.",
+    "formula": "FICO: 35% payment history + 30% utilization + 15% history length + 10% types + 10% inquiries",
+    "example": "Score of 750+ gets best rates. A 760 vs 660 score on a $300K mortgage = ~$50K difference in interest over 30 years.",
+    "key_stat": "750+ = excellent. Below 670 = subprime rates.",
+    "why_it_matters": "Affects mortgage rates, insurance premiums, rental applications, and even job prospects.",
+    "difficulty": "beginner",
+    "topic": "personal_finance"
+  },
+  {
+    "title": "401(k) Match",
+    "definition": "Free money from your employer. They match a percentage of your contributions up to a limit.",
+    "formula": "Match = Your Contribution * Match % (up to employer cap)",
+    "example": "Employer matches 50% up to 6% of salary. Salary $80K: contribute $4,800, employer adds $2,400. That's an instant 50% return.",
+    "key_stat": "Not taking the match = leaving $2,000-5,000/year on the table",
+    "why_it_matters": "Always contribute at least enough to get the full match. It's a guaranteed 50-100% return before any market gains.",
+    "difficulty": "beginner",
+    "topic": "personal_finance"
+  }
+]
