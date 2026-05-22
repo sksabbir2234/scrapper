@@ -3,82 +3,99 @@
 {% block title %}OSS Alternatives - Free & Open Source Tools{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="/static/css/oss.css">
+<style>
+.btn.upvoted { color: var(--danger); border-color: var(--danger); }
+</style>
 {% endblock %}
 
 {% block content %}
-<div class="oss-hero">
-    <h1>Free & Open Source Alternatives</h1>
-    <p class="subtitle">Stop paying for tools you can self-host</p>
-    <div class="oss-stats">
-        <span class="oss-count">{{ total }} alternatives tracked</span>
+<div class="page-wrapper">
+
+    <div style="text-align: center; padding: 1.5rem 0 1rem;">
+        <h1>Free & Open Source Alternatives</h1>
+        <p style="color: var(--text-light); margin: 0.25rem 0 0;">Stop paying for tools you can self-host</p>
+        <span class="badge badge-accent" style="margin-top: 0.75rem;">{{ total }} alternatives tracked</span>
     </div>
-</div>
 
-<div class="oss-controls">
-    <form method="get" action="/oss" class="oss-search-form">
-        <input type="text" name="search" value="{{ current_search }}" placeholder="Search alternatives..." class="oss-search-input">
-        <input type="hidden" name="category" value="{{ current_category }}">
-        <input type="hidden" name="sort" value="{{ current_sort }}">
-        <button type="submit" class="oss-search-btn">Search</button>
-    </form>
+    <!-- Search -->
+    <div class="card card-flat" style="margin-bottom: 1.25rem;">
+        <div class="card-body">
+            <form method="get" action="/oss" style="display: flex; gap: 0.75rem;">
+                <input type="text" name="search" value="{{ current_search }}" placeholder="Search alternatives..." class="search-input" style="flex: 1;">
+                <input type="hidden" name="category" value="{{ current_category }}">
+                <input type="hidden" name="sort" value="{{ current_sort }}">
+                <button type="submit" class="btn btn-primary">Search</button>
+            </form>
+        </div>
+    </div>
 
-    <div class="oss-categories">
-        <a href="/oss?sort={{ current_sort }}" class="oss-cat-pill {% if not current_category %}active{% endif %}">All</a>
+    <!-- Category Filters -->
+    <div class="filter-tabs">
+        <a href="/oss?sort={{ current_sort }}" class="filter-tab {% if not current_category %}active{% endif %}">All</a>
         {% for cat, count in categories %}
-        <a href="/oss?category={{ cat }}&sort={{ current_sort }}" class="oss-cat-pill {% if current_category == cat %}active{% endif %}">
+        <a href="/oss?category={{ cat }}&sort={{ current_sort }}" class="filter-tab {% if current_category == cat %}active{% endif %}">
             {{ cat.replace('-', ' ').title() }} ({{ count }})
         </a>
         {% endfor %}
     </div>
 
-    <div class="oss-sort">
-        <a href="/oss?category={{ current_category }}&search={{ current_search }}&sort=stars" class="oss-sort-btn {% if current_sort == 'stars' %}active{% endif %}">Stars</a>
-        <a href="/oss?category={{ current_category }}&search={{ current_search }}&sort=upvotes" class="oss-sort-btn {% if current_sort == 'upvotes' %}active{% endif %}">Upvotes</a>
-        <a href="/oss?category={{ current_category }}&search={{ current_search }}&sort=newest" class="oss-sort-btn {% if current_sort == 'newest' %}active{% endif %}">Newest</a>
+    <!-- Sort Options -->
+    <div class="filter-tabs" style="margin-bottom: 1.5rem;">
+        <a href="/oss?category={{ current_category }}&search={{ current_search }}&sort=stars" class="filter-tab {% if current_sort == 'stars' %}active{% endif %}">Stars</a>
+        <a href="/oss?category={{ current_category }}&search={{ current_search }}&sort=upvotes" class="filter-tab {% if current_sort == 'upvotes' %}active{% endif %}">Upvotes</a>
+        <a href="/oss?category={{ current_category }}&search={{ current_search }}&sort=newest" class="filter-tab {% if current_sort == 'newest' %}active{% endif %}">Newest</a>
     </div>
-</div>
 
-{% if alternatives %}
-<div class="oss-grid">
-    {% for alt in alternatives %}
-    <div class="oss-card {% if alt.featured %}oss-featured{% endif %}">
-        {% if alt.featured %}<div class="oss-badge">Featured</div>{% endif %}
-        <div class="oss-card-header">
-            <div class="oss-names">
-                <h3><a href="/oss/{{ alt.slug }}">{{ alt.oss_name }}</a></h3>
-                <span class="oss-replaces">replaces {{ alt.paid_name }}</span>
+    {% if alternatives %}
+    <div class="grid-auto">
+        {% for alt in alternatives %}
+        <div class="card">
+            <div class="card-body">
+                {% if alt.featured %}<span class="badge badge-highlight" style="margin-bottom: 0.5rem;">Featured</span>{% endif %}
+                <div style="margin-bottom: 0.5rem;">
+                    <h3 style="margin: 0;"><a href="/oss/{{ alt.slug }}">{{ alt.oss_name }}</a></h3>
+                    <span style="font-size: 0.8rem; color: var(--text-muted);">replaces {{ alt.paid_name }}</span>
+                </div>
+                <div class="flex gap-1" style="flex-wrap: wrap; margin-bottom: 0.75rem;">
+                    {% if alt.gh_stars %}
+                    <span class="badge badge-neutral">&#9733; {{ "{:,}".format(alt.gh_stars) }}</span>
+                    {% endif %}
+                    {% if alt.gh_forks %}
+                    <span class="badge badge-neutral">&#9741; {{ "{:,}".format(alt.gh_forks) }}</span>
+                    {% endif %}
+                    <span class="badge badge-info">{{ alt.category.replace('-', ' ') }}</span>
+                </div>
+                {% if alt.why_better %}
+                <p style="font-size: 0.85rem; color: var(--text-light); margin-bottom: 0.75rem;">{{ alt.why_better[:150] }}{% if alt.why_better|length > 150 %}...{% endif %}</p>
+                {% endif %}
+                <div class="flex gap-1" style="flex-wrap: wrap; margin-bottom: 0.75rem;">
+                    {% if alt.self_hostable %}<span class="badge badge-success">Self-hostable</span>{% endif %}
+                    {% if alt.has_free_tier %}<span class="badge badge-info">Free tier</span>{% endif %}
+                    {% if alt.difficulty %}
+                    {% if alt.difficulty == 'easy' %}
+                    <span class="badge badge-success">{{ alt.difficulty }}</span>
+                    {% elif alt.difficulty == 'medium' %}
+                    <span class="badge badge-warning">{{ alt.difficulty }}</span>
+                    {% else %}
+                    <span class="badge badge-danger">{{ alt.difficulty }}</span>
+                    {% endif %}
+                    {% endif %}
+                </div>
+                <div class="flex-between">
+                    <button class="btn btn-ghost btn-sm" onclick="upvoteOSS('{{ alt.slug }}', this)">&#9829; {{ alt.upvotes or 0 }}</button>
+                    <a href="/oss/{{ alt.slug }}" class="btn btn-ghost btn-sm">Details &rarr;</a>
+                </div>
             </div>
         </div>
-        <div class="oss-stats-row">
-            {% if alt.gh_stars %}
-            <span class="oss-stat">&#9733; {{ "{:,}".format(alt.gh_stars) }}</span>
-            {% endif %}
-            {% if alt.gh_forks %}
-            <span class="oss-stat">&#9741; {{ "{:,}".format(alt.gh_forks) }}</span>
-            {% endif %}
-            <span class="oss-cat-tag">{{ alt.category.replace('-', ' ') }}</span>
-        </div>
-        {% if alt.why_better %}
-        <p class="oss-desc">{{ alt.why_better[:150] }}{% if alt.why_better|length > 150 %}...{% endif %}</p>
-        {% endif %}
-        <div class="oss-badges">
-            {% if alt.self_hostable %}<span class="oss-badge-sm">Self-hostable</span>{% endif %}
-            {% if alt.has_free_tier %}<span class="oss-badge-sm">Free tier</span>{% endif %}
-            {% if alt.difficulty %}<span class="oss-badge-sm diff-{{ alt.difficulty }}">{{ alt.difficulty }}</span>{% endif %}
-        </div>
-        <div class="oss-card-footer">
-            <button class="oss-upvote" onclick="upvoteOSS('{{ alt.slug }}', this)">&#9829; {{ alt.upvotes or 0 }}</button>
-            <a href="/oss/{{ alt.slug }}" class="oss-detail-link">Details &rarr;</a>
-        </div>
+        {% endfor %}
     </div>
-    {% endfor %}
+    {% else %}
+    <div class="empty-state">
+        <p class="empty-state-text">No alternatives found. Try a different search or category.</p>
+    </div>
+    {% endif %}
+
 </div>
-{% else %}
-<div class="empty-state">
-    <p>No alternatives found. Try a different search or category.</p>
-</div>
-{% endif %}
 {% endblock %}
 
 {% block extra_js %}

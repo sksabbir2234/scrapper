@@ -485,6 +485,32 @@ def start_scheduler(interval_minutes: int = 30, cron_expression: str = None):
     scheduler = BackgroundScheduler()
     schedule_source_jobs(scheduler)
     schedule_github_jobs(scheduler)
+    schedule_seo_jobs(scheduler)
     scheduler.start()
     logger.info("Scheduler started with per-source intervals")
     return scheduler
+
+
+def _run_seo_pipeline():
+    """Sync wrapper for SEO pipeline."""
+    try:
+        from app.seo.pipeline import run_seo_on_new_articles
+        db = SessionLocal()
+        try:
+            run_seo_on_new_articles(db, limit=50)
+        finally:
+            db.close()
+    except Exception as e:
+        logger.error(f"SEO pipeline job failed: {e}")
+
+
+def schedule_seo_jobs(scheduler):
+    """Schedule SEO metadata generation every 30 minutes."""
+    scheduler.add_job(
+        _run_seo_pipeline,
+        trigger=IntervalTrigger(minutes=30),
+        id="seo_pipeline",
+        name="SEO Pipeline",
+        replace_existing=True,
+    )
+    logger.info("Scheduled SEO pipeline job every 30 min")

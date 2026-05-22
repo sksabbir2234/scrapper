@@ -1,56 +1,209 @@
 {% extends "base.html" %}
 
-{% block title %}{{ article.title }} - GlobalNews{% endblock %}
+{% block title %}{{ article.seo.seo_title if article.seo else article.title }} — GlobalNews{% endblock %}
 
-{% block main_class %}page-content{% endblock %}
+{% block extra_head %}
+{% if article.seo %}
+  <meta name="description" content="{{ article.seo.seo_description or '' }}">
+  {% if article.seo.seo_keywords %}
+  <meta name="keywords" content="{{ article.seo.seo_keywords | join(', ') }}">
+  {% endif %}
+  <link rel="canonical" href="{{ article.seo.canonical_url or request.url }}">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="{{ article.seo.og_title or article.seo.seo_title or article.title }}">
+  <meta property="og:description" content="{{ article.seo.og_description or article.seo.seo_description or '' }}">
+  <meta property="og:url" content="{{ article.seo.canonical_url or request.url }}">
+  {% if article.seo.og_image_url %}
+  <meta property="og:image" content="{{ article.seo.og_image_url }}">
+  {% endif %}
+  <meta property="og:site_name" content="GlobalNews">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{{ article.seo.og_title or article.title }}">
+  <meta name="twitter:description" content="{{ article.seo.seo_description or '' }}">
+  {% if article.seo.og_image_url %}
+  <meta name="twitter:image" content="{{ article.seo.og_image_url }}">
+  {% endif %}
+  {% if article.seo.schema_json %}
+  <script type="application/ld+json">{{ article.seo.schema_json | tojson }}</script>
+  {% endif %}
+{% else %}
+  <meta name="description" content="{{ (article.content_text or '')[:160] }}">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="{{ article.title }}">
+  <meta property="og:description" content="{{ (article.content_text or '')[:200] }}">
+  <meta property="og:site_name" content="GlobalNews">
+{% endif %}
+{% endblock %}
 
 {% block content %}
-<article class="article-detail">
-    {% if article.image_url %}
-    <div class="article-hero">
-        <img src="{{ article.image_url }}" alt="">
-    </div>
-    {% endif %}
+<div class="page-wrapper">
+  <div class="layout-sidebar">
 
-    <div class="article-body">
-        <h1>{{ article.title }}</h1>
+    <!-- Main Article -->
+    <div style="grid-column: 2;">
 
-        <div class="article-meta">
-            <span class="source">{{ article.source.name if article.source else 'Unknown Source' }}</span>
-            <span class="date">{{ article.published_at.strftime('%B %d, %Y') if article.published_at else '' }}</span>
-            {% if article.author %}
-            <span class="author">By {{ article.author }}</span>
-            {% endif %}
+      <!-- Reading Progress Bar -->
+      {% if article.content_text and article.content_text|length > 3000 %}
+      <div id="reading-progress" style="position:fixed;top:var(--nav-height);left:0;height:3px;width:0%;background:var(--highlight);z-index:99;transition:width 0.1s linear;"></div>
+      {% endif %}
+
+      <!-- Article Header -->
+      <div style="margin-bottom: 2rem;">
+        <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 0.75rem;">
+          {% if article.category %}
+          <span class="badge badge-accent">{{ article.category }}</span>
+          {% endif %}
+          {% if article.source %}
+          <span style="font-size: 0.78rem; color: var(--text-muted);">{{ article.source.name }}</span>
+          {% endif %}
         </div>
 
-        {% if article_tags %}
-        <div class="article-tags">
-            {% for tag in article_tags %}
-            <a href="/tags/{{ tag.slug }}" class="article-tag">{{ tag.name }}</a>
-            {% endfor %}
+        <h1 style="font-size: 2rem; line-height: 1.25; margin-bottom: 0.75rem;">{{ article.title }}</h1>
+
+        <div style="display: flex; align-items: center; gap: 12px; color: var(--text-muted); font-size: 0.85rem; flex-wrap: wrap;">
+          {% if article.author %}
+          <span>By {{ article.author }}</span>
+          {% endif %}
+          {% if article.published_at %}
+          <span>{{ article.published_at.strftime('%B %d, %Y') }}</span>
+          {% endif %}
+          {% if article.content_text %}
+          <span class="reading-time">{{ (article.content_text|length / 5)|int }} min read</span>
+          {% endif %}
+          {% if article.view_count %}
+          <span style="color: var(--text-muted);">{{ article.view_count }} views</span>
+          {% endif %}
         </div>
+      </div>
+
+      <!-- Hero Image -->
+      {% if article.image_url %}
+      <div style="margin-bottom: 2rem;">
+        <img src="{{ article.image_url }}" alt="" style="width: 100%; max-height: 480px; object-fit: cover; border-radius: var(--radius-md);">
+      </div>
+      {% endif %}
+
+      <!-- AI Summary -->
+      {% if article.summary_ai %}
+      <div class="ai-summary-box">
+        <div class="ai-summary-label">* AI Summary</div>
+        <p class="ai-summary-text">{{ article.summary_ai }}</p>
+      </div>
+      {% endif %}
+
+      <!-- Article Body -->
+      <div class="article-body">
+        {% if article.content_text %}
+        {{ article.content_text | replace('\n', '<br>') | safe }}
+        {% else %}
+        <p>No content available. Visit the original article for full details.</p>
         {% endif %}
+      </div>
 
-        {% if article.summary_ai %}
-        <div class="article-summary">
-            <strong>Summary:</strong> {{ article.summary_ai }}
+      <!-- Tags -->
+      {% if article_tags %}
+      <div style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border);">
+        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+          {% for tag in article_tags %}
+          <a href="/tags/{{ tag.slug }}" class="tag-pill">{{ tag.name }}</a>
+          {% endfor %}
         </div>
-        {% endif %}
+      </div>
+      {% endif %}
 
-        <div class="article-content">
-            {% if article.content_text %}
-            {{ article.content_text | replace('\n', '<br>') | safe }}
-            {% else %}
-            <p>No content available. Visit the original article for full details.</p>
-            {% endif %}
+      <!-- AI Prompt Widget -->
+      <div class="card" style="margin-top: 2rem;">
+        <div class="card-body">
+          <div class="section-title" style="margin-bottom: 0.5rem;">Use AI on this article</div>
+          <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.75rem;">Copy a prompt, paste with this article into any AI assistant</p>
+          <div id="prompt-widget-cards" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 0.75rem;">
+            <div class="skeleton" style="height: 80px;"></div>
+            <div class="skeleton" style="height: 80px;"></div>
+            <div class="skeleton" style="height: 80px;"></div>
+          </div>
+          <a href="/prompts" class="btn btn-sm" style="margin-top: 0.75rem;">Browse all prompts</a>
         </div>
+      </div>
 
-        <div class="article-footer">
-            <a href="{{ article.original_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-primary">
-                Read Original Article
-            </a>
-            <a href="/" class="btn btn-outline">Back to Home</a>
-        </div>
+      <!-- Footer Actions -->
+      <div style="margin-top: 2rem; display: flex; gap: 0.75rem; flex-wrap: wrap;">
+        <a href="{{ article.original_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-primary">
+          Read Original Article
+        </a>
+        <a href="/" class="btn btn-ghost">Back to Home</a>
+      </div>
+
     </div>
-</article>
+
+    <!-- Sidebar -->
+    <aside style="position: sticky; top: calc(var(--nav-height) + 2rem);">
+
+      {% if article_tags %}
+      <div class="section-title">Tags</div>
+      <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 2rem;">
+        {% for tag in article_tags %}
+        <a href="/tags/{{ tag.slug }}" class="tag-pill">{{ tag.name }}</a>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <div class="section-title">Article Info</div>
+      <div style="display: flex; flex-direction: column; gap: 8px; font-size: 0.85rem; color: var(--text-light);">
+        {% if article.source %}
+        <div><strong>Source:</strong> {{ article.source.name }}</div>
+        {% endif %}
+        {% if article.category %}
+        <div><strong>Category:</strong> {{ article.category }}</div>
+        {% endif %}
+        {% if article.language %}
+        <div><strong>Language:</strong> {{ article.language }}</div>
+        {% endif %}
+        {% if article.view_count %}
+        <div><strong>Views:</strong> {{ article.view_count }}</div>
+        {% endif %}
+      </div>
+
+    </aside>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+{% if article.content_text and article.content_text|length > 3000 %}
+<script>
+window.addEventListener('scroll', function() {
+  var el = document.getElementById('reading-progress');
+  if (!el) return;
+  var total = document.body.scrollHeight - window.innerHeight;
+  el.style.width = (window.scrollY / total * 100) + '%';
+});
+</script>
+{% endif %}
+<script>
+fetch('/api/prompts?limit=3')
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    var grid = document.getElementById('prompt-widget-cards');
+    if (!data.prompts || !data.prompts.length) { grid.innerHTML = ''; return; }
+    grid.innerHTML = data.prompts.map(function(p) {
+      return '<div class="card card-flat" style="cursor:pointer;">' +
+        '<div class="card-body" style="padding:0.75rem;">' +
+        '<div style="font-size:0.85rem;font-weight:600;margin-bottom:0.25rem;">' + escHTML(p.title) + '</div>' +
+        '<div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:0.5rem;">' + escHTML(p.use_case || '') + '</div>' +
+        '<div style="display:flex;gap:0.5rem;align-items:center;">' +
+        '<span class="badge badge-neutral" style="font-size:0.7rem;">' + escHTML(p.category) + '</span>' +
+        '<button class="btn btn-sm" style="margin-left:auto;font-size:0.75rem;" onclick="event.stopPropagation();copyArticlePrompt(' + p.id + ',this,' + JSON.stringify(p.prompt_text).replace(/'/g, "\\'") + ')">Copy</button>' +
+        '</div></div></div>';
+    }).join('');
+  });
+function escHTML(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function copyArticlePrompt(id, btn, text) {
+  navigator.clipboard.writeText(text).then(function() {
+    btn.textContent = 'Copied!';
+    setTimeout(function() { btn.textContent = 'Copy'; }, 2000);
+    fetch('/api/prompts/' + id + '/copy', {method: 'POST'});
+  });
+}
+</script>
 {% endblock %}

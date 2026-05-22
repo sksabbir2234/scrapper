@@ -3,139 +3,171 @@
 {% block title %}GitHub AI Watch - Global News Aggregator{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="/static/css/github.css">
+<style>
+@media (max-width: 768px) {
+  .gh-stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
+}
+</style>
 {% endblock %}
 
 {% block content %}
-<!-- Hero Banner -->
-<div class="gh-hero">
-    <h1>GitHub AI Watch</h1>
-    <p class="gh-hero-sub">Tracking {{ repos|length }} AI repos across the open-source ecosystem</p>
-    <div class="gh-stats-bar">
-        <div class="gh-stat">
-            <span class="gh-stat-val">{{ "{:,}".format(total_stars) }}</span>
-            <span class="gh-stat-label">Stars Tracked</span>
-        </div>
-        <div class="gh-stat">
-            <span class="gh-stat-val">{{ updates_this_week }}</span>
-            <span class="gh-stat-label">Updates This Week</span>
-        </div>
-        <div class="gh-stat">
-            <span class="gh-stat-val">{{ breaking_count }}</span>
-            <span class="gh-stat-label">Breaking Changes</span>
-        </div>
-        <div class="gh-stat">
-            <span class="gh-stat-val">{{ trending_count }}</span>
-            <span class="gh-stat-label">Trending</span>
-        </div>
-    </div>
-</div>
+<div class="page-wrapper">
 
-<!-- Weekly Digest -->
-{% if digest %}
-<div class="gh-digest">
-    <div class="gh-digest-header" onclick="this.parentElement.classList.toggle('open')">
-        <span class="gh-digest-title">Week of {{ digest.week_start.strftime('%b %d') }} &mdash; {{ digest.week_end.strftime('%b %d, %Y') }}</span>
-        <span class="gh-digest-toggle">&#9660;</span>
-    </div>
-    <div class="gh-digest-body">
-        <p>{{ digest.summary_text }}</p>
-        <div class="gh-digest-stats">
-            <span class="gh-digest-pill release">{{ digest.total_releases }} releases</span>
-            <span class="gh-digest-pill commit">{{ digest.total_commits }} commits</span>
-            <span class="gh-digest-pill pr">{{ digest.total_prs }} PRs</span>
-            {% if digest.breaking_changes %}<span class="gh-digest-pill breaking">{{ digest.breaking_changes }} breaking</span>{% endif %}
-        </div>
-    </div>
-</div>
-{% endif %}
+    <h1 style="margin-bottom: 0.25rem;">GitHub AI Watch</h1>
+    <p style="color: var(--text-light); margin-bottom: 1.5rem;">Tracking {{ repos|length }} AI repos across the open-source ecosystem</p>
 
-<!-- Category Pills -->
-<div class="gh-cats">
-    <a href="/github?sort={{ current_sort }}" class="gh-pill {% if not current_category %}active{% endif %}">All <span class="gh-pill-count">{{ repos|length }}</span></a>
-    {% for cat, count in cat_counts.items() %}
-    <a href="/github?category={{ cat }}&sort={{ current_sort }}" class="gh-pill {% if current_category == cat %}active{% endif %}">{{ cat }} <span class="gh-pill-count">{{ count }}</span></a>
-    {% endfor %}
-</div>
-
-<!-- Sort/Filter Bar -->
-<div class="gh-toolbar">
-    <form method="get" action="/github" class="gh-toolbar-form">
-        {% if current_category %}<input type="hidden" name="category" value="{{ current_category }}">{% endif %}
-        <select name="sort" onchange="this.form.submit()">
-            <option value="stars" {% if current_sort == 'stars' %}selected{% endif %}>Stars</option>
-            <option value="trending" {% if current_sort == 'trending' %}selected{% endif %}>Trending</option>
-            <option value="recent" {% if current_sort == 'recent' %}selected{% endif %}>Recent Activity</option>
-            <option value="name" {% if current_sort == 'name' %}selected{% endif %}>Name</option>
-        </select>
-        <input type="text" name="search" value="{{ current_search }}" placeholder="Search repos..." class="gh-search">
-    </form>
-</div>
-
-<!-- Repo Cards Grid -->
-{% if repos %}
-<div class="gh-grid">
-    {% for r in repos %}
-    <div class="gh-card">
-        <div class="gh-card-top">
-            <a href="{{ r.repo_url }}" target="_blank" rel="noopener noreferrer" class="gh-card-label">{{ r.label or r.full_name }}</a>
-            {% if r.category %}<span class="gh-cat-badge cat-{{ r.category }}">{{ r.category }}</span>{% endif %}
+    <!-- Stats Row -->
+    <div class="gh-stats-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2rem;">
+        <div class="card card-flat">
+            <div class="card-body" style="text-align: center;">
+                <div style="font-size: 1.6rem; font-weight: 700; color: var(--accent);">{{ "{:,}".format(total_stars) }}</div>
+                <div style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted);">Stars Tracked</div>
+            </div>
         </div>
-        {% if r.description %}
-        <p class="gh-card-desc">{{ r.description[:120] }}{% if r.description and r.description|length > 120 %}...{% endif %}</p>
-        {% endif %}
-        <div class="gh-card-metrics">
-            <span class="gh-metric stars">&#9733; {{ "{:,}".format(r.stars or 0) }}</span>
-            <span class="gh-metric forks">&#9270; {{ "{:,}".format(r.forks or 0) }}</span>
-            <span class="gh-metric issues">&#9888; {{ "{:,}".format(r.open_issues or 0) }}</span>
-            {% if r.language %}<span class="gh-metric lang">{{ r.language }}</span>{% endif %}
+        <div class="card card-flat">
+            <div class="card-body" style="text-align: center;">
+                <div style="font-size: 1.6rem; font-weight: 700; color: var(--success);">{{ updates_this_week }}</div>
+                <div style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted);">Updates This Week</div>
+            </div>
         </div>
-        {% if r.trending_score and r.trending_score > 0 %}
-        <div class="gh-growth">
-            <span class="gh-growth-positive">+{{ "%.1f"|format(r.trending_score) }}% / 7d</span>
+        <div class="card card-flat">
+            <div class="card-body" style="text-align: center;">
+                <div style="font-size: 1.6rem; font-weight: 700; color: var(--danger);">{{ breaking_count }}</div>
+                <div style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted);">Breaking Changes</div>
+            </div>
         </div>
-        {% endif %}
-        {% if r.tags %}
-        <div class="gh-tags">
-            {% for tag in r.tags.split(',')[:4] %}
-            <span class="gh-tag">{{ tag.strip() }}</span>
-            {% endfor %}
+        <div class="card card-flat">
+            <div class="card-body" style="text-align: center;">
+                <div style="font-size: 1.6rem; font-weight: 700; color: var(--highlight);">{{ trending_count }}</div>
+                <div style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted);">Trending</div>
+            </div>
         </div>
-        {% endif %}
     </div>
-    {% endfor %}
-</div>
-{% else %}
-<div class="empty-state gh-empty">
-    <div class="terminal-cursor">
-        <p>$ scanning github...</p>
-        <span class="cursor">_</span>
-    </div>
-    <p>No repos found. Data will appear after the next scheduled scrape.</p>
-</div>
-{% endif %}
 
-<!-- Recent Updates Feed -->
-{% if recent_updates %}
-<div class="gh-feed">
-    <h2 class="gh-feed-title">Recent Updates</h2>
-    <div class="gh-feed-filters">
-        <a href="/github?sort={{ current_sort }}{% if current_category %}&category={{ current_category }}{% endif %}" class="gh-pill-sm {% if not current_type %}active{% endif %}">All</a>
-        <a href="/github?update_type=release&sort={{ current_sort }}{% if current_category %}&category={{ current_category }}{% endif %}" class="gh-pill-sm {% if current_type == 'release' %}active{% endif %}">Releases</a>
-        <a href="/github?update_type=commit&sort={{ current_sort }}{% if current_category %}&category={{ current_category }}{% endif %}" class="gh-pill-sm {% if current_type == 'commit' %}active{% endif %}">Commits</a>
-        <a href="/github?update_type=pr&sort={{ current_sort }}{% if current_category %}&category={{ current_category }}{% endif %}" class="gh-pill-sm {% if current_type == 'pr' %}active{% endif %}">PRs</a>
+    <!-- Weekly Digest -->
+    {% if digest %}
+    <div class="card" style="margin-bottom: 1.5rem;">
+        <div class="card-body" onclick="this.parentElement.classList.toggle('open')" style="cursor: pointer;">
+            <div class="flex-between">
+                <span class="section-title" style="margin: 0; padding: 0; border: none;">
+                    Week of {{ digest.week_start.strftime('%b %d') }} &mdash; {{ digest.week_end.strftime('%b %d, %Y') }}
+                </span>
+                <span style="color: var(--text-muted);">&#9660;</span>
+            </div>
+            <div class="gh-digest-body">
+                <p style="color: var(--text-light);">{{ digest.summary_text }}</p>
+                <div class="flex gap-1" style="flex-wrap: wrap;">
+                    <span class="badge badge-success">{{ digest.total_releases }} releases</span>
+                    <span class="badge badge-info">{{ digest.total_commits }} commits</span>
+                    <span class="badge badge-accent">{{ digest.total_prs }} PRs</span>
+                    {% if digest.breaking_changes %}<span class="badge badge-danger">{{ digest.breaking_changes }} breaking</span>{% endif %}
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="gh-feed-list">
-        {% for u in recent_updates %}
-        <div class="gh-feed-item {% if u.is_breaking %}gh-breaking{% endif %}">
-            <span class="gh-feed-repo">{{ u.label or u.repo_name }}</span>
-            <span class="gh-feed-type type-{{ u.update_type }}">{{ u.update_type }}</span>
-            {% if u.is_breaking %}<span class="gh-feed-breaking">BREAKING</span>{% endif %}
-            <a href="{{ u.external_url }}" target="_blank" rel="noopener noreferrer" class="gh-feed-link">{{ u.title }}</a>
-            {% if u.published_at %}<span class="gh-feed-date">{{ u.published_at.strftime('%b %d') }}</span>{% endif %}
+    {% endif %}
+
+    <!-- Category Filter Pills -->
+    <div class="filter-tabs">
+        <a href="/github?sort={{ current_sort }}" class="filter-tab {% if not current_category %}active{% endif %}">All <span class="badge badge-neutral" style="margin-left: 4px;">{{ repos|length }}</span></a>
+        {% for cat, count in cat_counts.items() %}
+        <a href="/github?category={{ cat }}&sort={{ current_sort }}" class="filter-tab {% if current_category == cat %}active{% endif %}">{{ cat }} <span class="badge badge-neutral" style="margin-left: 4px;">{{ count }}</span></a>
+        {% endfor %}
+    </div>
+
+    <!-- Sort/Filter Bar -->
+    <div class="card card-flat" style="margin-bottom: 1.5rem;">
+        <div class="card-body">
+            <form method="get" action="/github" class="flex gap-2" style="flex-wrap: wrap;">
+                {% if current_category %}<input type="hidden" name="category" value="{{ current_category }}">{% endif %}
+                <select name="sort" onchange="this.form.submit()" class="search-input" style="width: auto; flex: 0 0 auto;">
+                    <option value="stars" {% if current_sort == 'stars' %}selected{% endif %}>Stars</option>
+                    <option value="trending" {% if current_sort == 'trending' %}selected{% endif %}>Trending</option>
+                    <option value="recent" {% if current_sort == 'recent' %}selected{% endif %}>Recent Activity</option>
+                    <option value="name" {% if current_sort == 'name' %}selected{% endif %}>Name</option>
+                </select>
+                <input type="text" name="search" value="{{ current_search }}" placeholder="Search repos..." class="search-input" style="flex: 1; min-width: 200px;">
+            </form>
+        </div>
+    </div>
+
+    <!-- Repo Cards Grid -->
+    {% if repos %}
+    <div class="grid-auto" style="margin-bottom: 2rem;">
+        {% for r in repos %}
+        <div class="card">
+            <div class="card-body">
+                <div class="flex-between" style="margin-bottom: 0.5rem;">
+                    <a href="{{ r.repo_url }}" target="_blank" rel="noopener noreferrer" style="font-weight: 700; font-size: 0.95rem;">{{ r.label or r.full_name }}</a>
+                    {% if r.category %}<span class="badge badge-accent">{{ r.category }}</span>{% endif %}
+                </div>
+                {% if r.description %}
+                <p style="font-size: 0.85rem; color: var(--text-light); margin-bottom: 0.75rem;">{{ r.description[:120] }}{% if r.description and r.description|length > 120 %}...{% endif %}</p>
+                {% endif %}
+                <div class="flex gap-1" style="flex-wrap: wrap; margin-bottom: 0.5rem;">
+                    <span class="badge badge-neutral">&#9733; {{ "{:,}".format(r.stars or 0) }}</span>
+                    <span class="badge badge-neutral">&#9741; {{ "{:,}".format(r.forks or 0) }}</span>
+                    <span class="badge badge-neutral">&#9888; {{ "{:,}".format(r.open_issues or 0) }}</span>
+                    {% if r.language %}<span class="badge badge-info">{{ r.language }}</span>{% endif %}
+                </div>
+                {% if r.trending_score and r.trending_score > 0 %}
+                <div style="margin-bottom: 0.5rem;">
+                    <span class="badge badge-success">+{{ "%.1f"|format(r.trending_score) }}% / 7d</span>
+                </div>
+                {% endif %}
+                {% if r.tags %}
+                <div class="flex gap-1" style="flex-wrap: wrap;">
+                    {% for tag in r.tags.split(',')[:4] %}
+                    <span class="tag-pill">{{ tag.strip() }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
         </div>
         {% endfor %}
     </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-state-icon">&#9654;</div>
+        <p class="empty-state-text">$ scanning github...</p>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.5rem;">No repos found. Data will appear after the next scheduled scrape.</p>
+    </div>
+    {% endif %}
+
+    <!-- Recent Updates Feed -->
+    {% if recent_updates %}
+    <h2 class="section-title">Recent Updates</h2>
+
+    <!-- Update Type Filter Pills -->
+    <div class="filter-tabs">
+        <a href="/github?sort={{ current_sort }}{% if current_category %}&category={{ current_category }}{% endif %}" class="filter-tab {% if not current_type %}active{% endif %}">All</a>
+        <a href="/github?update_type=release&sort={{ current_sort }}{% if current_category %}&category={{ current_category }}{% endif %}" class="filter-tab {% if current_type == 'release' %}active{% endif %}">Releases</a>
+        <a href="/github?update_type=commit&sort={{ current_sort }}{% if current_category %}&category={{ current_category }}{% endif %}" class="filter-tab {% if current_type == 'commit' %}active{% endif %}">Commits</a>
+        <a href="/github?update_type=pr&sort={{ current_sort }}{% if current_category %}&category={{ current_category }}{% endif %}" class="filter-tab {% if current_type == 'pr' %}active{% endif %}">PRs</a>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 2rem;">
+        {% for u in recent_updates %}
+        <div class="card card-flat">
+            <div class="card-body" style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; padding: 0.85rem 1.25rem;">
+                <span style="font-weight: 600; font-size: 0.85rem; min-width: 120px;">{{ u.label or u.repo_name }}</span>
+                {% if u.update_type == 'release' %}
+                <span class="badge badge-success">{{ u.update_type }}</span>
+                {% elif u.update_type == 'milestone' %}
+                <span class="badge badge-warning">{{ u.update_type }}</span>
+                {% elif u.update_type == 'pr' %}
+                <span class="badge badge-accent">{{ u.update_type }}</span>
+                {% else %}
+                <span class="badge badge-info">{{ u.update_type }}</span>
+                {% endif %}
+                {% if u.is_breaking %}<span class="badge badge-danger">BREAKING</span>{% endif %}
+                <a href="{{ u.external_url }}" target="_blank" rel="noopener noreferrer" style="flex: 1; min-width: 200px; font-size: 0.9rem;">{{ u.title }}</a>
+                {% if u.published_at %}<span style="font-size: 0.78rem; color: var(--text-muted); margin-left: auto;">{{ u.published_at.strftime('%b %d') }}</span>{% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
 </div>
-{% endif %}
 {% endblock %}

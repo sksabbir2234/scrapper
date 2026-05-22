@@ -2,257 +2,88 @@
 
 {% block title %}GitHub Opportunity Finder{% endblock %}
 
-{% block extra_css %}
-<style>
-.opp-hero {
-    text-align: center;
-    padding: 2.5rem 1rem 2rem;
-}
-.opp-hero h1 {
-    color: #e6edf3;
-    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
-    font-size: 2rem;
-    margin: 0 0 0.5rem;
-}
-.opp-hero p {
-    color: #8b949e;
-    margin: 0 0 1.5rem;
-}
-.opp-search-form {
-    display: flex;
-    gap: 0.75rem;
-    justify-content: center;
-    max-width: 600px;
-    margin: 0 auto;
-}
-.opp-search-input {
-    flex: 1;
-    background: #161b22;
-    color: #e6edf3;
-    border: 1px solid #30363d;
-    padding: 0.75rem 1rem;
-    border-radius: 8px;
-    font-size: 1rem;
-    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
-}
-.opp-search-input::placeholder { color: #484f58; }
-.opp-search-input:focus { outline: none; border-color: #58a6ff; }
-.opp-btn {
-    background: #238636;
-    color: #fff;
-    border: 1px solid #2ea043;
-    padding: 0.75rem 1.5rem;
-    border-radius: 8px;
-    font-size: 0.95rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.2s;
-}
-.opp-btn:hover { background: #2ea043; }
-.opp-btn-outline {
-    background: transparent;
-    color: #58a6ff;
-    border: 1px solid #30363d;
-    padding: 0.75rem 1rem;
-    border-radius: 8px;
-    font-size: 0.9rem;
-    cursor: pointer;
-    text-decoration: none;
-}
-.opp-btn-outline:hover { background: #161b22; }
-
-.opp-results {
-    max-width: 1000px;
-    margin: 0 auto;
-    padding: 0 1rem;
-}
-.opp-results-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-}
-.opp-results-header h2 {
-    color: #e6edf3;
-    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
-    font-size: 1.1rem;
-}
-.opp-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.85rem;
-}
-.opp-table th {
-    background: #161b22;
-    color: #8b949e;
-    font-weight: 600;
-    text-transform: uppercase;
-    font-size: 0.7rem;
-    letter-spacing: 0.05em;
-    padding: 0.6rem 0.75rem;
-    text-align: left;
-    border-bottom: 1px solid #30363d;
-}
-.opp-table td {
-    padding: 0.6rem 0.75rem;
-    border-bottom: 1px solid #21262d;
-    color: #e6edf3;
-}
-.opp-table tr:hover td {
-    background: #161b22;
-}
-.opp-rank {
-    color: #8b949e;
-    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
-    font-weight: 700;
-    width: 40px;
-}
-.opp-rank-1 { color: #d29922; }
-.opp-rank-2 { color: #8b949e; }
-.opp-rank-3 { color: #a37237; }
-.opp-name a {
-    color: #58a6ff;
-    text-decoration: none;
-    font-weight: 600;
-}
-.opp-name a:hover { text-decoration: underline; }
-.opp-desc {
-    color: #8b949e;
-    font-size: 0.8rem;
-    max-width: 300px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-.opp-stars {
-    color: #d29922;
-    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
-}
-.opp-issues {
-    color: #f85149;
-    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
-}
-.opp-lang {
-    color: #8b949e;
-}
-.opp-contribs {
-    color: #8b949e;
-    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
-}
-.opp-date {
-    color: #484f58;
-    font-size: 0.8rem;
-}
-.opp-score {
-    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
-    font-weight: 700;
-    font-size: 0.95rem;
-}
-.opp-score-high { color: #3fb950; }
-.opp-score-mid { color: #d29922; }
-.opp-score-low { color: #f85149; }
-.opp-topics {
-    display: flex;
-    gap: 0.25rem;
-    flex-wrap: wrap;
-    max-width: 200px;
-}
-.opp-topic {
-    background: #161b22;
-    color: #8b949e;
-    font-size: 0.65rem;
-    padding: 0.1rem 0.4rem;
-    border-radius: 8px;
-    border: 1px solid #21262d;
-}
-
-.opp-empty {
-    text-align: center;
-    padding: 3rem 1rem;
-    color: #8b949e;
-}
-.opp-loading {
-    text-align: center;
-    padding: 2rem;
-    color: #58a6ff;
-    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
-}
-
-@media (max-width: 768px) {
-    .opp-table { font-size: 0.8rem; }
-    .opp-desc { display: none; }
-    .opp-topics { display: none; }
-    .opp-search-form { flex-direction: column; }
-}
-</style>
-{% endblock %}
-
 {% block content %}
-<div class="opp-hero">
-    <h1>GitHub Opportunity Finder</h1>
-    <p>Search GitHub repos by keyword and rank by opportunity signals</p>
-    <form class="opp-search-form" action="/opportunities/search" method="get">
-        <input type="text" name="q" value="{{ query }}" placeholder="e.g. laravel billing, react pdf, rust cli" class="opp-search-input" autofocus>
-        <button type="submit" class="opp-btn">Search</button>
-        {% if results %}
-        <a href="/opportunities/export?q={{ query }}" class="opp-btn-outline">Export CSV</a>
-        {% endif %}
-    </form>
-</div>
+<div class="page-wrapper">
 
-{% if results %}
-<div class="opp-results">
-    <div class="opp-results-header">
-        <h2>{{ results|length }} repos ranked by opportunity score</h2>
+    <div style="text-align: center; padding: 2rem 0 1.5rem;">
+        <h1>GitHub Opportunity Finder</h1>
+        <p style="color: var(--text-light); margin: 0.25rem 0 1.5rem;">Search GitHub repos by keyword and rank by opportunity signals</p>
+        <form action="/opportunities/search" method="get" style="display: flex; gap: 0.75rem; justify-content: center; max-width: 600px; margin: 0 auto;">
+            <input type="text" name="q" value="{{ query }}" placeholder="e.g. laravel billing, react pdf, rust cli" class="search-input" style="flex: 1;" autofocus>
+            <button type="submit" class="btn btn-primary">Search</button>
+            {% if results %}
+            <a href="/opportunities/export?q={{ query }}" class="btn btn-ghost">Export CSV</a>
+            {% endif %}
+        </form>
     </div>
-    <table class="opp-table">
-        <thead>
-            <tr>
-                <th>#</th>
-                <th>Repository</th>
-                <th>Description</th>
-                <th>Stars</th>
-                <th>Issues</th>
-                <th>Language</th>
-                <th>Contributors</th>
-                <th>Last Commit</th>
-                <th>Score</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for r in results %}
-            <tr>
-                <td class="opp-rank opp-rank-{{ r.rank if r.rank <= 3 else '' }}">{{ r.rank }}</td>
-                <td class="opp-name">
-                    <a href="{{ r.url }}" target="_blank" rel="noopener noreferrer">{{ r.name }}</a>
-                    {% if r.topics %}
-                    <div class="opp-topics">
-                        {% for t in r.topics[:3] %}
-                        <span class="opp-topic">{{ t }}</span>
+
+    {% if results %}
+    <div class="card">
+        <div class="card-body">
+            <div class="flex-between" style="margin-bottom: 1rem;">
+                <span class="section-title" style="margin: 0; padding: 0; border: none;">{{ results|length }} repos ranked by opportunity score</span>
+            </div>
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                    <thead>
+                        <tr>
+                            <th style="text-align: left; padding: 0.6rem 0.75rem; border-bottom: 2px solid var(--border-strong); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">#</th>
+                            <th style="text-align: left; padding: 0.6rem 0.75rem; border-bottom: 2px solid var(--border-strong); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">Repository</th>
+                            <th style="text-align: left; padding: 0.6rem 0.75rem; border-bottom: 2px solid var(--border-strong); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">Description</th>
+                            <th style="text-align: left; padding: 0.6rem 0.75rem; border-bottom: 2px solid var(--border-strong); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">Stars</th>
+                            <th style="text-align: left; padding: 0.6rem 0.75rem; border-bottom: 2px solid var(--border-strong); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">Issues</th>
+                            <th style="text-align: left; padding: 0.6rem 0.75rem; border-bottom: 2px solid var(--border-strong); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">Language</th>
+                            <th style="text-align: left; padding: 0.6rem 0.75rem; border-bottom: 2px solid var(--border-strong); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">Contributors</th>
+                            <th style="text-align: left; padding: 0.6rem 0.75rem; border-bottom: 2px solid var(--border-strong); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">Last Commit</th>
+                            <th style="text-align: left; padding: 0.6rem 0.75rem; border-bottom: 2px solid var(--border-strong); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">Score</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in results %}
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 0.6rem 0.75rem; font-weight: 700; color: {% if r.rank == 1 %}var(--warning){% elif r.rank == 2 %}var(--text-light){% elif r.rank == 3 %}var(--accent){% else %}var(--text-muted){% endif %};">{{ r.rank }}</td>
+                            <td style="padding: 0.6rem 0.75rem;">
+                                <a href="{{ r.url }}" target="_blank" rel="noopener noreferrer" style="font-weight: 600;">{{ r.name }}</a>
+                                {% if r.topics %}
+                                <div style="display: flex; gap: 0.25rem; flex-wrap: wrap; margin-top: 0.35rem;">
+                                    {% for t in r.topics[:3] %}
+                                    <span class="tag-pill">{{ t }}</span>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td style="padding: 0.6rem 0.75rem; color: var(--text-light); max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ r.description }}">{{ r.description }}</td>
+                            <td style="padding: 0.6rem 0.75rem; color: var(--warning);">{{ "{:,}".format(r.stars) }}</td>
+                            <td style="padding: 0.6rem 0.75rem; color: var(--danger);">{{ r.open_issues }}</td>
+                            <td style="padding: 0.6rem 0.75rem; color: var(--text-light);">{{ r.language }}</td>
+                            <td style="padding: 0.6rem 0.75rem; color: var(--text-light);">{{ r.contributors }}</td>
+                            <td style="padding: 0.6rem 0.75rem; color: var(--text-muted); font-size: 0.8rem;">{{ r.last_commit[:10] if r.last_commit else '' }}</td>
+                            <td style="padding: 0.6rem 0.75rem;">
+                                {% if r.score >= 70 %}
+                                <span class="badge badge-success" style="font-size: 0.85rem;">{{ r.score }}</span>
+                                {% elif r.score >= 40 %}
+                                <span class="badge badge-warning" style="font-size: 0.85rem;">{{ r.score }}</span>
+                                {% else %}
+                                <span class="badge badge-danger" style="font-size: 0.85rem;">{{ r.score }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
                         {% endfor %}
-                    </div>
-                    {% endif %}
-                </td>
-                <td class="opp-desc" title="{{ r.description }}">{{ r.description }}</td>
-                <td class="opp-stars">{{ "{:,}".format(r.stars) }}</td>
-                <td class="opp-issues">{{ r.open_issues }}</td>
-                <td class="opp-lang">{{ r.language }}</td>
-                <td class="opp-contribs">{{ r.contributors }}</td>
-                <td class="opp-date">{{ r.last_commit[:10] if r.last_commit else '' }}</td>
-                <td class="opp-score {% if r.score >= 70 %}opp-score-high{% elif r.score >= 40 %}opp-score-mid{% else %}opp-score-low{% endif %}">{{ r.score }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% elif query %}
+    <div class="empty-state">
+        <p class="empty-state-text">No results found for "{{ query }}"</p>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <p class="empty-state-text">Enter a keyword to find contribution opportunities</p>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.5rem;">Examples: "fastapi auth", "react native camera", "rust web framework"</p>
+    </div>
+    {% endif %}
+
 </div>
-{% elif query %}
-<div class="opp-empty">
-    <p>No results found for "{{ query }}"</p>
-</div>
-{% else %}
-<div class="opp-empty">
-    <p>Enter a keyword to find contribution opportunities</p>
-    <p style="font-size: 0.85rem; color: #484f58; margin-top: 0.5rem;">Examples: "fastapi auth", "react native camera", "rust web framework"</p>
-</div>
-{% endif %}
 {% endblock %}

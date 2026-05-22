@@ -3,7 +3,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
-from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, Date, ForeignKey, Index, SmallInteger, Float
+from datetime import datetime
+from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, Date, ForeignKey, Index, SmallInteger, Float, JSON
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.db.database import Base
@@ -336,3 +337,75 @@ class OSSAlternative(Base):
     added_by = Column(String(20), default="seed")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class ArticleView(Base):
+    __tablename__ = "article_views"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    article_id = Column(Integer, ForeignKey("articles.id", ondelete="CASCADE"))
+    viewed_at = Column(DateTime, default=datetime.utcnow)
+    ip_hash = Column(String(16))
+    ua_type = Column(String(10))
+
+
+class ArticleViewDaily(Base):
+    __tablename__ = "article_views_daily"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    article_id = Column(Integer, ForeignKey("articles.id", ondelete="CASCADE"))
+    view_date = Column(Date)
+    view_count = Column(Integer, default=0)
+
+
+class SiteViewDaily(Base):
+    __tablename__ = "site_views_daily"
+
+    view_date = Column(Date, primary_key=True)
+    total_views = Column(Integer, default=0)
+    desktop = Column(Integer, default=0)
+    mobile = Column(Integer, default=0)
+    bot = Column(Integer, default=0)
+
+
+class ArticleSEO(Base):
+    __tablename__ = "article_seo"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    article_id = Column(Integer, ForeignKey("articles.id", ondelete="CASCADE"), unique=True)
+    seo_title = Column(String(70))
+    seo_description = Column(String(165))
+    seo_keywords = Column(Text)  # stored as JSON array string
+    canonical_url = Column(String)
+    og_title = Column(String(95))
+    og_description = Column(String(200))
+    og_image_url = Column(String)
+    schema_json = Column(JSON)
+    reading_time = Column(Integer)
+    seo_score = Column(Integer, default=0)
+    score_breakdown = Column(JSON)
+    issues = Column(JSON)
+    generated_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow)
+    generation_method = Column(String, default="rule_based")
+
+    article = relationship("Article", backref="seo")
+
+
+class PromptLibrary(Base):
+    __tablename__ = "prompt_library"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    title = Column(String, nullable=False)
+    prompt_text = Column(Text, nullable=False)
+    category = Column(String, nullable=False)
+    subcategory = Column(String)
+    tags = Column(Text)  # stored as JSON array string
+    use_case = Column(Text)
+    model_hint = Column(String, default="any")
+    difficulty = Column(String, default="beginner")
+    upvotes = Column(Integer, default=0)
+    copy_count = Column(Integer, default=0)
+    is_featured = Column(Boolean, default=False)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)

@@ -3,33 +3,38 @@
 {% block title %}All Articles - Global News Aggregator{% endblock %}
 
 {% block content %}
-<h1>All Articles</h1>
+<div class="page-wrapper">
+  <h1>All Articles</h1>
 
-<div class="article-grid">
+  <div class="grid-auto">
     {% for article in articles %}
-    <article class="article-card">
-        <a href="/articles/{{ article.slug }}" class="article-link">
-            <h2>{{ article.title }}</h2>
-            <div class="article-meta">
-                <span class="source">{{ article.source.name if article.source else 'Unknown' }}</span>
-                <span class="date">{{ article.published_at.strftime('%b %d, %Y') if article.published_at else 'Unknown date' }}</span>
-            </div>
-        </a>
-    </article>
+    <div class="card card-flat">
+      <div class="article-card">
+        {% if article.image_url %}
+        <img src="{{ article.image_url }}" alt="" class="thumb" loading="lazy">
+        {% endif %}
+        <div class="content">
+          <div class="source source-high">{{ article.source.name if article.source else 'Unknown' }}</div>
+          <a href="/articles/{{ article.slug }}" class="title">{{ article.title }}</a>
+          <div class="meta">{{ article.published_at.strftime('%b %d, %Y') if article.published_at else 'Unknown date' }}</div>
+        </div>
+      </div>
+    </div>
     {% endfor %}
-</div>
+  </div>
 
-{% if total_pages > 1 %}
-<div class="pagination">
+  {% if total_pages > 1 %}
+  <div class="pagination">
     {% if page > 1 %}
-    <a href="?page={{ page - 1 }}" class="btn">&laquo; Previous</a>
+    <a href="?page={{ page - 1 }}" class="btn btn-ghost">&laquo; Previous</a>
     {% endif %}
 
-    <span class="page-info">Page {{ page }} of {{ total_pages }} ({{ total }} articles)</span>
+    <span class="pagination-info">Page {{ page }} of {{ total_pages }} ({{ total }} articles)</span>
 
     {% if page < total_pages %}
-    <a href="?page={{ page + 1 }}" class="btn">Next &raquo;</a>
+    <a href="?page={{ page + 1 }}" class="btn btn-ghost">Next &raquo;</a>
     {% endif %}
+  </div>
+  {% endif %}
 </div>
-{% endif %}
 {% endblock %}

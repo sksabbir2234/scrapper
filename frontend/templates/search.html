@@ -3,48 +3,56 @@
 {% block title %}Search - Global News Aggregator{% endblock %}
 
 {% block content %}
-<h1>Search Articles</h1>
-<form action="/search" method="get" class="search-form" onsubmit="if(!this.q.value.trim()){return false;}">
-    <input type="text" name="q" value="{{ query }}" placeholder="Search articles..." class="search-input" autofocus>
-    <button type="submit" class="btn">Search</button>
-</form>
+<div class="page-wrapper">
+  <div class="content-wrap">
+    <h1>Search Articles</h1>
+    <form action="/search" method="get" class="search-form" onsubmit="if(!this.q.value.trim()){return false;}" style="margin-bottom: 1.5rem;">
+      <input type="text" name="q" value="{{ query }}" placeholder="Search articles..." class="search-input" autofocus style="margin-bottom: 0.75rem;">
+      <button type="submit" class="btn btn-primary">Search</button>
+    </form>
 
-{% if query %}
-<p class="subtitle">{{ total }} results for "{{ query }}"</p>
-{% endif %}
+    {% if query %}
+    <p style="color: var(--text-muted); margin-bottom: 1.5rem;">{{ total }} results for "{{ query }}"</p>
+    {% endif %}
 
-{% if articles %}
-<div class="article-grid">
-    {% for article in articles %}
-    <article class="article-card">
-        <a href="/articles/{{ article.slug }}" class="article-link">
-            <h2>{{ article.title }}</h2>
-            <div class="article-meta">
-                <span class="source">{{ article.source.name if article.source else 'Unknown' }}</span>
-                <span class="date">{{ article.published_at.strftime('%b %d, %Y') if article.published_at else '' }}</span>
-            </div>
+    {% if articles %}
+    <div class="grid-auto">
+      {% for article in articles %}
+      <div class="card card-flat">
+        <div class="article-card">
+          {% if article.image_url %}
+          <img src="{{ article.image_url }}" alt="" class="thumb" loading="lazy">
+          {% endif %}
+          <div class="content">
+            <div class="source source-high">{{ article.source.name if article.source else 'Unknown' }}</div>
+            <a href="/articles/{{ article.slug }}" class="title">{{ article.title }}</a>
+            <div class="meta">{{ article.published_at.strftime('%b %d, %Y') if article.published_at else '' }}</div>
             {% if article.content_text %}
-            <p class="excerpt">{{ article.content_text[:200] }}...</p>
+            <p style="font-size: 0.85rem; color: var(--text-light); margin-top: 0.5rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">{{ article.content_text[:200] }}...</p>
             {% endif %}
-        </a>
-    </article>
-    {% endfor %}
-</div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
 
-{% if total_pages > 1 %}
-<div class="pagination">
-    {% if page > 1 %}
-    <a href="/search?q={{ query }}&page={{ page - 1 }}" class="btn">&laquo; Previous</a>
+    {% if total_pages > 1 %}
+    <div class="pagination">
+      {% if page > 1 %}
+      <a href="/search?q={{ query }}&page={{ page - 1 }}" class="btn btn-ghost">&laquo; Previous</a>
+      {% endif %}
+      <span class="pagination-info">Page {{ page }} of {{ total_pages }}</span>
+      {% if page < total_pages %}
+      <a href="/search?q={{ query }}&page={{ page + 1 }}" class="btn btn-ghost">Next &raquo;</a>
+      {% endif %}
+    </div>
     {% endif %}
-    <span>Page {{ page }} of {{ total_pages }}</span>
-    {% if page < total_pages %}
-    <a href="/search?q={{ query }}&page={{ page + 1 }}" class="btn">Next &raquo;</a>
+    {% elif query %}
+    <div class="empty-state">
+      <div class="empty-state-icon">*</div>
+      <p class="empty-state-text">No articles found matching your search.</p>
+    </div>
     {% endif %}
+  </div>
 </div>
-{% endif %}
-{% elif query %}
-<div class="empty-state">
-    <p>No articles found matching your search.</p>
-</div>
-{% endif %}
 {% endblock %}

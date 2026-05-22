@@ -3,41 +3,47 @@
 {% block title %}{{ category.name }} - Global News Aggregator{% endblock %}
 
 {% block content %}
-<h1>{{ category.name }}</h1>
-<p class="subtitle">{{ total }} articles</p>
+<div class="page-wrapper">
+  <h1>{{ category.name }}</h1>
+  <p style="color: var(--text-muted); margin-bottom: 1.5rem;">{{ total }} articles</p>
 
-{% if articles %}
-<div class="article-grid">
+  {% if articles %}
+  <div class="grid-auto">
     {% for article in articles %}
-    <article class="article-card">
-        <a href="/articles/{{ article.slug }}" class="article-link">
-            <h2>{{ article.title }}</h2>
-            <div class="article-meta">
-                <span class="source">{{ article.source.name if article.source else 'Unknown' }}</span>
-                <span class="date">{{ article.published_at.strftime('%b %d, %Y') if article.published_at else '' }}</span>
-            </div>
-            {% if article.content_text %}
-            <p class="excerpt">{{ article.content_text[:200] }}...</p>
-            {% endif %}
-        </a>
-    </article>
+    <div class="card card-flat">
+      <div class="article-card">
+        {% if article.image_url %}
+        <img src="{{ article.image_url }}" alt="" class="thumb" loading="lazy">
+        {% endif %}
+        <div class="content">
+          <div class="source source-high">{{ article.source.name if article.source else 'Unknown' }}</div>
+          <a href="/articles/{{ article.slug }}" class="title">{{ article.title }}</a>
+          <div class="meta">{{ article.published_at.strftime('%b %d, %Y') if article.published_at else '' }}</div>
+          {% if article.content_text %}
+          <p style="font-size: 0.85rem; color: var(--text-light); margin-top: 0.5rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">{{ article.content_text[:200] }}...</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
     {% endfor %}
-</div>
+  </div>
 
-{% if total_pages > 1 %}
-<div class="pagination">
+  {% if total_pages > 1 %}
+  <div class="pagination">
     {% if page > 1 %}
-    <a href="/categories/{{ category.slug }}?page={{ page - 1 }}" class="btn">&laquo; Previous</a>
+    <a href="/categories/{{ category.slug }}?page={{ page - 1 }}" class="btn btn-ghost">&laquo; Previous</a>
     {% endif %}
-    <span>Page {{ page }} of {{ total_pages }}</span>
+    <span class="pagination-info">Page {{ page }} of {{ total_pages }}</span>
     {% if page < total_pages %}
-    <a href="/categories/{{ category.slug }}?page={{ page + 1 }}" class="btn">Next &raquo;</a>
+    <a href="/categories/{{ category.slug }}?page={{ page + 1 }}" class="btn btn-ghost">Next &raquo;</a>
     {% endif %}
+  </div>
+  {% endif %}
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-state-icon">*</div>
+    <p class="empty-state-text">No articles in this category yet.</p>
+  </div>
+  {% endif %}
 </div>
-{% endif %}
-{% else %}
-<div class="empty-state">
-    <p>No articles in this category yet.</p>
-</div>
-{% endif %}
 {% endblock %}

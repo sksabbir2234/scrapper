@@ -1,6 +1,7 @@
 import sys
+import hashlib
 from pathlib import Path
-from datetime import datetime, timezone
+from datetime import datetime, timezone, date as date_cls
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
@@ -8,7 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Query
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from sqlalchemy import desc, func
+from sqlalchemy import desc, func, text
 
 from app.db.database import get_db
 from app.models import (
@@ -16,6 +17,8 @@ from app.models import (
     GithubUpdate, GithubRepo, GithubRepoSnapshot, GithubWeeklyDigest,
     FinanceResource, FinanceQuizQuestion,
     PromptPattern, AIModelCard, AITool, AITip, OSSAlternative,
+    ArticleView, ArticleViewDaily, SiteViewDaily,
+    PromptLibrary, ArticleSEO,
 )
 
 BASE_DIR = Path(__file__).parent.parent.parent.parent / "frontend"
@@ -35,7 +38,8 @@ async def index(request: Request, db: Session = Depends(get_db)):
     )
     categories = db.query(Category).filter(Category.is_active == True).all()
     return templates.TemplateResponse("index.html", {
-        "request": request, "articles": articles, "categories": categories
+        "request": request, "articles": articles, "categories": categories,
+        "active_page": "home",
     })
 
 
@@ -60,6 +64,7 @@ async def articles_list(request: Request, page: int = 1, db: Session = Depends(g
     return templates.TemplateResponse("articles.html", {
         "request": request, "articles": articles, "page": page,
         "total_pages": total_pages, "total": total, "categories": categories,
+        "active_page": "",
     })
 
 
@@ -70,7 +75,43 @@ async def article_detail(request: Request, slug: str, db: Session = Depends(get_
         raise HTTPException(status_code=404, detail="Article not found")
 
     article.view_count += 1
-    db.commit()
+
+    # View tracking — non-blocking, never breaks article loading
+    try:
+        raw_ip = request.client.host if request.client else "unknown"
+        ip_hash = hashlib.sha256(raw_ip.encode()).hexdigest()[:16]
+        ua = request.headers.get("user-agent", "").lower()
+        ua_type = (
+            "bot" if any(b in ua for b in ["bot", "crawler", "spider", "slurp", "bytespider"])
+            else "mobile" if "mobile" in ua
+            else "desktop"
+        )
+
+        db.add(ArticleView(article_id=article.id, ip_hash=ip_hash, ua_type=ua_type))
+
+        today = date_cls.today()
+        db.execute(
+            ArticleViewDaily.__table__.insert().values(
+                article_id=article.id, view_date=today, view_count=1
+            ).on_conflict_do_update(
+                index_elements=["article_id", "view_date"],
+                set_={"view_count": ArticleViewDaily.view_count + 1}
+            )
+        )
+        db.execute(
+            SiteViewDaily.__table__.insert().values(
+                view_date=today, total_views=1, **{ua_type: 1}
+            ).on_conflict_do_update(
+                index_elements=["view_date"],
+                set_={
+                    "total_views": SiteViewDaily.total_views + 1,
+                    ua_type: getattr(SiteViewDaily, ua_type) + 1,
+                }
+            )
+        )
+        db.commit()
+    except Exception:
+        db.rollback()
 
     article_tags = (
         db.query(Tag)
@@ -80,7 +121,8 @@ async def article_detail(request: Request, slug: str, db: Session = Depends(get_
     )
 
     return templates.TemplateResponse("article.html", {
-        "request": request, "article": article, "article_tags": article_tags
+        "request": request, "article": article, "article_tags": article_tags,
+        "active_page": "",
     })
 
 
@@ -92,7 +134,8 @@ async def categories_list(request: Request, db: Session = Depends(get_db)):
         count = db.query(Article).filter(Article.category == cat.slug, Article.deleted_at.is_(None)).count()
         category_counts.append({"category": cat, "count": count})
     return templates.TemplateResponse("categories.html", {
-        "request": request, "category_counts": category_counts
+        "request": request, "category_counts": category_counts,
+        "active_page": "categories",
     })
 
 
@@ -118,6 +161,7 @@ async def category_detail(request: Request, slug: str, page: int = 1, db: Sessio
     return templates.TemplateResponse("category.html", {
         "request": request, "category": category, "articles": articles,
         "page": page, "total_pages": total_pages, "total": total,
+        "active_page": "categories",
     })
 
 
@@ -128,7 +172,8 @@ async def search(request: Request, q: str = Query(default=""), page: int = 1, db
 
     if not q.strip():
         return templates.TemplateResponse("search.html", {
-            "request": request, "articles": [], "query": "", "total": 0, "page": 1, "total_pages": 0
+            "request": request, "articles": [], "query": "", "total": 0, "page": 1, "total_pages": 0,
+            "active_page": "",
         })
 
     ts_query = " & ".join(q.strip().split())
@@ -149,6 +194,7 @@ async def search(request: Request, q: str = Query(default=""), page: int = 1, db
     return templates.TemplateResponse("search.html", {
         "request": request, "articles": articles, "query": q,
         "total": total, "page": page, "total_pages": total_pages,
+        "active_page": "",
     })
 
 
@@ -177,19 +223,24 @@ async def trending(request: Request, db: Session = Depends(get_db)):
     )
     articles = [a for a, _ in top_articles]
 
-    return templates.TemplateResponse("trending.html", {"request": request, "articles": articles})
+    return templates.TemplateResponse("trending.html", {
+        "request": request, "articles": articles, "active_page": "trending",
+    })
 
 
 @router.get("/tags", response_class=HTMLResponse)
 async def tag_list(request: Request, db: Session = Depends(get_db)):
-    tag_counts = (
+    tag_rows = (
         db.query(Tag, func.count(ArticleTag.article_id).label("count"))
         .join(ArticleTag, Tag.id == ArticleTag.tag_id)
         .group_by(Tag.id)
         .order_by(desc("count"))
         .all()
     )
-    return templates.TemplateResponse("tags.html", {"request": request, "tags": tag_counts})
+    tag_counts = [{"tag": row[0], "count": row[1]} for row in tag_rows]
+    return templates.TemplateResponse("tags.html", {
+        "request": request, "tags": tag_counts, "active_page": "",
+    })
 
 
 @router.get("/tags/{slug}", response_class=HTMLResponse)
@@ -211,6 +262,7 @@ async def tag_detail(slug: str, request: Request, page: int = Query(1, ge=1), db
     return templates.TemplateResponse("tag_detail.html", {
         "request": request, "tag": tag, "articles": articles,
         "total": total, "page": page, "total_pages": total_pages,
+        "active_page": "",
     })
 
 
@@ -292,6 +344,7 @@ async def github_page(
         "updates_this_week": updates_this_week,
         "breaking_count": breaking_count,
         "trending_count": trending_count,
+        "active_page": "github",
     })
 
 
@@ -382,6 +435,7 @@ async def github_api_updates(
 async def opportunities_page(request: Request, q: str = ""):
     return templates.TemplateResponse("opportunities.html", {
         "request": request, "query": q, "results": [],
+        "active_page": "",
     })
 
 
@@ -395,6 +449,7 @@ async def opportunities_search(request: Request, q: str = ""):
         results = find_opportunities(q.strip(), settings.github_token)
     return templates.TemplateResponse("opportunities.html", {
         "request": request, "query": q, "results": results,
+        "active_page": "",
     })
 
 
@@ -444,7 +499,9 @@ async def opportunities_export(q: str = ""):
 
 @router.get("/finance", response_class=HTMLResponse)
 async def finance_page(request: Request):
-    return templates.TemplateResponse("finance.html", {"request": request})
+    return templates.TemplateResponse("finance.html", {
+        "request": request, "active_page": "finance",
+    })
 
 
 @router.get("/finance/api/concept-of-day")
@@ -512,7 +569,9 @@ async def finance_glossary():
 
 @router.get("/ai-tips", response_class=HTMLResponse)
 async def ai_tips_page(request: Request):
-    return templates.TemplateResponse("ai_tips.html", {"request": request})
+    return templates.TemplateResponse("ai_tips.html", {
+        "request": request, "active_page": "ai_tips",
+    })
 
 
 @router.get("/ai-tips/api/patterns")
@@ -647,6 +706,7 @@ async def oss_page(request: Request, category: str = "", search: str = "", sort:
         "request": request, "alternatives": alternatives,
         "categories": categories, "total": total,
         "current_category": category, "current_search": search, "current_sort": sort,
+        "active_page": "oss",
     })
 
 
@@ -667,6 +727,7 @@ async def oss_detail_page(request: Request, slug: str, db: Session = Depends(get
     ).limit(3).all()
     return templates.TemplateResponse("oss_detail.html", {
         "request": request, "alt": alt, "related": related, "same_cat": same_cat,
+        "active_page": "oss",
     })
 
 
@@ -704,3 +765,319 @@ async def oss_upvote(slug: str, db: Session = Depends(get_db)):
     alt.upvotes = (alt.upvotes or 0) + 1
     db.commit()
     return {"upvotes": alt.upvotes}
+
+
+@router.get("/jobs", response_class=HTMLResponse)
+async def jobs_page(request: Request):
+    return templates.TemplateResponse("jobs.html", {
+        "request": request, "active_page": "jobs",
+    })
+
+
+@router.get("/jobs/api/list")
+async def jobs_api_list(
+    keyword: str = "",
+    location: str = "",
+    remote: str = "",
+    source: str = "",
+    page: int = 1,
+    per_page: int = 20,
+):
+    from app.scrapers.job_scraper import fetch_live_jobs
+    remote_only = remote.lower() in ("1", "true", "yes")
+    jobs = fetch_live_jobs(keyword=keyword, location=location, remote_only=remote_only, source=source)
+    total = len(jobs)
+    start = (page - 1) * per_page
+    end = start + per_page
+    return {
+        "total": total,
+        "page": page,
+        "per_page": per_page,
+        "pages": (total + per_page - 1) // per_page,
+        "items": jobs[start:end],
+    }
+
+
+@router.get("/jobs/api/stats")
+async def jobs_api_stats(keyword: str = "", location: str = ""):
+    from app.scrapers.job_scraper import fetch_job_stats
+    return fetch_job_stats(keyword=keyword, location=location)
+
+
+# ── SEO Endpoints ────────────────────────────────────────────────
+
+from fastapi.responses import Response, PlainTextResponse
+from datetime import timedelta
+
+SITEMAP_CACHE = {"xml": None, "generated_at": None}
+SITEMAP_TTL = 1800  # 30 minutes
+
+
+@router.get("/sitemap.xml")
+def sitemap_xml(db: Session = Depends(get_db)):
+    now = datetime.now(timezone.utc)
+    if (SITEMAP_CACHE["xml"] and SITEMAP_CACHE["generated_at"]
+            and (now - SITEMAP_CACHE["generated_at"]).total_seconds() < SITEMAP_TTL):
+        return Response(SITEMAP_CACHE["xml"], media_type="application/xml")
+
+    site_url = "http://localhost:8000"
+
+    static_pages = [
+        {"url": site_url, "priority": "1.0", "changefreq": "always"},
+        {"url": f"{site_url}/trending", "priority": "0.9", "changefreq": "hourly"},
+        {"url": f"{site_url}/categories", "priority": "0.8", "changefreq": "daily"},
+        {"url": f"{site_url}/finance", "priority": "0.8", "changefreq": "hourly"},
+        {"url": f"{site_url}/github", "priority": "0.7", "changefreq": "hourly"},
+        {"url": f"{site_url}/ai-tips", "priority": "0.7", "changefreq": "daily"},
+        {"url": f"{site_url}/oss", "priority": "0.7", "changefreq": "daily"},
+        {"url": f"{site_url}/prompts", "priority": "0.8", "changefreq": "weekly"},
+        {"url": f"{site_url}/jobs", "priority": "0.7", "changefreq": "hourly"},
+    ]
+
+    articles = db.execute(text(
+        """
+        SELECT a.slug, a.published_at, s.seo_score
+        FROM articles a
+        LEFT JOIN article_seo s ON a.id = s.article_id
+        WHERE a.deleted_at IS NULL
+        ORDER BY a.published_at DESC
+        LIMIT 1000
+        """
+    )).fetchall()
+
+    lines = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+    ]
+    for p in static_pages:
+        lines.append(f'  <url><loc>{p["url"]}</loc><changefreq>{p["changefreq"]}</changefreq><priority>{p["priority"]}</priority></url>')
+
+    for row in articles:
+        if not row[0]:
+            continue
+        lastmod = row[1].strftime("%Y-%m-%d") if row[1] else now.strftime("%Y-%m-%d")
+        score = row[2] or 0
+        priority = "0.8" if score >= 80 else "0.7" if score >= 60 else "0.5"
+        lines.append(f'  <url><loc>{site_url}/articles/{row[0]}</loc><lastmod>{lastmod}</lastmod><changefreq>never</changefreq><priority>{priority}</priority></url>')
+
+    lines.append("</urlset>")
+    xml = "\n".join(lines)
+    SITEMAP_CACHE["xml"] = xml
+    SITEMAP_CACHE["generated_at"] = now
+
+    return Response(xml, media_type="application/xml")
+
+
+@router.get("/sitemap-news.xml")
+def sitemap_news_xml(db: Session = Depends(get_db)):
+    site_url = "http://localhost:8000"
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=48)
+
+    articles = db.execute(text(
+        """
+        SELECT a.slug, a.title, a.published_at
+        FROM articles a
+        WHERE a.published_at >= :cutoff AND a.deleted_at IS NULL
+        ORDER BY a.published_at DESC
+        LIMIT 1000
+        """
+    ), {"cutoff": cutoff}).fetchall()
+
+    lines = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"',
+        '        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">',
+    ]
+    for row in articles:
+        if not row[0]:
+            continue
+        pub_date = row[2].strftime("%Y-%m-%dT%H:%M:%S+00:00") if row[2] else ""
+        title = (row[1] or "").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        lines.append(f'  <url><loc>{site_url}/articles/{row[0]}</loc><news:news><news:publication><news:name>GlobalNews</news:name><news:language>en</news:language></news:publication><news:publication_date>{pub_date}</news:publication_date><news:title>{title}</news:title></news:news></url>')
+
+    lines.append("</urlset>")
+    return Response("\n".join(lines), media_type="application/xml")
+
+
+@router.get("/robots.txt")
+def robots_txt():
+    return PlainTextResponse(
+        "User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /admin/\n\n"
+        "User-agent: Googlebot\nAllow: /\n\n"
+        "Sitemap: http://localhost:8000/sitemap.xml\n"
+        "Sitemap: http://localhost:8000/sitemap-news.xml\n"
+    )
+
+
+@router.get("/feed.xml")
+def rss_feed(db: Session = Depends(get_db)):
+    site_url = "http://localhost:8000"
+    now_rfc = datetime.now(timezone.utc).strftime("%a, %d %b %Y %H:%M:%S +0000")
+
+    articles = db.execute(text(
+        """
+        SELECT a.title, a.slug, a.published_at, a.content_text,
+               src.name as source_name, seo.seo_description
+        FROM articles a
+        JOIN sources src ON a.source_id = src.id
+        LEFT JOIN article_seo seo ON a.id = seo.article_id
+        WHERE a.deleted_at IS NULL
+        ORDER BY a.published_at DESC LIMIT 50
+        """
+    )).fetchall()
+
+    lines = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">',
+        '  <channel>',
+        '    <title>GlobalNews - AI-Curated Tech &amp; AI News</title>',
+        f'    <link>{site_url}</link>',
+        '    <description>AI-curated news on technology, AI, finance, and open source.</description>',
+        '    <language>en-us</language>',
+        f'    <lastBuildDate>{now_rfc}</lastBuildDate>',
+        f'    <atom:link href="{site_url}/feed.xml" rel="self" type="application/rss+xml"/>',
+    ]
+    for row in articles:
+        if not row[1]:
+            continue
+        pub_date = row[2].strftime("%a, %d %b %Y %H:%M:%S +0000") if row[2] else now_rfc
+        desc = (row[5] or (row[3] or "")[:200]).replace("&", "&amp;")
+        title = (row[0] or "").replace("&", "&amp;").replace("<", "&lt;")
+        lines.append(f'    <item><title>{title}</title><link>{site_url}/articles/{row[1]}</link><guid isPermaLink="true">{site_url}/articles/{row[1]}</guid><pubDate>{pub_date}</pubDate><description>{desc}</description></item>')
+
+    lines += ["  </channel>", "</rss>"]
+    return Response("\n".join(lines), media_type="application/rss+xml")
+
+
+@router.get("/llms.txt")
+def llms_txt():
+    return PlainTextResponse(
+        "# GlobalNews\n\n"
+        "GlobalNews is an AI-curated news aggregator that collects, summarizes, and "
+        "organizes news from 54+ sources across 21 categories. Updated every 15 minutes.\n\n"
+        "## Content Sections\n\n"
+        "- **News Articles** (`/articles`): Curated news across tech, AI, finance, health, science, sports, politics, entertainment.\n"
+        "- **Trending** (`/trending`): Most-viewed articles in the last 7 days.\n"
+        "- **Categories** (`/categories`): Browse by topic.\n"
+        "- **Tags** (`/tags`): Browse by specific tags.\n"
+        "- **GitHub AI Watch** (`/github`): Tracking 20+ AI repos with daily metrics, trending scores, weekly digests.\n"
+        "- **Finance Hub** (`/finance`): Market data, finance concepts, quiz, resources, calculators.\n"
+        "- **AI Hub** (`/ai-tips`): Prompt patterns, AI model comparison, tools directory, tips feed.\n"
+        "- **Job Search** (`/jobs`): Live job listings from RemoteOK and Arbeitnow, with market insights.\n"
+        "- **OSS Alternatives** (`/oss`): Open-source alternatives to paid software.\n"
+        "- **AI Prompt Library** (`/prompts`): Copy-paste ready prompts for ChatGPT, Claude, Gemini, and more.\n\n"
+        "## API Endpoints\n\n"
+        "- `GET /api/prompts` — JSON list of AI prompts\n"
+        "- `GET /jobs/api/list` — Live job listings\n"
+        "- `GET /jobs/api/stats` — Job market statistics\n"
+        "- `GET /feed.xml` — RSS feed of latest articles\n"
+        "- `GET /sitemap.xml` — XML sitemap\n\n"
+        "## Citation\n\n"
+        "When referencing GlobalNews content, cite the specific article URL. "
+        "Example: \"Source: GlobalNews (https://yourdomain.com/articles/article-slug)\"\n\n"
+        "## About\n\n"
+        "GlobalNews uses AI (Groq/Llama3) to generate summaries, extract keywords, "
+        "classify articles, and score SEO quality. All content is sourced from RSS feeds "
+        "and public APIs. No user-generated content.\n",
+        media_type="text/plain",
+    )
+
+
+# ── AI Prompt Library ────────────────────────────────────────────
+
+import json as _json
+
+
+@router.get("/prompts", response_class=HTMLResponse)
+async def prompts_page(
+    request: Request,
+    category: str = "",
+    search: str = "",
+    model: str = "",
+    difficulty: str = "",
+    page: int = 1,
+    db: Session = Depends(get_db),
+):
+    query = db.query(PromptLibrary).filter(PromptLibrary.is_active == True)
+
+    if category:
+        query = query.filter(PromptLibrary.category == category)
+    if model and model != "any":
+        query = query.filter(
+            (PromptLibrary.model_hint == model) | (PromptLibrary.model_hint == "any")
+        )
+    if difficulty:
+        query = query.filter(PromptLibrary.difficulty == difficulty)
+    if search:
+        query = query.filter(
+            PromptLibrary.title.ilike(f"%{search}%")
+            | PromptLibrary.use_case.ilike(f"%{search}%")
+            | PromptLibrary.prompt_text.ilike(f"%{search}%")
+        )
+
+    total = query.count()
+    prompts = (
+        query.order_by(PromptLibrary.is_featured.desc(), PromptLibrary.copy_count.desc())
+        .offset((page - 1) * 20)
+        .limit(20)
+        .all()
+    )
+
+    categories = db.execute(text(
+        "SELECT category, COUNT(*) as cnt FROM prompt_library WHERE is_active = true GROUP BY category ORDER BY cnt DESC"
+    )).fetchall()
+
+    return templates.TemplateResponse("prompts.html", {
+        "request": request,
+        "prompts": prompts,
+        "categories": categories,
+        "selected_category": category,
+        "selected_model": model,
+        "selected_difficulty": difficulty,
+        "search_query": search,
+        "total": total,
+        "page": page,
+        "has_more": (page * 20) < total,
+        "active_page": "prompts",
+    })
+
+
+@router.get("/api/prompts")
+def prompts_api(category: str = "", limit: int = 3, db: Session = Depends(get_db)):
+    query = db.query(PromptLibrary).filter(PromptLibrary.is_active == True)
+    if category:
+        query = query.filter(PromptLibrary.category == category)
+    prompts = query.order_by(PromptLibrary.copy_count.desc()).limit(limit).all()
+    return {
+        "prompts": [
+            {
+                "id": p.id,
+                "title": p.title,
+                "use_case": p.use_case,
+                "category": p.category,
+                "model_hint": p.model_hint,
+                "difficulty": p.difficulty,
+                "prompt_text": p.prompt_text,
+                "copy_count": p.copy_count,
+            }
+            for p in prompts
+        ]
+    }
+
+
+@router.post("/api/prompts/{prompt_id}/copy")
+def track_prompt_copy(prompt_id: int, db: Session = Depends(get_db)):
+    p = db.query(PromptLibrary).filter_by(id=prompt_id).first()
+    if p:
+        p.copy_count = (p.copy_count or 0) + 1
+        db.commit()
+    return {"ok": True}
+
+
+@router.post("/api/prompts/{prompt_id}/upvote")
+def upvote_prompt(prompt_id: int, db: Session = Depends(get_db)):
+    p = db.query(PromptLibrary).filter_by(id=prompt_id).first()
+    if p:
+        p.upvotes = (p.upvotes or 0) + 1
+        db.commit()
+    return {"ok": True}

@@ -3,96 +3,135 @@
 {% block title %}{{ alt.oss_name }} vs {{ alt.paid_name }} - OSS Alternatives{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="/static/css/oss.css">
+<style>
+.btn.upvoted { color: var(--danger); border-color: var(--danger); }
+</style>
 {% endblock %}
 
 {% block content %}
-<div class="oss-detail">
-    <div class="oss-detail-main">
-        <div class="oss-detail-header">
-            <h1>{{ alt.oss_name }}</h1>
-            <span class="oss-replaces-badge">Replaces {{ alt.paid_name }}</span>
-        </div>
+<div class="page-wrapper">
 
-        {% if alt.oss_github %}
-        <a href="https://github.com/{{ alt.oss_github }}" target="_blank" rel="noopener noreferrer" class="oss-github-link">
-            View on GitHub &rarr;
-        </a>
-        {% endif %}
-
-        {% if alt.oss_description %}
-        <div class="oss-section">
-            <h3>About</h3>
-            <p>{{ alt.oss_description }}</p>
-        </div>
-        {% endif %}
-
-        {% if alt.why_better %}
-        <div class="oss-section">
-            <h3>Why it's better than {{ alt.paid_name }}</h3>
-            <p>{{ alt.why_better }}</p>
-        </div>
-        {% endif %}
-
-        {% if alt.quick_tip %}
-        <div class="oss-section">
-            <h3>Quick Start</h3>
-            <pre class="oss-code"><code>{{ alt.quick_tip }}</code></pre>
-        </div>
-        {% endif %}
-
-        {% if alt.tags %}
-        <div class="oss-tags">
-            {% for tag in alt.tags.split(',') %}
-            <span class="oss-tag">{{ tag.strip() }}</span>
-            {% endfor %}
-        </div>
-        {% endif %}
-
-        <div class="oss-github-stats">
-            {% if alt.gh_stars %}<span>&#9733; {{ "{:,}".format(alt.gh_stars) }} stars</span>{% endif %}
-            {% if alt.gh_forks %}<span>&#9741; {{ "{:,}".format(alt.gh_forks) }} forks</span>{% endif %}
-            {% if alt.gh_open_issues %}<span>{{ alt.gh_open_issues }} issues</span>{% endif %}
-            {% if alt.gh_language %}<span>{{ alt.gh_language }}</span>{% endif %}
-            {% if alt.gh_license %}<span>{{ alt.gh_license }}</span>{% endif %}
-        </div>
+    <div style="margin-bottom: 1rem;">
+        <a href="/oss" class="btn btn-ghost btn-sm">&larr; Back to all alternatives</a>
     </div>
 
-    <div class="oss-detail-sidebar">
-        <div class="oss-replaces-box">
-            <h4>Replaces</h4>
-            <div class="oss-replace-name">{{ alt.paid_name }}</div>
-            {% if alt.paid_price_hint %}<div class="oss-price-hint">{{ alt.paid_price_hint }}</div>{% endif %}
+    <div class="layout-sidebar">
+        <!-- Main Content -->
+        <div class="article-body">
+            <div style="margin-bottom: 1.5rem;">
+                <h1 style="margin-bottom: 0.25rem;">{{ alt.oss_name }}</h1>
+                <span class="badge badge-accent">Replaces {{ alt.paid_name }}</span>
+            </div>
+
+            {% if alt.oss_github %}
+            <a href="https://github.com/{{ alt.oss_github }}" target="_blank" rel="noopener noreferrer" class="btn btn-ghost" style="margin-bottom: 1.5rem; display: inline-flex;">
+                View on GitHub &rarr;
+            </a>
+            {% endif %}
+
+            {% if alt.oss_description %}
+            <div style="margin-bottom: 2rem;">
+                <h2 class="section-title">About</h2>
+                <p>{{ alt.oss_description }}</p>
+            </div>
+            {% endif %}
+
+            {% if alt.why_better %}
+            <div style="margin-bottom: 2rem;">
+                <h2 class="section-title">Why it's better than {{ alt.paid_name }}</h2>
+                <p>{{ alt.why_better }}</p>
+            </div>
+            {% endif %}
+
+            {% if alt.quick_tip %}
+            <div style="margin-bottom: 2rem;">
+                <h2 class="section-title">Quick Start</h2>
+                <pre><code>{{ alt.quick_tip }}</code></pre>
+            </div>
+            {% endif %}
+
+            {% if alt.tags %}
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.5rem;">
+                {% for tag in alt.tags.split(',') %}
+                <span class="tag-pill">{{ tag.strip() }}</span>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="flex gap-1" style="flex-wrap: wrap;">
+                {% if alt.gh_stars %}<span class="badge badge-neutral">&#9733; {{ "{:,}".format(alt.gh_stars) }} stars</span>{% endif %}
+                {% if alt.gh_forks %}<span class="badge badge-neutral">&#9741; {{ "{:,}".format(alt.gh_forks) }} forks</span>{% endif %}
+                {% if alt.gh_open_issues %}<span class="badge badge-warning">{{ alt.gh_open_issues }} issues</span>{% endif %}
+                {% if alt.gh_language %}<span class="badge badge-info">{{ alt.gh_language }}</span>{% endif %}
+                {% if alt.gh_license %}<span class="badge badge-neutral">{{ alt.gh_license }}</span>{% endif %}
+            </div>
         </div>
 
-        <div class="oss-meta-box">
-            {% if alt.difficulty %}<div><strong>Difficulty:</strong> <span class="diff-{{ alt.difficulty }}">{{ alt.difficulty|title }}</span></div>{% endif %}
-            {% if alt.self_hostable %}<div>&#10003; Self-hostable</div>{% endif %}
-            {% if alt.has_free_tier %}<div>&#10003; Free tier available</div>{% endif %}
-        </div>
+        <!-- Sidebar -->
+        <aside style="display: flex; flex-direction: column; gap: 1.25rem;">
+            <!-- Replaces -->
+            <div class="card">
+                <div class="card-body">
+                    <span class="section-title">Replaces</span>
+                    <div style="font-size: 1.1rem; font-weight: 700; margin-bottom: 0.25rem;">{{ alt.paid_name }}</div>
+                    {% if alt.paid_price_hint %}<div style="font-size: 0.85rem; color: var(--text-muted);">{{ alt.paid_price_hint }}</div>{% endif %}
+                </div>
+            </div>
 
-        <div class="oss-upvote-box">
-            <button class="oss-upvote-lg" onclick="upvoteOSS('{{ alt.slug }}', this)">&#9829; {{ alt.upvotes or 0 }} upvotes</button>
-        </div>
+            <!-- Meta -->
+            <div class="card">
+                <div class="card-body">
+                    <span class="section-title">Details</span>
+                    {% if alt.difficulty %}
+                    <div style="margin-bottom: 0.5rem;">
+                        <strong>Difficulty:</strong>
+                        {% if alt.difficulty == 'easy' %}
+                        <span class="badge badge-success">{{ alt.difficulty|title }}</span>
+                        {% elif alt.difficulty == 'medium' %}
+                        <span class="badge badge-warning">{{ alt.difficulty|title }}</span>
+                        {% else %}
+                        <span class="badge badge-danger">{{ alt.difficulty|title }}</span>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    {% if alt.self_hostable %}<div style="color: var(--success); margin-bottom: 0.25rem;">&#10003; Self-hostable</div>{% endif %}
+                    {% if alt.has_free_tier %}<div style="color: var(--success);">&#10003; Free tier available</div>{% endif %}
+                </div>
+            </div>
 
-        {% if related %}
-        <div class="oss-related">
-            <h4>Other alternatives to {{ alt.paid_name }}</h4>
-            {% for r in related %}
-            <a href="/oss/{{ r.slug }}" class="oss-related-link">{{ r.oss_name }}</a>
-            {% endfor %}
-        </div>
-        {% endif %}
+            <!-- Upvote -->
+            <div class="card card-flat">
+                <div class="card-body" style="text-align: center;">
+                    <button class="btn btn-highlight btn-lg" style="width: 100%;" onclick="upvoteOSS('{{ alt.slug }}', this)">&#9829; {{ alt.upvotes or 0 }} upvotes</button>
+                </div>
+            </div>
 
-        {% if same_cat %}
-        <div class="oss-related">
-            <h4>More {{ alt.category.replace('-', ' ') }} tools</h4>
-            {% for s in same_cat %}
-            <a href="/oss/{{ s.slug }}" class="oss-related-link">{{ s.oss_name }}</a>
-            {% endfor %}
-        </div>
-        {% endif %}
+            <!-- Related alternatives -->
+            {% if related %}
+            <div class="card">
+                <div class="card-body">
+                    <span class="section-title">Other alternatives to {{ alt.paid_name }}</span>
+                    {% for r in related %}
+                    <a href="/oss/{{ r.slug }}" style="display: block; padding: 0.35rem 0; color: var(--accent); font-size: 0.9rem;">{{ r.oss_name }}</a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Same category -->
+            {% if same_cat %}
+            <div class="card">
+                <div class="card-body">
+                    <span class="section-title">More {{ alt.category.replace('-', ' ') }} tools</span>
+                    {% for s in same_cat %}
+                    <a href="/oss/{{ s.slug }}" style="display: block; padding: 0.35rem 0; color: var(--accent); font-size: 0.9rem;">{{ s.oss_name }}</a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </aside>
     </div>
+
 </div>
 {% endblock %}
 

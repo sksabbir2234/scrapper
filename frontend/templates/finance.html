@@ -3,170 +3,237 @@
 {% block title %}Finance Learning Hub - Global News Aggregator{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="/static/css/finance.css">
+<style>
+.finance-content { display: none; }
+.finance-content.active { display: block; }
+</style>
 {% endblock %}
 
 {% block content %}
-<div class="finance-header">
-    <h1>Finance Learning Hub</h1>
-    <p class="subtitle">Learn finance by doing, not just reading</p>
-</div>
+<div class="page-wrapper">
 
-<div class="finance-tabs">
-    <button class="finance-tab active" onclick="switchFinanceTab('concept')">Concept of the Day</button>
-    <button class="finance-tab" onclick="switchFinanceTab('markets')">Markets</button>
-    <button class="finance-tab" onclick="switchFinanceTab('resources')">Resources</button>
-    <button class="finance-tab" onclick="switchFinanceTab('calculators')">Calculators</button>
-    <button class="finance-tab" onclick="switchFinanceTab('quiz')">Quiz</button>
-    <button class="finance-tab" onclick="switchFinanceTab('glossary')">Glossary</button>
-    <button class="finance-tab" onclick="switchFinanceTab('news')">Finance News</button>
-</div>
-
-<!-- Concept of the Day -->
-<div id="tab-concept" class="finance-content active">
-    <div id="concept-card" class="concept-card">
-        <p>Loading today's concept...</p>
+    <div class="flex-between" style="margin-bottom: 1.5rem;">
+        <div>
+            <h1>Finance Learning Hub</h1>
+            <p style="color: var(--text-light); margin: 0.25rem 0 0;">Learn finance by doing, not just reading</p>
+        </div>
     </div>
-</div>
 
-<!-- Markets -->
-<div id="tab-markets" class="finance-content">
-    <div id="market-data" class="market-grid">
-        <p>Loading market data...</p>
+    <!-- Market Ticker -->
+    <div class="market-ticker" id="market-ticker">
+        <div class="market-item" style="text-align: center; color: var(--text-muted);">Loading market data...</div>
     </div>
-</div>
 
-<!-- Resources -->
-<div id="tab-resources" class="finance-content">
-    <div class="resource-filters">
-        <select id="resource-level" onchange="loadResources()">
-            <option value="">All Levels</option>
-            <option value="beginner">Beginner</option>
-            <option value="intermediate">Intermediate</option>
-            <option value="advanced">Advanced</option>
-        </select>
-        <select id="resource-topic" onchange="loadResources()">
-            <option value="">All Topics</option>
-            <option value="investing">Investing</option>
-            <option value="stocks">Stocks</option>
-            <option value="personal_finance">Personal Finance</option>
-            <option value="trading">Trading</option>
-            <option value="basics">Basics</option>
-        </select>
+    <!-- Tab Navigation -->
+    <div class="filter-tabs">
+        <button class="filter-tab active" onclick="switchFinanceTab('concept')">Concept of the Day</button>
+        <button class="filter-tab" onclick="switchFinanceTab('markets')">Markets</button>
+        <button class="filter-tab" onclick="switchFinanceTab('resources')">Resources</button>
+        <button class="filter-tab" onclick="switchFinanceTab('calculators')">Calculators</button>
+        <button class="filter-tab" onclick="switchFinanceTab('quiz')">Quiz</button>
+        <button class="filter-tab" onclick="switchFinanceTab('glossary')">Glossary</button>
+        <button class="filter-tab" onclick="switchFinanceTab('news')">Finance News</button>
     </div>
-    <div id="resource-list" class="resource-grid">
-        <p>Loading resources...</p>
-    </div>
-</div>
 
-<!-- Calculators -->
-<div id="tab-calculators" class="finance-content">
-    <div class="calculator-grid">
-        <!-- Compound Interest -->
-        <div class="calculator-card">
-            <h3>Compound Interest</h3>
-            <div class="calc-inputs">
-                <label>Principal ($)<input type="number" id="ci-principal" value="10000"></label>
-                <label>Annual Rate (%)<input type="number" id="ci-rate" value="8" step="0.1"></label>
-                <label>Years<input type="number" id="ci-years" value="10"></label>
-                <label>Compounding
-                    <select id="ci-freq">
-                        <option value="1">Annually</option>
-                        <option value="4">Quarterly</option>
-                        <option value="12" selected>Monthly</option>
-                        <option value="365">Daily</option>
+    <!-- Concept of the Day -->
+    <div id="tab-concept" class="finance-content active">
+        <div class="card">
+            <div class="card-body" id="concept-card">
+                <p>Loading today's concept...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Markets -->
+    <div id="tab-markets" class="finance-content">
+        <div id="market-data" class="market-ticker">
+            <p>Loading market data...</p>
+        </div>
+    </div>
+
+    <!-- Resources -->
+    <div id="tab-resources" class="finance-content">
+        <div class="card card-flat" style="margin-bottom: 1.25rem;">
+            <div class="card-body">
+                <div class="flex gap-2" style="flex-wrap: wrap;">
+                    <select id="resource-level" onchange="loadResources()" class="search-input" style="width: auto; flex: 1; min-width: 140px;">
+                        <option value="">All Levels</option>
+                        <option value="beginner">Beginner</option>
+                        <option value="intermediate">Intermediate</option>
+                        <option value="advanced">Advanced</option>
                     </select>
-                </label>
+                    <select id="resource-topic" onchange="loadResources()" class="search-input" style="width: auto; flex: 1; min-width: 140px;">
+                        <option value="">All Topics</option>
+                        <option value="investing">Investing</option>
+                        <option value="stocks">Stocks</option>
+                        <option value="personal_finance">Personal Finance</option>
+                        <option value="trading">Trading</option>
+                        <option value="basics">Basics</option>
+                    </select>
+                </div>
             </div>
-            <button class="calc-btn" onclick="calcCompound()">Calculate</button>
-            <div id="ci-result" class="calc-result"></div>
         </div>
-
-        <!-- SIP / DCA -->
-        <div class="calculator-card">
-            <h3>SIP / DCA Returns</h3>
-            <div class="calc-inputs">
-                <label>Monthly Amount ($)<input type="number" id="sip-monthly" value="500"></label>
-                <label>Expected Return (% p.a.)<input type="number" id="sip-rate" value="10" step="0.1"></label>
-                <label>Years<input type="number" id="sip-years" value="15"></label>
-            </div>
-            <button class="calc-btn" onclick="calcSIP()">Calculate</button>
-            <div id="sip-result" class="calc-result"></div>
-        </div>
-
-        <!-- EMI -->
-        <div class="calculator-card">
-            <h3>Loan EMI</h3>
-            <div class="calc-inputs">
-                <label>Loan Amount ($)<input type="number" id="emi-principal" value="200000"></label>
-                <label>Interest Rate (% p.a.)<input type="number" id="emi-rate" value="6" step="0.1"></label>
-                <label>Tenure (years)<input type="number" id="emi-years" value="30"></label>
-            </div>
-            <button class="calc-btn" onclick="calcEMI()">Calculate</button>
-            <div id="emi-result" class="calc-result"></div>
-        </div>
-
-        <!-- Rule of 72 -->
-        <div class="calculator-card">
-            <h3>Rule of 72</h3>
-            <div class="calc-inputs">
-                <label>Expected Return (%)<input type="number" id="r72-rate" value="8" step="0.1"></label>
-            </div>
-            <button class="calc-btn" onclick="calcRule72()">Calculate</button>
-            <div id="r72-result" class="calc-result"></div>
-        </div>
-
-        <!-- Position Sizing -->
-        <div class="calculator-card">
-            <h3>Position Sizing</h3>
-            <div class="calc-inputs">
-                <label>Account Size ($)<input type="number" id="ps-account" value="50000"></label>
-                <label>Risk per Trade (%)<input type="number" id="ps-risk" value="2" step="0.1"></label>
-                <label>Entry Price ($)<input type="number" id="ps-entry" value="100"></label>
-                <label>Stop Loss ($)<input type="number" id="ps-stop" value="95"></label>
-            </div>
-            <button class="calc-btn" onclick="calcPosition()">Calculate</button>
-            <div id="ps-result" class="calc-result"></div>
-        </div>
-
-        <!-- P/E Fair Value -->
-        <div class="calculator-card">
-            <h3>P/E Fair Value</h3>
-            <div class="calc-inputs">
-                <label>EPS ($)<input type="number" id="pe-eps" value="5" step="0.01"></label>
-                <label>Expected Growth (%)<input type="number" id="pe-growth" value="10" step="0.1"></label>
-                <label>Benchmark P/E<input type="number" id="pe-bench" value="20"></label>
-            </div>
-            <button class="calc-btn" onclick="calcPE()">Calculate</button>
-            <div id="pe-result" class="calc-result"></div>
+        <div id="resource-list" class="grid-auto">
+            <p>Loading resources...</p>
         </div>
     </div>
-</div>
 
-<!-- Quiz -->
-<div id="tab-quiz" class="finance-content">
-    <div id="quiz-container">
-        <button class="calc-btn" onclick="loadQuiz()">Load New Quiz (10 Questions)</button>
-        <div id="quiz-questions"></div>
-        <div id="quiz-result" class="quiz-result" style="display:none;"></div>
-    </div>
-</div>
+    <!-- Calculators -->
+    <div id="tab-calculators" class="finance-content">
+        <div class="grid-auto">
+            <!-- Compound Interest -->
+            <div class="card">
+                <div class="card-body">
+                    <h3>Compound Interest</h3>
+                    <div style="display: flex; flex-direction: column; gap: 0.75rem; margin: 1rem 0;">
+                        <label style="font-size: 0.85rem; color: var(--text-light);">Principal ($)
+                            <input type="number" id="ci-principal" value="10000" class="search-input" style="margin-top: 0.25rem;">
+                        </label>
+                        <label style="font-size: 0.85rem; color: var(--text-light);">Annual Rate (%)
+                            <input type="number" id="ci-rate" value="8" step="0.1" class="search-input" style="margin-top: 0.25rem;">
+                        </label>
+                        <label style="font-size: 0.85rem; color: var(--text-light);">Years
+                            <input type="number" id="ci-years" value="10" class="search-input" style="margin-top: 0.25rem;">
+                        </label>
+                        <label style="font-size: 0.85rem; color: var(--text-light);">Compounding
+                            <select id="ci-freq" class="search-input" style="margin-top: 0.25rem;">
+                                <option value="1">Annually</option>
+                                <option value="4">Quarterly</option>
+                                <option value="12" selected>Monthly</option>
+                                <option value="365">Daily</option>
+                            </select>
+                        </label>
+                    </div>
+                    <button class="btn btn-primary" onclick="calcCompound()">Calculate</button>
+                    <div id="ci-result" style="margin-top: 1rem;"></div>
+                </div>
+            </div>
 
-<!-- Glossary -->
-<div id="tab-glossary" class="finance-content">
-    <input type="text" id="glossary-search" placeholder="Search finance terms..." oninput="filterGlossary()">
-    <div id="glossary-list" class="glossary-grid"></div>
-</div>
+            <!-- SIP / DCA -->
+            <div class="card">
+                <div class="card-body">
+                    <h3>SIP / DCA Returns</h3>
+                    <div style="display: flex; flex-direction: column; gap: 0.75rem; margin: 1rem 0;">
+                        <label style="font-size: 0.85rem; color: var(--text-light);">Monthly Amount ($)
+                            <input type="number" id="sip-monthly" value="500" class="search-input" style="margin-top: 0.25rem;">
+                        </label>
+                        <label style="font-size: 0.85rem; color: var(--text-light);">Expected Return (% p.a.)
+                            <input type="number" id="sip-rate" value="10" step="0.1" class="search-input" style="margin-top: 0.25rem;">
+                        </label>
+                        <label style="font-size: 0.85rem; color: var(--text-light);">Years
+                            <input type="number" id="sip-years" value="15" class="search-input" style="margin-top: 0.25rem;">
+                        </label>
+                    </div>
+                    <button class="btn btn-primary" onclick="calcSIP()">Calculate</button>
+                    <div id="sip-result" style="margin-top: 1rem;"></div>
+                </div>
+            </div>
 
-<!-- Finance News -->
-<div id="tab-news" class="finance-content">
-    <div class="finance-news-header">
-        <h2>Finance News</h2>
-        <p class="subtitle">Latest from Investopedia, Bloomberg, Yahoo Finance, Reddit, and more</p>
+            <!-- EMI -->
+            <div class="card">
+                <div class="card-body">
+                    <h3>Loan EMI</h3>
+                    <div style="display: flex; flex-direction: column; gap: 0.75rem; margin: 1rem 0;">
+                        <label style="font-size: 0.85rem; color: var(--text-light);">Loan Amount ($)
+                            <input type="number" id="emi-principal" value="200000" class="search-input" style="margin-top: 0.25rem;">
+                        </label>
+                        <label style="font-size: 0.85rem; color: var(--text-light);">Interest Rate (% p.a.)
+                            <input type="number" id="emi-rate" value="6" step="0.1" class="search-input" style="margin-top: 0.25rem;">
+                        </label>
+                        <label style="font-size: 0.85rem; color: var(--text-light);">Tenure (years)
+                            <input type="number" id="emi-years" value="30" class="search-input" style="margin-top: 0.25rem;">
+                        </label>
+                    </div>
+                    <button class="btn btn-primary" onclick="calcEMI()">Calculate</button>
+                    <div id="emi-result" style="margin-top: 1rem;"></div>
+                </div>
+            </div>
+
+            <!-- Rule of 72 -->
+            <div class="card">
+                <div class="card-body">
+                    <h3>Rule of 72</h3>
+                    <div style="display: flex; flex-direction: column; gap: 0.75rem; margin: 1rem 0;">
+                        <label style="font-size: 0.85rem; color: var(--text-light);">Expected Return (%)
+                            <input type="number" id="r72-rate" value="8" step="0.1" class="search-input" style="margin-top: 0.25rem;">
+                        </label>
+                    </div>
+                    <button class="btn btn-primary" onclick="calcRule72()">Calculate</button>
+                    <div id="r72-result" style="margin-top: 1rem;"></div>
+                </div>
+            </div>
+
+            <!-- Position Sizing -->
+            <div class="card">
+                <div class="card-body">
+                    <h3>Position Sizing</h3>
+                    <div style="display: flex; flex-direction: column; gap: 0.75rem; margin: 1rem 0;">
+                        <label style="font-size: 0.85rem; color: var(--text-light);">Account Size ($)
+                            <input type="number" id="ps-account" value="50000" class="search-input" style="margin-top: 0.25rem;">
+                        </label>
+                        <label style="font-size: 0.85rem; color: var(--text-light);">Risk per Trade (%)
+                            <input type="number" id="ps-risk" value="2" step="0.1" class="search-input" style="margin-top: 0.25rem;">
+                        </label>
+                        <label style="font-size: 0.85rem; color: var(--text-light);">Entry Price ($)
+                            <input type="number" id="ps-entry" value="100" class="search-input" style="margin-top: 0.25rem;">
+                        </label>
+                        <label style="font-size: 0.85rem; color: var(--text-light);">Stop Loss ($)
+                            <input type="number" id="ps-stop" value="95" class="search-input" style="margin-top: 0.25rem;">
+                        </label>
+                    </div>
+                    <button class="btn btn-primary" onclick="calcPosition()">Calculate</button>
+                    <div id="ps-result" style="margin-top: 1rem;"></div>
+                </div>
+            </div>
+
+            <!-- P/E Fair Value -->
+            <div class="card">
+                <div class="card-body">
+                    <h3>P/E Fair Value</h3>
+                    <div style="display: flex; flex-direction: column; gap: 0.75rem; margin: 1rem 0;">
+                        <label style="font-size: 0.85rem; color: var(--text-light);">EPS ($)
+                            <input type="number" id="pe-eps" value="5" step="0.01" class="search-input" style="margin-top: 0.25rem;">
+                        </label>
+                        <label style="font-size: 0.85rem; color: var(--text-light);">Expected Growth (%)
+                            <input type="number" id="pe-growth" value="10" step="0.1" class="search-input" style="margin-top: 0.25rem;">
+                        </label>
+                        <label style="font-size: 0.85rem; color: var(--text-light);">Benchmark P/E
+                            <input type="number" id="pe-bench" value="20" class="search-input" style="margin-top: 0.25rem;">
+                        </label>
+                    </div>
+                    <button class="btn btn-primary" onclick="calcPE()">Calculate</button>
+                    <div id="pe-result" style="margin-top: 1rem;"></div>
+                </div>
+            </div>
+        </div>
     </div>
-    <div id="finance-news-list" class="finance-news-grid">
-        <p>Loading news...</p>
+
+    <!-- Quiz -->
+    <div id="tab-quiz" class="finance-content">
+        <div class="card">
+            <div class="card-body" id="quiz-container">
+                <button class="btn btn-primary" onclick="loadQuiz()">Load New Quiz (10 Questions)</button>
+                <div id="quiz-questions" style="margin-top: 1.25rem;"></div>
+                <div id="quiz-result" class="quiz-result" style="display:none;"></div>
+            </div>
+        </div>
     </div>
+
+    <!-- Glossary -->
+    <div id="tab-glossary" class="finance-content">
+        <input type="text" id="glossary-search" placeholder="Search finance terms..." oninput="filterGlossary()" class="search-input" style="margin-bottom: 1.25rem;">
+        <div id="glossary-list" class="grid-auto"></div>
+    </div>
+
+    <!-- Finance News -->
+    <div id="tab-news" class="finance-content">
+        <h2 class="section-title">Finance News</h2>
+        <p style="color: var(--text-light); margin-bottom: 1.25rem;">Latest from Investopedia, Bloomberg, Yahoo Finance, Reddit, and more</p>
+        <div id="finance-news-list" class="grid-auto">
+            <p>Loading news...</p>
+        </div>
+    </div>
+
 </div>
 {% endblock %}
 
@@ -175,7 +242,7 @@
 // Tab switching
 function switchFinanceTab(name) {
     document.querySelectorAll('.finance-content').forEach(el => el.classList.remove('active'));
-    document.querySelectorAll('.finance-tab').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.filter-tab').forEach(el => el.classList.remove('active'));
     document.getElementById('tab-' + name).classList.add('active');
     event.target.classList.add('active');
     if (name === 'markets') loadMarket();
@@ -190,45 +257,60 @@ async function loadConcept() {
         const resp = await fetch('/finance/api/concept-of-day');
         const c = await resp.json();
         document.getElementById('concept-card').innerHTML = `
-            <div class="concept-key-stat">${c.key_stat || ''}</div>
-            <h2>${c.title}</h2>
-            <p class="concept-definition">${c.definition}</p>
-            ${c.formula ? `<div class="formula-block">${c.formula}</div>` : ''}
-            <div class="concept-example">
+            ${c.key_stat ? `<span class="badge badge-accent">${c.key_stat}</span>` : ''}
+            <h2 style="margin: 0.75rem 0;">${c.title}</h2>
+            <p style="color: var(--text-light);">${c.definition}</p>
+            ${c.formula ? `<pre><code>${c.formula}</code></pre>` : ''}
+            <div style="background: var(--bg-subtle); border-radius: var(--radius-sm); padding: 1rem; margin-top: 1rem;">
                 <h4>Example</h4>
-                <p>${c.example}</p>
+                <p style="margin: 0;">${c.example}</p>
             </div>
-            <div class="concept-why">
+            <div style="margin-top: 1rem;">
                 <h4>Why It Matters</h4>
-                <p>${c.why_it_matters}</p>
+                <p style="margin: 0; color: var(--text-light);">${c.why_it_matters}</p>
             </div>
         `;
     } catch(e) { document.getElementById('concept-card').innerHTML = '<p>Error loading concept.</p>'; }
 }
 loadConcept();
 
-// Market Data
+// Market Data (ticker at top)
 async function loadMarket() {
     try {
         const resp = await fetch('/finance/api/market');
         const data = await resp.json();
-        let html = '';
+        let tickerHtml = '';
+        let detailHtml = '';
         data.forEach(m => {
-            if (m.error) { html += `<div class="market-card error"><h3>${m.label}</h3><p>Unavailable</p></div>`; return; }
-            const color = m.change_pct >= 0 ? '#16a34a' : '#dc2626';
+            if (m.error) {
+                tickerHtml += `<div class="market-item"><strong>${m.label}</strong><div class="market-price">Unavailable</div></div>`;
+                detailHtml += `<div class="market-item"><h3>${m.label}</h3><p>Unavailable</p></div>`;
+                return;
+            }
+            const colorClass = m.change_pct >= 0 ? 'positive' : 'negative';
             const sign = m.change_pct >= 0 ? '+' : '';
-            const sparkline = m.sparkline && m.sparkline.length > 1 ? renderSparkline(m.sparkline, color) : '';
-            html += `<div class="market-card">
-                <div class="market-symbol">${m.symbol}</div>
-                <div class="market-label">${m.label}</div>
+            const sparkline = m.sparkline && m.sparkline.length > 1 ? renderSparkline(m.sparkline, m.change_pct >= 0 ? 'var(--success)' : 'var(--danger)') : '';
+            tickerHtml += `<div class="market-item">
+                <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">${m.symbol}</div>
                 <div class="market-price">$${m.price.toLocaleString()}</div>
-                <div class="market-change" style="color:${color}">${sign}${m.change_pct}%</div>
+                <div class="market-change ${colorClass}">${sign}${m.change_pct}%</div>
+            </div>`;
+            detailHtml += `<div class="market-item">
+                <div style="font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted);">${m.symbol}</div>
+                <div style="font-size: 0.85rem; color: var(--text-light); margin-bottom: 0.25rem;">${m.label}</div>
+                <div class="market-price">$${m.price.toLocaleString()}</div>
+                <div class="market-change ${colorClass}">${sign}${m.change_pct}%</div>
                 ${sparkline}
             </div>`;
         });
-        document.getElementById('market-data').innerHTML = html || '<p>No market data available.</p>';
-    } catch(e) { document.getElementById('market-data').innerHTML = '<p>Error loading market data.</p>'; }
+        document.getElementById('market-ticker').innerHTML = tickerHtml || '<div class="market-item"><p>No market data available.</p></div>';
+        document.getElementById('market-data').innerHTML = detailHtml || '<p>No market data available.</p>';
+    } catch(e) {
+        document.getElementById('market-ticker').innerHTML = '<div class="market-item"><p>Error loading market data.</p></div>';
+        document.getElementById('market-data').innerHTML = '<p>Error loading market data.</p>';
+    }
 }
+loadMarket();
 
 function renderSparkline(data, color) {
     const min = Math.min(...data), max = Math.max(...data);
@@ -247,11 +329,16 @@ async function loadResources() {
         const data = await resp.json();
         let html = '';
         data.forEach(r => {
-            html += `<div class="resource-card">
-                <span class="resource-type">${r.resource_type}</span>
-                <span class="resource-level level-${r.level}">${r.level}</span>
-                <h3><a href="${r.url}" target="_blank" rel="noopener noreferrer">${r.title}</a></h3>
-                <p>${r.description}</p>
+            const levelClass = r.level === 'beginner' ? 'badge-success' : r.level === 'intermediate' ? 'badge-warning' : 'badge-danger';
+            html += `<div class="card">
+                <div class="card-body">
+                    <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">
+                        <span class="badge badge-info">${r.resource_type}</span>
+                        <span class="badge ${levelClass}">${r.level}</span>
+                    </div>
+                    <h3><a href="${r.url}" target="_blank" rel="noopener noreferrer">${r.title}</a></h3>
+                    <p style="color: var(--text-light); margin: 0;">${r.description}</p>
+                </div>
             </div>`;
         });
         document.getElementById('resource-list').innerHTML = html || '<p>No resources found.</p>';
@@ -267,9 +354,9 @@ function calcCompound() {
     const A = P * Math.pow(1 + r/n, n*t);
     const interest = A - P;
     document.getElementById('ci-result').innerHTML = `
-        <div class="result-main">Final Value: <strong>$${A.toLocaleString(undefined, {maximumFractionDigits:2})}</strong></div>
-        <div class="result-detail">Total Interest: $${interest.toLocaleString(undefined, {maximumFractionDigits:2})}</div>
-        <div class="result-detail">Growth: ${((A/P - 1) * 100).toFixed(1)}%</div>`;
+        <div style="font-size: 1.1rem; font-weight: 700;">Final Value: <strong>$${A.toLocaleString(undefined, {maximumFractionDigits:2})}</strong></div>
+        <div style="font-size: 0.85rem; color: var(--text-light);">Total Interest: $${interest.toLocaleString(undefined, {maximumFractionDigits:2})}</div>
+        <div style="font-size: 0.85rem; color: var(--text-light);">Growth: ${((A/P - 1) * 100).toFixed(1)}%</div>`;
 }
 
 function calcSIP() {
@@ -280,9 +367,9 @@ function calcSIP() {
     const invested = P * n;
     const gain = FV - invested;
     document.getElementById('sip-result').innerHTML = `
-        <div class="result-main">Corpus: <strong>$${FV.toLocaleString(undefined, {maximumFractionDigits:2})}</strong></div>
-        <div class="result-detail">Invested: $${invested.toLocaleString()}</div>
-        <div class="result-detail">Gains: $${gain.toLocaleString(undefined, {maximumFractionDigits:2})}</div>`;
+        <div style="font-size: 1.1rem; font-weight: 700;">Corpus: <strong>$${FV.toLocaleString(undefined, {maximumFractionDigits:2})}</strong></div>
+        <div style="font-size: 0.85rem; color: var(--text-light);">Invested: $${invested.toLocaleString()}</div>
+        <div style="font-size: 0.85rem; color: var(--text-light);">Gains: $${gain.toLocaleString(undefined, {maximumFractionDigits:2})}</div>`;
 }
 
 function calcEMI() {
@@ -293,17 +380,17 @@ function calcEMI() {
     const total = emi * n;
     const interest = total - P;
     document.getElementById('emi-result').innerHTML = `
-        <div class="result-main">Monthly EMI: <strong>$${emi.toLocaleString(undefined, {maximumFractionDigits:2})}</strong></div>
-        <div class="result-detail">Total Payment: $${total.toLocaleString(undefined, {maximumFractionDigits:2})}</div>
-        <div class="result-detail">Total Interest: $${interest.toLocaleString(undefined, {maximumFractionDigits:2})}</div>`;
+        <div style="font-size: 1.1rem; font-weight: 700;">Monthly EMI: <strong>$${emi.toLocaleString(undefined, {maximumFractionDigits:2})}</strong></div>
+        <div style="font-size: 0.85rem; color: var(--text-light);">Total Payment: $${total.toLocaleString(undefined, {maximumFractionDigits:2})}</div>
+        <div style="font-size: 0.85rem; color: var(--text-light);">Total Interest: $${interest.toLocaleString(undefined, {maximumFractionDigits:2})}</div>`;
 }
 
 function calcRule72() {
     const r = parseFloat(document.getElementById('r72-rate').value);
     const years = 72 / r;
     document.getElementById('r72-result').innerHTML = `
-        <div class="result-main">Years to Double: <strong>${years.toFixed(1)} years</strong></div>
-        <div class="result-detail">At ${r}% annual return</div>`;
+        <div style="font-size: 1.1rem; font-weight: 700;">Years to Double: <strong>${years.toFixed(1)} years</strong></div>
+        <div style="font-size: 0.85rem; color: var(--text-light);">At ${r}% annual return</div>`;
 }
 
 function calcPosition() {
@@ -316,9 +403,9 @@ function calcPosition() {
     const shares = Math.floor(riskAmount / riskPerShare);
     const positionValue = shares * entry;
     document.getElementById('ps-result').innerHTML = `
-        <div class="result-main">Max Shares: <strong>${shares}</strong></div>
-        <div class="result-detail">Position Value: $${positionValue.toLocaleString()}</div>
-        <div class="result-detail">Max Loss: $${riskAmount.toLocaleString()}</div>`;
+        <div style="font-size: 1.1rem; font-weight: 700;">Max Shares: <strong>${shares}</strong></div>
+        <div style="font-size: 0.85rem; color: var(--text-light);">Position Value: $${positionValue.toLocaleString()}</div>
+        <div style="font-size: 0.85rem; color: var(--text-light);">Max Loss: $${riskAmount.toLocaleString()}</div>`;
 }
 
 function calcPE() {
@@ -329,9 +416,9 @@ function calcPE() {
     const fairPrice = eps * fairPE;
     const currentImplied = eps * benchPE;
     document.getElementById('pe-result').innerHTML = `
-        <div class="result-main">Fair Value: <strong>$${fairPrice.toFixed(2)}</strong></div>
-        <div class="result-detail">PEG-implied P/E: ${fairPE.toFixed(1)}</div>
-        <div class="result-detail">At benchmark P/E (${benchPE}): $${currentImplied.toFixed(2)}</div>`;
+        <div style="font-size: 1.1rem; font-weight: 700;">Fair Value: <strong>$${fairPrice.toFixed(2)}</strong></div>
+        <div style="font-size: 0.85rem; color: var(--text-light);">PEG-implied P/E: ${fairPE.toFixed(1)}</div>
+        <div style="font-size: 0.85rem; color: var(--text-light);">At benchmark P/E (${benchPE}): $${currentImplied.toFixed(2)}</div>`;
 }
 
 // Quiz
@@ -342,18 +429,20 @@ async function loadQuiz() {
         quizData = await resp.json();
         let html = '';
         quizData.forEach((q, i) => {
-            html += `<div class="quiz-question" id="q-${i}">
-                <h4>Q${i+1}. ${q.question}</h4>
-                <div class="quiz-options">
-                    <label><input type="radio" name="q${i}" value="A"> ${q.option_a}</label>
-                    <label><input type="radio" name="q${i}" value="B"> ${q.option_b}</label>
-                    <label><input type="radio" name="q${i}" value="C"> ${q.option_c}</label>
-                    <label><input type="radio" name="q${i}" value="D"> ${q.option_d}</label>
+            html += `<div class="card card-flat" style="margin-bottom: 1rem;" id="q-${i}">
+                <div class="card-body">
+                    <h4>Q${i+1}. ${q.question}</h4>
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem; margin: 0.75rem 0;">
+                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;"><input type="radio" name="q${i}" value="A"> ${q.option_a}</label>
+                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;"><input type="radio" name="q${i}" value="B"> ${q.option_b}</label>
+                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;"><input type="radio" name="q${i}" value="C"> ${q.option_c}</label>
+                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;"><input type="radio" name="q${i}" value="D"> ${q.option_d}</label>
+                    </div>
+                    <div class="quiz-explanation" id="exp-${i}" style="display:none; padding: 0.75rem 1rem; margin-top: 0.5rem; background: var(--bg-subtle); border-radius: var(--radius-sm); font-size: 0.9rem;">${q.explanation}</div>
                 </div>
-                <div class="quiz-explanation" id="exp-${i}" style="display:none;">${q.explanation}</div>
             </div>`;
         });
-        html += '<button class="calc-btn" onclick="submitQuiz()">Submit Answers</button>';
+        html += '<button class="btn btn-primary" onclick="submitQuiz()">Submit Answers</button>';
         document.getElementById('quiz-questions').innerHTML = html;
         document.getElementById('quiz-result').style.display = 'none';
     } catch(e) { document.getElementById('quiz-questions').innerHTML = '<p>Error loading quiz.</p>'; }
@@ -367,15 +456,15 @@ function submitQuiz() {
         if (selected && selected.value === q.correct_answer) {
             score++;
             expEl.style.display = 'block';
-            expEl.style.borderLeft = '3px solid #16a34a';
+            expEl.style.borderLeft = '3px solid var(--success)';
         } else {
             expEl.style.display = 'block';
-            expEl.style.borderLeft = '3px solid #dc2626';
+            expEl.style.borderLeft = '3px solid var(--danger)';
         }
     });
     const resultEl = document.getElementById('quiz-result');
     resultEl.style.display = 'block';
-    resultEl.innerHTML = `<h3>Score: ${score} / ${quizData.length}</h3><p>${score >= 8 ? 'Excellent!' : score >= 6 ? 'Good job!' : score >= 4 ? 'Keep learning!' : 'Review the concepts and try again!'}</p>`;
+    resultEl.innerHTML = `<div class="card"><div class="card-body"><h3>Score: ${score} / ${quizData.length}</h3><p>${score >= 8 ? 'Excellent!' : score >= 6 ? 'Good job!' : score >= 4 ? 'Keep learning!' : 'Review the concepts and try again!'}</p></div></div>`;
 }
 
 // Glossary
@@ -385,10 +474,12 @@ async function loadGlossary() {
         const concepts = await resp.json();
         let html = '';
         concepts.forEach(c => {
-            html += `<div class="glossary-item">
-                <h4>${c.title}</h4>
-                <p>${c.definition}</p>
-                ${c.formula ? `<div class="formula-block" style="font-size:0.85rem;padding:0.5rem 1rem;margin:0.5rem 0;">${c.formula}</div>` : ''}
+            html += `<div class="card card-flat">
+                <div class="card-body">
+                    <h4>${c.title}</h4>
+                    <p style="color: var(--text-light); margin: 0;">${c.definition}</p>
+                    ${c.formula ? `<pre style="font-size:0.85rem; padding:0.5rem 1rem; margin:0.5rem 0;"><code>${c.formula}</code></pre>` : ''}
+                </div>
             </div>`;
         });
         document.getElementById('glossary-list').innerHTML = html || '<p>No glossary entries.</p>';
@@ -397,7 +488,7 @@ async function loadGlossary() {
 
 function filterGlossary() {
     const q = document.getElementById('glossary-search').value.toLowerCase();
-    document.querySelectorAll('.glossary-item').forEach(el => {
+    document.querySelectorAll('#glossary-list .card').forEach(el => {
         el.style.display = el.textContent.toLowerCase().includes(q) ? '' : 'none';
     });
 }
@@ -409,19 +500,41 @@ async function loadFinanceNews() {
         const data = await resp.json();
         let html = '';
         data.forEach(a => {
-            html += `<div class="finance-news-card">
-                <div class="news-source">${escapeHtml(a.source)}</div>
-                <h3><a href="/articles/${a.slug}">${escapeHtml(a.title)}</a></h3>
-                ${a.summary_ai ? `<p class="news-summary">${escapeHtml(a.summary_ai)}</p>` : ''}
-                ${a.content ? `<p class="news-excerpt">${escapeHtml(a.content)}...</p>` : ''}
-                <div class="news-footer">
-                    <span class="news-date">${a.published_at}</span>
-                    <a href="${a.original_url}" target="_blank" rel="noopener noreferrer" class="news-link">Read original</a>
+            html += `<div class="card">
+                <div class="card-body">
+                    <span class="badge badge-accent" style="margin-bottom: 0.5rem;">${escapeHtml(a.source)}</span>
+                    <h3><a href="/articles/${a.slug}">${escapeHtml(a.title)}</a></h3>
+                    ${a.summary_ai ? `<p style="color: var(--text-light); font-size: 0.9rem;">${escapeHtml(a.summary_ai)}</p>` : ''}
+                    ${a.content ? `<p style="color: var(--text-muted); font-size: 0.85rem;">${truncate(a.content, 200)}</p>` : ''}
+                    <div class="flex-between" style="margin-top: 0.75rem;">
+                        <span style="font-size: 0.78rem; color: var(--text-muted);">${a.published_at}</span>
+                        <a href="${a.original_url}" target="_blank" rel="noopener noreferrer" class="btn btn-ghost btn-sm">Read original</a>
+                    </div>
                 </div>
             </div>`;
         });
         document.getElementById('finance-news-list').innerHTML = html || '<p>No finance news yet. Run the scraper to fetch content from finance sources.</p>';
     } catch(e) { document.getElementById('finance-news-list').innerHTML = '<p>Error loading news.</p>'; }
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function stripHtml(html) {
+    if (!html) return '';
+    const div = document.createElement('div');
+    div.innerHTML = html;
+    return div.textContent || div.innerText || '';
+}
+
+function truncate(text, len) {
+    if (!text) return '';
+    text = stripHtml(text);
+    return text.length > len ? text.substring(0, len) + '...' : text;
 }
 </script>
 {% endblock %}

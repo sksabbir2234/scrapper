@@ -3,74 +3,57 @@
 {% block title %}AI Tips & Tricks - Global News Aggregator{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="/static/css/ai-tips.css">
+<style>
+.ai-content { display: none; }
+.ai-content.active { display: block; }
+.btn.liked { color: var(--danger); border-color: var(--danger); }
+</style>
 {% endblock %}
 
 {% block content %}
-<div class="ai-header">
-    <h1>AI Tips & Tricks</h1>
-    <p class="subtitle">Actionable AI knowledge — prompt patterns, tools, and techniques</p>
-</div>
+<div class="page-wrapper">
 
-<div class="ai-tabs">
-    <button class="ai-tab active" onclick="switchAITab('patterns')">Prompt Patterns</button>
-    <button class="ai-tab" onclick="switchAITab('models')">Model Comparison</button>
-    <button class="ai-tab" onclick="switchAITab('tools')">Tools</button>
-    <button class="ai-tab" onclick="switchAITab('tips')">Quick Tips</button>
-    <button class="ai-tab" onclick="switchAITab('digest')">Weekly Digest</button>
-</div>
+    <h1 style="margin-bottom: 0.25rem;">AI Tips & Tricks</h1>
+    <p style="color: var(--text-light); margin-bottom: 1.5rem;">AI models, tools, tips, and weekly digest. For prompts, visit <a href="/prompts">Prompt Library</a>.</p>
 
-<!-- Prompt Patterns -->
-<div id="tab-patterns" class="ai-content active">
-    <div class="pattern-filters">
-        <select id="pattern-category" onchange="loadPatterns()">
-            <option value="">All Categories</option>
-            <option value="reasoning">Reasoning</option>
-            <option value="coding">Coding</option>
-            <option value="writing">Writing</option>
-            <option value="analysis">Analysis</option>
-            <option value="creative">Creative</option>
-            <option value="general">General</option>
-            <option value="system">System</option>
-            <option value="debugging">Debugging</option>
-        </select>
-        <input type="text" id="pattern-search" placeholder="Search patterns..." oninput="loadPatterns()">
+    <!-- Tab Navigation -->
+    <div class="filter-tabs">
+        <button class="filter-tab active" onclick="switchAITab('models')">Model Comparison</button>
+        <button class="filter-tab" onclick="switchAITab('tools')">Tools</button>
+        <button class="filter-tab" onclick="switchAITab('tips')">Quick Tips</button>
+        <button class="filter-tab" onclick="switchAITab('digest')">Weekly Digest</button>
     </div>
-    <div id="pattern-list" class="pattern-grid">
-        <p>Loading patterns...</p>
-    </div>
-</div>
 
-<!-- Model Comparison -->
-<div id="tab-models" class="ai-content">
-    <div id="model-list" class="model-grid">
-        <p>Loading models...</p>
+    <!-- Model Comparison -->
+    <div id="tab-models" class="ai-content active">
+        <div id="model-list">
+            <p>Loading models...</p>
+        </div>
     </div>
-</div>
 
-<!-- Tools -->
-<div id="tab-tools" class="ai-content">
-    <div id="tool-list" class="tool-grid">
-        <p>Loading tools...</p>
+    <!-- Tools -->
+    <div id="tab-tools" class="ai-content">
+        <div id="tool-list" class="grid-auto">
+            <p>Loading tools...</p>
+        </div>
     </div>
-</div>
 
-<!-- Quick Tips -->
-<div id="tab-tips" class="ai-content">
-    <div id="tip-list" class="tip-feed">
-        <p>Loading tips...</p>
+    <!-- Quick Tips -->
+    <div id="tab-tips" class="ai-content">
+        <div id="tip-list" style="display: flex; flex-direction: column; gap: 1rem;">
+            <p>Loading tips...</p>
+        </div>
     </div>
-</div>
 
-<!-- Weekly Digest -->
-<div id="tab-digest" class="ai-content">
-    <div class="digest-header">
-        <h2>AI Weekly Digest</h2>
-        <p class="subtitle">Latest from AI blogs, research, Reddit, and GitHub</p>
+    <!-- Weekly Digest -->
+    <div id="tab-digest" class="ai-content">
+        <h2 class="section-title">AI Weekly Digest</h2>
+        <p style="color: var(--text-light); margin-bottom: 1.25rem;">Latest from AI blogs, research, Reddit, and GitHub</p>
+        <div id="digest-list" class="grid-auto">
+            <p>Loading digest...</p>
+        </div>
     </div>
-    <div id="digest-list" class="digest-grid">
-        <p>Loading digest...</p>
-    </div>
+
 </div>
 {% endblock %}
 
@@ -78,64 +61,38 @@
 <script>
 function switchAITab(name) {
     document.querySelectorAll('.ai-content').forEach(el => el.classList.remove('active'));
-    document.querySelectorAll('.ai-tab').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.filter-tab').forEach(el => el.classList.remove('active'));
     document.getElementById('tab-' + name).classList.add('active');
     event.target.classList.add('active');
-    if (name === 'patterns') loadPatterns();
     if (name === 'models') loadModels();
     if (name === 'tools') loadTools();
     if (name === 'tips') loadTips();
     if (name === 'digest') loadDigest();
 }
 
-// Prompt Patterns
-async function loadPatterns() {
-    const category = document.getElementById('pattern-category').value;
-    const search = document.getElementById('pattern-search').value;
-    try {
-        const resp = await fetch(`/ai-tips/api/patterns?category=${category}&search=${encodeURIComponent(search)}`);
-        const data = await resp.json();
-        let html = '';
-        data.forEach(p => {
-            html += `<div class="pattern-card">
-                <div class="pattern-header">
-                    <span class="pattern-cat cat-${p.category}">${p.category}</span>
-                    <span class="pattern-diff">${p.difficulty}</span>
-                </div>
-                <h3>${p.name}</h3>
-                <div class="pattern-text"><pre>${escapeHtml(p.pattern_text)}</pre></div>
-                <details>
-                    <summary>Example</summary>
-                    <div class="pattern-example">
-                        <p><strong>Input:</strong> ${escapeHtml(p.example_input || '')}</p>
-                        <p><strong>Output:</strong> ${escapeHtml(p.example_output || '')}</p>
-                    </div>
-                </details>
-                ${p.tips ? `<div class="pattern-tips"><strong>Tip:</strong> ${escapeHtml(p.tips)}</div>` : ''}
-            </div>`;
-        });
-        document.getElementById('pattern-list').innerHTML = html || '<p>No patterns found.</p>';
-    } catch(e) { document.getElementById('pattern-list').innerHTML = '<p>Error loading patterns.</p>'; }
-}
-loadPatterns();
-
 // Models
 async function loadModels() {
     try {
         const resp = await fetch('/ai-tips/api/models');
         const data = await resp.json();
-        let html = '<div class="model-table-wrap"><table class="model-table"><thead><tr><th>Model</th><th>Provider</th><th>Context</th><th>Pricing</th><th>Best For</th></tr></thead><tbody>';
+        let html = '<div class="card"><div class="card-body" style="overflow-x: auto;"><table style="width: 100%; border-collapse: collapse; font-size: 0.875rem;"><thead><tr>';
+        html += '<th style="text-align: left; padding: 0.6rem 0.75rem; border-bottom: 2px solid var(--border-strong); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted);">Model</th>';
+        html += '<th style="text-align: left; padding: 0.6rem 0.75rem; border-bottom: 2px solid var(--border-strong); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted);">Provider</th>';
+        html += '<th style="text-align: left; padding: 0.6rem 0.75rem; border-bottom: 2px solid var(--border-strong); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted);">Context</th>';
+        html += '<th style="text-align: left; padding: 0.6rem 0.75rem; border-bottom: 2px solid var(--border-strong); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted);">Pricing</th>';
+        html += '<th style="text-align: left; padding: 0.6rem 0.75rem; border-bottom: 2px solid var(--border-strong); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted);">Best For</th>';
+        html += '</tr></thead><tbody>';
         data.forEach(m => {
             const ctx = m.context_window ? (m.context_window >= 1000000 ? (m.context_window/1000000)+'M' : (m.context_window/1000)+'K') : '—';
-            html += `<tr>
-                <td><strong>${m.name}</strong></td>
-                <td>${m.provider || '—'}</td>
-                <td>${ctx}</td>
-                <td>${m.pricing_note || '—'}</td>
-                <td>${m.best_for || '—'}</td>
+            html += `<tr style="border-bottom: 1px solid var(--border);">
+                <td style="padding: 0.6rem 0.75rem;"><strong>${m.name}</strong></td>
+                <td style="padding: 0.6rem 0.75rem; color: var(--text-light);">${m.provider || '—'}</td>
+                <td style="padding: 0.6rem 0.75rem;"><span class="badge badge-neutral">${ctx}</span></td>
+                <td style="padding: 0.6rem 0.75rem; color: var(--text-light);">${m.pricing_note || '—'}</td>
+                <td style="padding: 0.6rem 0.75rem; color: var(--text-light);">${m.best_for || '—'}</td>
             </tr>`;
         });
-        html += '</tbody></table></div>';
+        html += '</tbody></table></div></div>';
         document.getElementById('model-list').innerHTML = data.length ? html : '<p>No model cards yet.</p>';
     } catch(e) { document.getElementById('model-list').innerHTML = '<p>Error loading models.</p>'; }
 }
@@ -147,11 +104,13 @@ async function loadTools() {
         const data = await resp.json();
         let html = '';
         data.forEach(t => {
-            html += `<div class="tool-card ${t.is_tool_of_week ? 'tool-featured' : ''}">
-                ${t.is_tool_of_week ? '<div class="tool-badge">Tool of the Week</div>' : ''}
-                <span class="tool-cat">${t.category}</span>
-                <h3><a href="${t.url}" target="_blank" rel="noopener noreferrer">${t.name}</a></h3>
-                <p>${t.description}</p>
+            html += `<div class="card${t.is_tool_of_week ? '' : ''}">
+                <div class="card-body">
+                    ${t.is_tool_of_week ? '<span class="badge badge-highlight" style="margin-bottom: 0.5rem;">Tool of the Week</span>' : ''}
+                    <span class="badge badge-neutral" style="margin-bottom: 0.5rem;">${t.category}</span>
+                    <h3><a href="${t.url}" target="_blank" rel="noopener noreferrer">${t.name}</a></h3>
+                    <p style="color: var(--text-light); margin: 0;">${t.description}</p>
+                </div>
             </div>`;
         });
         document.getElementById('tool-list').innerHTML = data.length ? html : '<p>No tools yet.</p>';
@@ -165,13 +124,15 @@ async function loadTips() {
         const data = await resp.json();
         let html = '';
         data.forEach(t => {
-            html += `<div class="tip-card ${t.is_featured ? 'tip-featured' : ''}">
-                <div class="tip-header">
-                    <span class="tip-cat">${t.category}</span>
-                    <button class="like-btn" onclick="likeTip(${t.id}, this)">&#9829; ${t.likes || 0}</button>
+            html += `<div class="card card-flat"${t.is_featured ? ' style="border-left: 3px solid var(--highlight);"' : ''}>
+                <div class="card-body">
+                    <div class="flex-between" style="margin-bottom: 0.5rem;">
+                        <span class="badge badge-accent">${t.category}</span>
+                        <button class="btn btn-ghost btn-sm" onclick="likeTip(${t.id}, this)">&#9829; ${t.likes || 0}</button>
+                    </div>
+                    <h3>${escapeHtml(t.title)}</h3>
+                    <p style="color: var(--text-light); margin: 0;">${escapeHtml(t.content)}</p>
                 </div>
-                <h3>${escapeHtml(t.title)}</h3>
-                <p>${escapeHtml(t.content)}</p>
             </div>`;
         });
         document.getElementById('tip-list').innerHTML = data.length ? html : '<p>No tips yet.</p>';
@@ -194,14 +155,16 @@ async function loadDigest() {
         const data = await resp.json();
         let html = '';
         data.forEach(a => {
-            html += `<div class="digest-card">
-                <div class="digest-source">${escapeHtml(a.source)}</div>
-                <h3><a href="/articles/${a.slug}">${escapeHtml(a.title)}</a></h3>
-                ${a.summary_ai ? `<p class="digest-summary">${escapeHtml(a.summary_ai)}</p>` : ''}
-                ${a.content ? `<p class="digest-excerpt">${escapeHtml(a.content)}...</p>` : ''}
-                <div class="digest-footer">
-                    <span class="digest-date">${a.published_at}</span>
-                    <a href="${a.original_url}" target="_blank" rel="noopener noreferrer" class="digest-link">Read original</a>
+            html += `<div class="card">
+                <div class="card-body">
+                    <span class="badge badge-accent" style="margin-bottom: 0.5rem;">${escapeHtml(a.source)}</span>
+                    <h3><a href="/articles/${a.slug}">${escapeHtml(a.title)}</a></h3>
+                    ${a.summary_ai ? `<p style="color: var(--text-light); font-size: 0.9rem;">${escapeHtml(a.summary_ai)}</p>` : ''}
+                    ${a.content ? `<p style="color: var(--text-muted); font-size: 0.85rem;">${truncate(a.content, 200)}</p>` : ''}
+                    <div class="flex-between" style="margin-top: 0.75rem;">
+                        <span style="font-size: 0.78rem; color: var(--text-muted);">${a.published_at}</span>
+                        <a href="${a.original_url}" target="_blank" rel="noopener noreferrer" class="btn btn-ghost btn-sm">Read original</a>
+                    </div>
                 </div>
             </div>`;
         });
@@ -210,9 +173,26 @@ async function loadDigest() {
 }
 
 function escapeHtml(text) {
+    if (!text) return '';
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
 }
+
+function stripHtml(html) {
+    if (!html) return '';
+    const div = document.createElement('div');
+    div.innerHTML = html;
+    return div.textContent || div.innerText || '';
+}
+
+function truncate(text, len) {
+    if (!text) return '';
+    text = stripHtml(text);
+    return text.length > len ? text.substring(0, len) + '...' : text;
+}
+
+// Load default tab
+loadModels();
 </script>
 {% endblock %}

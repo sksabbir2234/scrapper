@@ -3,15 +3,19 @@
 {% block title %}Tags - Global News Aggregator{% endblock %}
 
 {% block content %}
-<h1>Tags</h1>
-<p class="subtitle">{{ tags|length }} tags</p>
+<div class="page-wrapper">
+  <div class="content-wrap">
+    <h1>Tags</h1>
+    <p style="color: var(--text-muted); margin-bottom: 1.5rem;">{{ tags|length }} tags</p>
 
-<div class="tag-cloud">
-    {% for item in tags %}
-    <a href="/tags/{{ item.tag.slug }}" class="tag-pill">
+    <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+      {% for item in tags %}
+      <a href="/tags/{{ item.tag.slug }}" class="tag-pill">
         {{ item.tag.name }}
-        <span class="tag-count">{{ item.count }}</span>
-    </a>
-    {% endfor %}
+        <span class="badge badge-neutral" style="margin-left: 4px;">{{ item.count }}</span>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
 </div>
 {% endblock %}

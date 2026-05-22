@@ -1,34 +1,151 @@
 {% extends "base.html" %}
 
-{% block title %}Home - Global News Aggregator{% endblock %}
+{% block title %}GlobalNews — AI-Curated News{% endblock %}
 
 {% block content %}
-<h1>Latest News</h1>
+<div class="page-wrapper">
 
-{% if articles %}
-<div class="article-grid">
-    {% for article in articles %}
-    <article class="article-card">
-        <a href="/articles/{{ article.slug }}" class="article-link">
-            {% if article.image_url %}
-            <img src="{{ article.image_url }}" alt="" class="article-thumb" loading="lazy">
-            {% endif %}
-            <h2>{{ article.title }}</h2>
-            <div class="article-meta">
-                <span class="source">{{ article.source.name if article.source else 'Unknown' }}</span>
-                <span class="date">{{ article.published_at.strftime('%b %d, %Y') if article.published_at else 'Unknown date' }}</span>
-            </div>
-            {% if article.content_text %}
-            <p class="excerpt">{{ article.content_text[:200] }}...</p>
-            {% endif %}
-        </a>
-    </article>
+  <!-- Greeting -->
+  <div style="margin-bottom: 1.5rem;">
+    <h1 id="greeting" style="font-size: 1.6rem; margin-bottom: 0.25rem;">Good morning</h1>
+    <p style="color: var(--text-muted); font-size: 0.9rem; margin: 0;">Your daily briefing, curated by AI</p>
+  </div>
+
+  <!-- Category filter pills -->
+  {% if categories %}
+  <div class="filter-tabs" style="margin-bottom: 1.5rem;">
+    <a href="/" class="filter-tab active">All</a>
+    {% for cat in categories %}
+    <a href="/categories/{{ cat.slug }}" class="filter-tab">{{ cat.name }}</a>
     {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- 3-column layout -->
+  <div class="layout-3col">
+
+    <!-- Left Sidebar: Categories -->
+    <aside>
+      <div class="section-title">Categories</div>
+      <div style="display: flex; flex-direction: column; gap: 4px; margin-bottom: 2rem;">
+        {% for cat in categories %}
+        <a href="/categories/{{ cat.slug }}" style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; border-radius: var(--radius-sm); color: var(--text-light); font-size: 0.875rem; text-decoration: none; transition: all 0.2s;">
+          <span>{{ cat.name }}</span>
+        </a>
+        {% endfor %}
+      </div>
+      <a href="/categories" class="btn btn-ghost btn-sm" style="width: 100%; justify-content: center;">All Categories</a>
+    </aside>
+
+    <!-- Center: Featured + Article Grid -->
+    <div>
+      {% if articles %}
+      <!-- Featured Article (first item) -->
+      {% set featured = articles[0] %}
+      <div class="card article-card-featured" style="margin-bottom: 1.5rem;">
+        {% if featured.image_url %}
+        <img src="{{ featured.image_url }}" alt="{{ featured.title }}" class="featured-img" loading="lazy">
+        {% else %}
+        <div class="featured-img" style="display: flex; align-items: center; justify-content: center; min-height: 180px; background: var(--bg-subtle); color: var(--text-muted); font-size: 2rem;">*</div>
+        {% endif %}
+        <div class="featured-body">
+          <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 0.5rem;">
+            {% if featured.source %}
+            <span class="source-high" style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">{{ featured.source.name }}</span>
+            {% endif %}
+            {% if featured.category %}
+            <span class="badge badge-neutral">{{ featured.category }}</span>
+            {% endif %}
+          </div>
+          <a href="/articles/{{ featured.slug }}" class="title" style="text-decoration: none;">{{ featured.title }}</a>
+          <p class="summary">{{ (featured.content_text or '')[:200] }}{% if featured.content_text and featured.content_text|length > 200 %}...{% endif %}</p>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <span class="reading-time">{{ ((featured.content_text or '')|length / 5)|int }} min read</span>
+            <span style="font-size: 0.78rem; color: var(--text-muted);">{{ featured.published_at.strftime('%b %d, %Y') if featured.published_at else '' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Article Grid -->
+      <div class="section-title">Latest Articles</div>
+      <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+        {% for article in articles[1:] %}
+        <div class="card card-flat">
+          <div class="article-card">
+            {% if article.image_url %}
+            <img src="{{ article.image_url }}" alt="" class="thumb" loading="lazy">
+            {% else %}
+            <div class="thumb" style="display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 1.2rem;">*</div>
+            {% endif %}
+            <div class="content">
+              {% if article.source %}
+              <div class="source {% if article.source.credibility_score and article.source.credibility_score >= 90 %}source-high{% elif article.source.credibility_score and article.source.credibility_score >= 75 %}source-medium{% else %}source-low{% endif %}">{{ article.source.name }}</div>
+              {% endif %}
+              <a href="/articles/{{ article.slug }}" class="title" style="text-decoration: none;">{{ article.title }}</a>
+              <div class="meta">
+                {{ article.published_at.strftime('%b %d') if article.published_at else '' }}
+                {% if article.category %} &middot; {{ article.category }}{% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      {% if articles|length > 20 %}
+      <div style="text-align: center; margin-top: 2rem;">
+        <a href="/articles" class="btn btn-ghost">View All Articles</a>
+      </div>
+      {% endif %}
+
+      {% else %}
+      <div class="empty-state">
+        <div class="empty-state-icon">*</div>
+        <div class="empty-state-text">No articles yet. Run the scraper to populate content.</div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Right Sidebar: Trending -->
+    <aside>
+      <div class="section-title">Trending Now</div>
+      {% if articles %}
+      <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 2rem;">
+        {% for article in articles[:5] %}
+        <div style="display: flex; gap: 10px; align-items: flex-start;">
+          <span style="font-size: 1.2rem; font-weight: 700; color: var(--text-muted); min-width: 1.8rem; text-align: center; font-family: var(--font-sans);">{{ loop.index }}</span>
+          <div style="min-width: 0;">
+            <a href="/articles/{{ article.slug }}" style="font-family: var(--font-serif); font-size: 0.875rem; color: var(--text); line-height: 1.4; text-decoration: none; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">{{ article.title }}</a>
+            <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 2px;">{{ article.published_at.strftime('%b %d') if article.published_at else '' }}</div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      <a href="/trending" class="btn btn-ghost btn-sm" style="width: 100%; justify-content: center;">View All Trending</a>
+      {% endif %}
+
+      <div style="margin-top: 2rem;">
+        <div class="section-title">Quick Links</div>
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+          <a href="/github" style="padding: 6px 10px; border-radius: var(--radius-sm); color: var(--text-light); font-size: 0.875rem; text-decoration: none;">> GitHub Tracker</a>
+          <a href="/finance" style="padding: 6px 10px; border-radius: var(--radius-sm); color: var(--text-light); font-size: 0.875rem; text-decoration: none;">$ Finance Hub</a>
+          <a href="/ai-tips" style="padding: 6px 10px; border-radius: var(--radius-sm); color: var(--text-light); font-size: 0.875rem; text-decoration: none;">* AI Tips</a>
+          <a href="/oss" style="padding: 6px 10px; border-radius: var(--radius-sm); color: var(--text-light); font-size: 0.875rem; text-decoration: none;">OSS Alternatives</a>
+        </div>
+      </div>
+    </aside>
+
+  </div>
 </div>
-{% else %}
-<div class="empty-state">
-    <p>No articles yet. Run the scraper to fetch news!</p>
-    <code>python scripts/run_scraper.py</code>
-</div>
-{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function() {
+  var h = new Date().getHours();
+  var greeting = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+  var el = document.getElementById('greeting');
+  if (el) el.textContent = greeting;
+})();
+</script>
 {% endblock %}

@@ -1,0 +1,194 @@
+{
+  "categories": [
+    "Writing & Content",
+    "Coding & Dev",
+    "Research & Analysis",
+    "Business & Strategy",
+    "Learning & Education",
+    "SEO & Marketing",
+    "Data & Analytics",
+    "Creative & Design"
+  ],
+  "prompts": [
+    {
+      "title": "Summarize an article for social media",
+      "category": "Writing & Content",
+      "use_case": "Turn a long article into a punchy 3-line social post",
+      "model_hint": "any",
+      "difficulty": "beginner",
+      "tags": ["social", "twitter", "linkedin", "summarize"],
+      "prompt_text": "Summarize the following article into 3 punchy sentences for Twitter/X. Use active voice, include the key insight, and end with a hook. Max 280 characters total.\n\nArticle:\n{{article_text}}"
+    },
+    {
+      "title": "Generate SEO meta description",
+      "category": "SEO & Marketing",
+      "use_case": "Write a compelling 155-char meta description for any article",
+      "model_hint": "any",
+      "difficulty": "beginner",
+      "tags": ["seo", "meta", "content", "google"],
+      "prompt_text": "Write an SEO meta description for the following article. Rules: exactly 140-160 characters, include the primary keyword naturally, make it compelling with a clear benefit, no clickbait. Output ONLY the description, nothing else.\n\nArticle title: {{title}}\nArticle summary: {{summary}}\nPrimary keyword: {{keyword}}"
+    },
+    {
+      "title": "Explain a complex topic simply",
+      "category": "Learning & Education",
+      "use_case": "Break down any technical concept for a non-expert audience",
+      "model_hint": "claude",
+      "difficulty": "beginner",
+      "tags": ["explain", "simplify", "education", "eli5"],
+      "prompt_text": "Explain {{topic}} to someone with no technical background. Use:\n- A simple one-sentence definition\n- A real-world analogy they'd already understand\n- One concrete example of why it matters\n- Max 150 words total\n\nAvoid jargon. If you must use a technical term, define it immediately."
+    },
+    {
+      "title": "Competitive analysis framework",
+      "category": "Business & Strategy",
+      "use_case": "Analyze a company or product versus its competitors",
+      "model_hint": "any",
+      "difficulty": "intermediate",
+      "tags": ["business", "strategy", "analysis", "competitive"],
+      "prompt_text": "Analyze {{company/product}} versus its top 3 competitors. Structure your response as:\n\n1. Core differentiation (what makes each unique)\n2. Target customer differences\n3. Pricing strategy comparison\n4. Key weaknesses of {{company/product}}\n5. One strategic opportunity they're missing\n\nBe specific and use data where possible. No generic observations."
+    },
+    {
+      "title": "Code review checklist",
+      "category": "Coding & Dev",
+      "use_case": "Review code for security, performance, and maintainability",
+      "model_hint": "claude",
+      "difficulty": "intermediate",
+      "tags": ["code", "review", "security", "python"],
+      "prompt_text": "Review the following {{language}} code. Check for:\n\n**Security:** SQL injection, XSS, hardcoded secrets, input validation\n**Performance:** N+1 queries, missing indexes, unnecessary loops\n**Maintainability:** unclear variable names, missing error handling\n**Best practices:** follows {{language}} conventions\n\nFormat: for each issue found, state: [SEVERITY: critical/warning/info] + location + problem + fix suggestion.\n\nCode:\n```\n{{code}}\n```"
+    },
+    {
+      "title": "Research deep dive prompt",
+      "category": "Research & Analysis",
+      "use_case": "Comprehensive research on any topic with structured output",
+      "model_hint": "claude",
+      "difficulty": "intermediate",
+      "tags": ["research", "analysis", "structured", "comprehensive"],
+      "prompt_text": "Research {{topic}} comprehensively. Structure your response:\n\n**Executive Summary** (3 sentences max)\n**Key Facts** (5 bullet points)\n**Main Perspectives** (2-3 different viewpoints)\n**Recent Developments** (last 12 months)\n**Open Questions** (what experts still disagree on)\n**Further Reading** (types of sources to consult)\n\nBe precise. Flag uncertainty explicitly."
+    },
+    {
+      "title": "Newsletter intro paragraph",
+      "category": "Writing & Content",
+      "use_case": "Write an engaging newsletter opening that hooks readers",
+      "model_hint": "any",
+      "difficulty": "beginner",
+      "tags": ["newsletter", "writing", "email", "hook"],
+      "prompt_text": "Write a newsletter intro paragraph for today's edition covering: {{main_topics}}.\n\nTone: {{tone}} (e.g., casual and curious / professional and direct)\nAudience: {{audience}}\nLength: 2-3 sentences max\n\nThe first sentence must hook the reader immediately. Do NOT start with 'Welcome' or 'This week'. Output only the paragraph."
+    },
+    {
+      "title": "Python function from description",
+      "category": "Coding & Dev",
+      "use_case": "Generate a complete Python function with type hints and docstring",
+      "model_hint": "claude",
+      "difficulty": "beginner",
+      "tags": ["python", "code", "function", "generation"],
+      "prompt_text": "Write a Python function that {{description}}.\n\nRequirements:\n- Full type hints on all parameters and return value\n- Google-style docstring with Args, Returns, Raises sections\n- Handle edge cases: {{edge_cases}}\n- No external dependencies unless specified\n- Include 2 example usages in the docstring\n\nOutput only the function code, no explanation."
+    },
+    {
+      "title": "Turn data into story",
+      "category": "Data & Analytics",
+      "use_case": "Transform raw numbers into a compelling narrative",
+      "model_hint": "any",
+      "difficulty": "intermediate",
+      "tags": ["data", "storytelling", "narrative", "insights"],
+      "prompt_text": "Transform the following data into a compelling 3-paragraph narrative:\n\n{{data}}\n\nParagraph 1: The surprising headline finding\nParagraph 2: Context that explains why this happened\nParagraph 3: What this means going forward\n\nUse concrete numbers. Avoid passive voice. Write for a non-technical executive audience."
+    },
+    {
+      "title": "Startup pitch critique",
+      "category": "Business & Strategy",
+      "use_case": "Get brutal honest feedback on a startup idea like a VC would",
+      "model_hint": "claude",
+      "difficulty": "advanced",
+      "tags": ["startup", "pitch", "vc", "feedback", "critique"],
+      "prompt_text": "Act as a skeptical but fair venture capitalist evaluating this startup idea:\n\n{{startup_idea}}\n\nEvaluate:\n1. Market size - is it big enough?\n2. Timing - why now?\n3. Team fit - what expertise is needed?\n4. Competition - who already does this?\n5. Business model risk - most likely failure mode?\n6. Killer question - the hardest question an investor would ask\n\nBe direct. Don't sugarcoat."
+    },
+    {
+      "title": "SQL query optimizer",
+      "category": "Coding & Dev",
+      "use_case": "Optimize slow SQL queries for PostgreSQL",
+      "model_hint": "any",
+      "difficulty": "advanced",
+      "tags": ["sql", "postgresql", "performance", "optimization"],
+      "prompt_text": "Optimize the following PostgreSQL query. It currently takes {{current_time}} to run on {{row_count}} rows.\n\nSQL:\n```sql\n{{query}}\n```\n\nTable structure:\n{{table_schema}}\n\nProvide:\n1. Diagnosis: what's making this slow\n2. Optimized query with explanation\n3. Index recommendations\n4. Expected performance improvement"
+    },
+    {
+      "title": "Contextual article summary",
+      "category": "Writing & Content",
+      "use_case": "Generate a 2-sentence news article summary automatically",
+      "model_hint": "groq",
+      "difficulty": "beginner",
+      "tags": ["news", "summary", "automation", "groq"],
+      "prompt_text": "Summarize the following news article in exactly 2 sentences. Sentence 1: the main event or finding. Sentence 2: why it matters or what happens next. Use active voice. No opinion.\n\nArticle:\n{{article_content}}\n\nOutput only the 2-sentence summary."
+    },
+    {
+      "title": "Debug error message",
+      "category": "Coding & Dev",
+      "use_case": "Get a clear explanation and fix for any error message",
+      "model_hint": "any",
+      "difficulty": "beginner",
+      "tags": ["debug", "error", "fix", "troubleshoot"],
+      "prompt_text": "I got this error:\n\n```\n{{error_message}}\n```\n\nContext: {{what_i_was_doing}}\nLanguage: {{language}}\nFramework: {{framework}}\n\nExplain:\n1. What this error means in plain English\n2. The most likely cause\n3. Step-by-step fix\n4. How to prevent it in the future"
+    },
+    {
+      "title": "Write a regex pattern",
+      "category": "Coding & Dev",
+      "use_case": "Generate and explain a regex for any pattern matching need",
+      "model_hint": "any",
+      "difficulty": "intermediate",
+      "tags": ["regex", "pattern", "text", "parsing"],
+      "prompt_text": "Write a regex pattern that matches: {{description}}\n\nExamples that SHOULD match:\n{{match_examples}}\n\nExamples that should NOT match:\n{{no_match_examples}}\n\nProvide:\n1. The regex pattern\n2. A line-by-line explanation of each part\n3. Test it against all examples above\n4. Note any edge cases or limitations"
+    },
+    {
+      "title": "API documentation generator",
+      "category": "Coding & Dev",
+      "use_case": "Generate clean API docs from code or descriptions",
+      "model_hint": "claude",
+      "difficulty": "intermediate",
+      "tags": ["api", "documentation", "openapi", "rest"],
+      "prompt_text": "Generate API documentation for the following endpoint:\n\n{{endpoint_description}}\n\nInclude:\n- Endpoint URL and HTTP method\n- Request parameters (path, query, body) with types\n- Request example (curl)\n- Response example (JSON)\n- Error codes and meanings\n- Authentication requirements\n\nFormat as Markdown suitable for a developer docs site."
+    },
+    {
+      "title": "Debate both sides",
+      "category": "Research & Analysis",
+      "use_case": "Explore any topic from both perspectives with strong arguments",
+      "model_hint": "any",
+      "difficulty": "intermediate",
+      "tags": ["debate", "analysis", "perspective", "critical-thinking"],
+      "prompt_text": "Present the strongest possible arguments for and against: {{topic}}\n\nFormat:\n**FOR (3 strongest arguments)**\n1. ...\n2. ...\n3. ...\n\n**AGAINST (3 strongest arguments)**\n1. ...\n2. ...\n3. ...\n\n**Synthesis:** What a reasonable person might conclude after hearing both sides.\n\nBe fair to both sides. Steel-man, don't straw-man."
+    },
+    {
+      "title": "Email writer - professional",
+      "category": "Writing & Content",
+      "use_case": "Write a professional email for any situation",
+      "model_hint": "any",
+      "difficulty": "beginner",
+      "tags": ["email", "professional", "communication", "business"],
+      "prompt_text": "Write a professional email for this situation:\n\nSituation: {{situation}}\nRecipient: {{recipient}}\nTone: {{tone}} (formal/friendly/direct)\nKey message: {{main_point}}\nDesired action: {{what_you_want}}\n\nKeep it under 150 words. Subject line included. No filler phrases like 'I hope this email finds you well'."
+    },
+    {
+      "title": "Product description for e-commerce",
+      "category": "SEO & Marketing",
+      "use_case": "Write a conversion-optimized product description",
+      "model_hint": "any",
+      "difficulty": "beginner",
+      "tags": ["ecommerce", "product", "copywriting", "conversion"],
+      "prompt_text": "Write a product description for:\n\nProduct: {{product_name}}\nKey features: {{features}}\nTarget audience: {{audience}}\nPrice point: {{price}}\n\nStructure:\n1. Headline (benefit-driven, under 10 words)\n2. Opening hook (address the pain point)\n3. 3-5 key benefits (not features)\n4. Social proof suggestion\n5. Call to action\n\nTone: {{tone}}. Max 200 words."
+    },
+    {
+      "title": "Meeting notes summarizer",
+      "category": "Business & Strategy",
+      "use_case": "Turn messy meeting notes into structured action items",
+      "model_hint": "any",
+      "difficulty": "beginner",
+      "tags": ["meeting", "notes", "action-items", "productivity"],
+      "prompt_text": "Turn these meeting notes into a structured summary:\n\n{{meeting_notes}}\n\nFormat:\n**Key Decisions:**\n- ...\n\n**Action Items:**\n| Task | Owner | Deadline |\n|------|-------|----------|\n\n**Open Questions:**\n- ...\n\n**Next Meeting Agenda:**\n- ..."
+    },
+    {
+      "title": "Git commit message writer",
+      "category": "Coding & Dev",
+      "use_case": "Write clear, conventional commit messages from diffs",
+      "model_hint": "any",
+      "difficulty": "beginner",
+      "tags": ["git", "commit", "version-control", "conventional"],
+      "prompt_text": "Write a conventional commit message for this diff:\n\n```diff\n{{git_diff}}\n```\n\nFollow the format:\n<type>(<scope>): <subject>\n\n<body>\n\nTypes: feat, fix, docs, style, refactor, test, chore\nSubject: imperative mood, lowercase, no period, max 50 chars\nBody: explain what and why, not how. Wrap at 72 chars."
+    }
+  ]
+}

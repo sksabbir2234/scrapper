@@ -1,0 +1,325 @@
+{% extends "base.html" %}
+
+{% block title %}AI Prompt Library — Copy-Paste Ready Prompts{% endblock %}
+{% block meta_desc %}Browse {{ total }} AI prompts for ChatGPT, Claude, Gemini. Copy-paste ready for writing, coding, research, SEO, and more.{% endblock %}
+
+{% block extra_css %}
+<style>
+.prompts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1rem;
+}
+.prompt-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.prompt-card h3 {
+  font-size: 0.95rem;
+  margin: 0;
+  line-height: 1.3;
+}
+.prompt-use {
+  font-size: 0.82rem;
+  color: var(--text-light);
+  line-height: 1.4;
+}
+.prompt-meta {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+.prompt-footer {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-top: auto;
+  padding-top: 0.5rem;
+}
+.prompt-text-preview {
+  font-size: 0.82rem;
+  color: var(--text-light);
+  background: var(--bg-subtle, #f8f8f8);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem;
+  max-height: 120px;
+  overflow: hidden;
+  line-height: 1.5;
+  font-family: 'JetBrains Mono', monospace;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.prompt-var {
+  background: var(--accent-subtle);
+  color: var(--accent);
+  padding: 0 3px;
+  border-radius: 3px;
+  font-weight: 600;
+}
+.category-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.category-link {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.4rem 0.75rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: all 0.15s;
+}
+.category-link:hover, .category-link.active {
+  background: var(--accent-subtle);
+  color: var(--accent);
+}
+.category-count {
+  font-size: 0.72rem;
+  background: var(--bg-subtle, #f0f0f0);
+  padding: 0.1rem 0.4rem;
+  border-radius: 8px;
+}
+.search-bar {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.search-bar input, .search-bar select {
+  flex: 1;
+  min-width: 150px;
+}
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+.modal-content {
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
+  max-width: 640px;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 1.5rem;
+}
+.modal-content h2 {
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+}
+.modal-prompt-text {
+  background: var(--bg-subtle, #f8f8f8);
+  border-radius: var(--radius-sm);
+  padding: 1rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 1rem 0;
+}
+.modal-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+.btn-copy-success {
+  background: #10b981 !important;
+  color: #fff !important;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+
+  <!-- Hero -->
+  <div style="text-align: center; margin-bottom: 1.5rem;">
+    <h1 style="font-size: 1.8rem;">AI Prompt Library</h1>
+    <p style="color: var(--text-muted); max-width: 520px; margin: 0.4rem auto 0;">
+      {{ total }} copy-paste ready prompts for ChatGPT, Claude, Gemini, and more.
+    </p>
+  </div>
+
+  <!-- Search -->
+  <div class="card" style="margin-bottom: 1.25rem;">
+    <div class="card-body">
+      <form class="search-bar" method="get" action="/prompts">
+        <input type="text" name="search" value="{{ search_query }}" placeholder="Search prompts..." class="search-input">
+        <select name="model" class="search-input">
+          <option value="">All Models</option>
+          <option value="claude" {% if selected_model == 'claude' %}selected{% endif %}>Claude</option>
+          <option value="gpt4" {% if selected_model == 'gpt4' %}selected{% endif %}>GPT-4</option>
+          <option value="any" {% if selected_model == 'any' %}selected{% endif %}>Any AI</option>
+          <option value="groq" {% if selected_model == 'groq' %}selected{% endif %}>Groq</option>
+        </select>
+        <select name="difficulty" class="search-input">
+          <option value="">All Levels</option>
+          <option value="beginner" {% if selected_difficulty == 'beginner' %}selected{% endif %}>Beginner</option>
+          <option value="intermediate" {% if selected_difficulty == 'intermediate' %}selected{% endif %}>Intermediate</option>
+          <option value="advanced" {% if selected_difficulty == 'advanced' %}selected{% endif %}>Advanced</option>
+        </select>
+        <button type="submit" class="btn btn-primary">Search</button>
+      </form>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 200px 1fr; gap: 1.5rem;">
+    <!-- Sidebar -->
+    <div>
+      <div class="card">
+        <div class="card-body">
+          <h3 style="font-size: 0.85rem; margin-bottom: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Categories</h3>
+          <div class="category-sidebar">
+            <a href="/prompts" class="category-link {% if not selected_category %}active{% endif %}">
+              <span>All</span>
+              <span class="category-count">{{ total }}</span>
+            </a>
+            {% for cat in categories %}
+            <a href="/prompts?category={{ cat[0] }}" class="category-link {% if selected_category == cat[0] %}active{% endif %}">
+              <span>{{ cat[0] }}</span>
+              <span class="category-count">{{ cat[1] }}</span>
+            </a>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Prompts Grid -->
+    <div>
+      {% if prompts %}
+      <div class="prompts-grid">
+        {% for p in prompts %}
+        <div class="card prompt-card" onclick="openPromptModal({{ p.id }}, {{ p.title | tojson }}, {{ p.prompt_text | tojson }}, {{ p.use_case | tojson }}, {{ p.category | tojson }}, {{ p.model_hint | tojson }}, {{ p.difficulty | tojson }}, {{ p.upvotes }})">
+          <div class="card-body" style="display: flex; flex-direction: column; gap: 0.5rem;">
+            <h3>{{ p.title }}</h3>
+            {% if p.use_case %}
+            <div class="prompt-use">{{ p.use_case }}</div>
+            {% endif %}
+            <div class="prompt-meta">
+              <span class="badge badge-neutral">{{ p.category }}</span>
+              <span class="badge badge-info">{{ p.difficulty }}</span>
+              <span>{{ p.model_hint }}</span>
+            </div>
+            <div class="prompt-text-preview">{{ p.prompt_text[:150] }}{% if p.prompt_text|length > 150 %}...{% endif %}</div>
+            <div class="prompt-footer">
+              <button class="btn btn-sm" onclick="event.stopPropagation(); copyPrompt({{ p.id }}, {{ p.prompt_text | tojson }}, this)">Copy</button>
+              <span style="font-size: 0.75rem; color: var(--text-muted);">{{ p.copy_count }} copies</span>
+              <span style="font-size: 0.75rem; color: var(--text-muted); margin-left: auto;">{{ p.upvotes }}</span>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      {% if has_more %}
+      <div style="text-align: center; margin-top: 1.5rem;">
+        <a href="/prompts?{% if selected_category %}category={{ selected_category }}&{% endif %}{% if selected_model %}model={{ selected_model }}&{% endif %}{% if selected_difficulty %}difficulty={{ selected_difficulty }}&{% endif %}{% if search_query %}search={{ search_query }}&{% endif %}page={{ page + 1 }}" class="btn">Load More</a>
+      </div>
+      {% endif %}
+
+      {% else %}
+      <div style="text-align: center; padding: 3rem; color: var(--text-muted);">
+        <p>No prompts found. Try a different search or category.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="prompt-modal" style="display: none;" onclick="closeModal(event)">
+  <div class="modal-content" onclick="event.stopPropagation()">
+    <h2 id="modal-title"></h2>
+    <div class="prompt-meta" style="margin-bottom: 0.75rem;">
+      <span class="badge badge-neutral" id="modal-category"></span>
+      <span class="badge badge-info" id="modal-difficulty"></span>
+      <span id="modal-model"></span>
+    </div>
+    <p style="font-size: 0.85rem; color: var(--text-light);" id="modal-use"></p>
+    <div class="modal-prompt-text" id="modal-text"></div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" id="modal-copy-btn" onclick="copyFromModal()">Copy Prompt</button>
+      <button class="btn" onclick="upvoteFromModal()">Upvote <span id="modal-votes"></span></button>
+      <button class="btn" onclick="document.getElementById('prompt-modal').style.display='none'" style="margin-left: auto;">Close</button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+var currentPromptId = 0;
+var currentPromptText = '';
+
+function highlightVars(text) {
+  return text.replace(/\{\{([^}]+)\}\}/g, function(m, p1) { return '<span class="prompt-var">{{' + p1 + '}}</span>'; });
+}
+
+function copyPrompt(id, text, btn) {
+  navigator.clipboard.writeText(text).then(function() {
+    btn.textContent = 'Copied!';
+    btn.classList.add('btn-copy-success');
+    setTimeout(function() {
+      btn.textContent = 'Copy';
+      btn.classList.remove('btn-copy-success');
+    }, 2000);
+    fetch('/api/prompts/' + id + '/copy', {method: 'POST'});
+  });
+}
+
+function openPromptModal(id, title, text, use, category, model, difficulty, votes) {
+  currentPromptId = id;
+  currentPromptText = text;
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-category').textContent = category;
+  document.getElementById('modal-difficulty').textContent = difficulty;
+  document.getElementById('modal-model').textContent = model;
+  document.getElementById('modal-use').textContent = use || '';
+  document.getElementById('modal-text').innerHTML = highlightVars(text);
+  document.getElementById('modal-votes').textContent = votes;
+  document.getElementById('prompt-modal').style.display = 'flex';
+}
+
+function copyFromModal() {
+  navigator.clipboard.writeText(currentPromptText).then(function() {
+    var btn = document.getElementById('modal-copy-btn');
+    btn.textContent = 'Copied!';
+    btn.classList.add('btn-copy-success');
+    setTimeout(function() {
+      btn.textContent = 'Copy Prompt';
+      btn.classList.remove('btn-copy-success');
+    }, 2000);
+    fetch('/api/prompts/' + currentPromptId + '/copy', {method: 'POST'});
+  });
+}
+
+function upvoteFromModal() {
+  fetch('/api/prompts/' + currentPromptId + '/upvote', {method: 'POST'})
+    .then(function(r) { return r.json(); })
+    .then(function() {
+      var el = document.getElementById('modal-votes');
+      el.textContent = parseInt(el.textContent) + 1;
+    });
+}
+
+function closeModal(e) {
+  if (e.target === document.getElementById('prompt-modal')) {
+    document.getElementById('prompt-modal').style.display = 'none';
+  }
+}
+</script>
+{% endblock %}

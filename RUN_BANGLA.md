@@ -20,7 +20,7 @@ Get-Service postgresql*
 
 ```bash
 cd "D:\cse code\scrapper\backend"
-python -m uvicorn app.main:app --reload --port 8000
+.
 ```
 
 সফল হলে দেখাবে:

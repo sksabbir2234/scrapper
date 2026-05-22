@@ -7,7 +7,7 @@ from datetime import datetime, timezone, timedelta
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Query
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
@@ -15,7 +15,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import desc, func, or_
 
 from app.db.database import get_db
-from app.models import Article, Source, ScrapeLog, Tag, ArticleTag
+from app.models import Article, Source, ScrapeLog, Tag, ArticleTag, ArticleViewDaily, SiteViewDaily, Category, ArticleCategory
 from config.settings import get_settings
 
 router = APIRouter()
@@ -429,3 +429,142 @@ async def trigger_scrape(options: ScrapeOptions = ScrapeOptions(), user: str = D
     if features:
         msg += f" with {', '.join(features)}"
     return {"status": "ok", "message": msg}
+
+
+# ─── Analytics Endpoints ───
+
+@router.get("/admin/analytics/views")
+async def analytics_views(days: int = 7, user: str = Depends(verify_admin), db: Session = Depends(get_db)):
+    """Daily site views for the last N days. Used for the line chart."""
+    from datetime import date as date_type, timedelta
+    since = date_type.today() - timedelta(days=days)
+    rows = (
+        db.query(SiteViewDaily)
+        .filter(SiteViewDaily.view_date >= since)
+        .order_by(SiteViewDaily.view_date)
+        .all()
+    )
+    data = [{
+        "view_date": str(r.view_date),
+        "total_views": r.total_views or 0,
+        "desktop": r.desktop or 0,
+        "mobile": r.mobile or 0,
+        "bot": r.bot or 0,
+    } for r in rows]
+    return JSONResponse({"data": data, "days": days})
+
+
+@router.get("/admin/analytics/sources")
+async def analytics_sources(days: int = 7, user: str = Depends(verify_admin), db: Session = Depends(get_db)):
+    """Article count per source per day. Used for stacked bar chart."""
+    from datetime import timedelta
+    since = datetime.now(timezone.utc) - timedelta(days=days)
+    rows = (
+        db.query(
+            Source.name,
+            func.date(Article.created_at).label("day"),
+            func.count(Article.id).label("count"),
+        )
+        .join(Source, Article.source_id == Source.id)
+        .filter(Article.created_at >= since, Article.deleted_at.is_(None))
+        .group_by(Source.name, func.date(Article.created_at))
+        .order_by(func.date(Article.created_at))
+        .all()
+    )
+    data = [{"name": r[0], "day": str(r[1]), "count": r[2]} for r in rows]
+    return JSONResponse({"data": data})
+
+
+@router.get("/admin/analytics/categories")
+async def analytics_categories(user: str = Depends(verify_admin), db: Session = Depends(get_db)):
+    """Article count per category. Used for doughnut chart."""
+    rows = (
+        db.query(Category.name, func.count(ArticleCategory.article_id).label("count"))
+        .outerjoin(ArticleCategory, Category.id == ArticleCategory.category_id)
+        .group_by(Category.name)
+        .order_by(desc("count"))
+        .limit(12)
+        .all()
+    )
+    data = [{"name": r[0] or "Uncategorized", "count": r[1]} for r in rows]
+    return JSONResponse({"data": data})
+
+
+@router.get("/admin/analytics/activity")
+async def analytics_activity(limit: int = 30, user: str = Depends(verify_admin), db: Session = Depends(get_db)):
+    """Recent scrape logs + new articles for live activity feed."""
+    sources_map = {s.id: s.name for s in db.query(Source).all()}
+
+    logs = (
+        db.query(ScrapeLog)
+        .order_by(desc(ScrapeLog.scraped_at))
+        .limit(limit)
+        .all()
+    )
+    articles = (
+        db.query(Article)
+        .filter(Article.deleted_at.is_(None))
+        .order_by(desc(Article.created_at))
+        .limit(limit)
+        .all()
+    )
+
+    events = []
+    for l in logs:
+        events.append({
+            "type": "scrape",
+            "label": sources_map.get(l.source_id, "Unknown"),
+            "value": l.articles_found,
+            "status": "error" if l.errors else "success",
+            "ts": l.scraped_at.isoformat() if l.scraped_at else None,
+        })
+    for a in articles:
+        events.append({
+            "type": "article",
+            "label": a.title,
+            "value": None,
+            "status": "new",
+            "ts": a.created_at.isoformat() if a.created_at else None,
+        })
+
+    events.sort(key=lambda x: x["ts"] or "", reverse=True)
+    return JSONResponse({"data": events[:limit]})
+
+
+@router.get("/admin/analytics/engagement")
+async def analytics_engagement(days: int = 7, user: str = Depends(verify_admin), db: Session = Depends(get_db)):
+    """Top articles by views and top tags."""
+    from datetime import date as date_type, timedelta
+    since = date_type.today() - timedelta(days=days)
+
+    top_articles = (
+        db.query(
+            Article.title,
+            Article.slug,
+            func.sum(ArticleViewDaily.view_count).label("views"),
+        )
+        .join(ArticleViewDaily, Article.id == ArticleViewDaily.article_id)
+        .filter(ArticleViewDaily.view_date >= since)
+        .group_by(Article.title, Article.slug)
+        .order_by(desc("views"))
+        .limit(10)
+        .all()
+    )
+
+    week_ago = datetime.now(timezone.utc) - timedelta(days=days)
+    top_tags = (
+        db.query(Tag.name, func.count(ArticleTag.article_id).label("count"))
+        .join(ArticleTag, Tag.id == ArticleTag.tag_id)
+        .join(Article, ArticleTag.article_id == Article.id)
+        .filter(Article.created_at >= week_ago, Article.deleted_at.is_(None))
+        .group_by(Tag.name)
+        .order_by(desc("count"))
+        .limit(10)
+        .all()
+    )
+
+    return JSONResponse({
+        "top_articles": [{"title": r[0], "slug": r[1], "views": r[2]} for r in top_articles],
+        "top_tags": [{"name": r[0], "count": r[1]} for r in top_tags],
+        "days": days,
+    })

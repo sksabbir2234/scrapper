@@ -1,0 +1,830 @@
+{% extends "base.html" %}
+
+{% block title %}Job Search — Find Your Next Role{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Stats bar */
+.stats-bar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+.stat-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  text-align: center;
+}
+.stat-value {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+.stat-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 0.2rem;
+}
+
+/* Search form */
+.search-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto auto;
+  gap: 0.75rem;
+  align-items: end;
+}
+@media (max-width: 768px) {
+  .search-row { grid-template-columns: 1fr; }
+  .stats-bar { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* Remote toggle */
+.toggle-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-bottom: 0.15rem;
+}
+.toggle {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  cursor: pointer;
+}
+.toggle input { display: none; }
+.toggle-track {
+  position: absolute;
+  inset: 0;
+  background: var(--border);
+  border-radius: 12px;
+  transition: background 0.2s;
+}
+.toggle input:checked + .toggle-track {
+  background: var(--accent);
+}
+.toggle-knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.2s;
+  pointer-events: none;
+}
+.toggle input:checked ~ .toggle-knob {
+  transform: translateX(20px);
+}
+.toggle-label {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+/* Job card */
+.job-card {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+.job-logo {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-sm);
+  background: var(--accent-subtle);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.job-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.job-body h3 {
+  font-size: 0.95rem;
+  margin-bottom: 0.2rem;
+  line-height: 1.3;
+}
+.job-body h3 a {
+  color: var(--text);
+  text-decoration: none;
+}
+.job-body h3 a:hover {
+  color: var(--accent);
+}
+.job-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-bottom: 0.4rem;
+}
+.job-meta span {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+.job-desc {
+  font-size: 0.82rem;
+  color: var(--text-light);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.job-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.5rem;
+}
+.job-tag {
+  font-size: 0.7rem;
+  padding: 0.15rem 0.5rem;
+  background: var(--bg-subtle, #f0f0f0);
+  border-radius: 10px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.job-tag:hover {
+  background: var(--accent-subtle);
+  color: var(--accent);
+}
+.job-apply {
+  margin-left: auto;
+  flex-shrink: 0;
+  align-self: center;
+}
+
+/* Filter bar */
+.filter-bar {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+.source-chip {
+  font-size: 0.78rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+  font-weight: 500;
+}
+.source-chip.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+/* Chart container */
+.chart-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+@media (max-width: 768px) {
+  .chart-grid { grid-template-columns: 1fr; }
+}
+.chart-box {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+}
+.chart-box h3 {
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+  color: var(--text-muted);
+}
+
+/* Loading skeleton */
+.skeleton {
+  background: linear-gradient(90deg, var(--border) 25%, transparent 50%, var(--border) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--radius-sm);
+}
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Empty state */
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--text-muted);
+}
+.empty-state .icon {
+  font-size: 2.5rem;
+  margin-bottom: 0.75rem;
+}
+
+/* Site card */
+.site-card {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  text-decoration: none;
+  color: inherit;
+}
+.site-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  color: #fff;
+}
+
+/* Tip card */
+.tip-card {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+.tip-num {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--accent-subtle);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+
+/* Load more */
+.load-more-wrap {
+  text-align: center;
+  margin-top: 1.5rem;
+}
+
+/* Salary badge */
+.salary-badge {
+  font-size: 0.72rem;
+  padding: 0.15rem 0.45rem;
+  background: #e6f9ed;
+  color: #1a7f37;
+  border-radius: 6px;
+  font-weight: 600;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+
+  <!-- Hero -->
+  <div style="text-align: center; margin-bottom: 1.75rem;">
+    <h1 style="font-size: 1.8rem;">Job Search</h1>
+    <p style="color: var(--text-muted); max-width: 520px; margin: 0.4rem auto 0;">
+      Live listings from multiple platforms. Search, filter, and apply in one place.
+    </p>
+  </div>
+
+  <!-- Search -->
+  <div class="card" style="margin-bottom: 1.25rem;">
+    <div class="card-body">
+      <div class="search-row">
+        <div>
+          <label style="display:block;font-size:0.75rem;font-weight:600;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em;">Job Title / Keyword</label>
+          <input type="text" id="job-keyword" class="search-input" placeholder="e.g. Software Engineer, React, Marketing">
+        </div>
+        <div>
+          <label style="display:block;font-size:0.75rem;font-weight:600;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em;">Location</label>
+          <input type="text" id="job-location" class="search-input" placeholder="e.g. Dhaka, Remote, Berlin">
+        </div>
+        <div class="toggle-wrap">
+          <label class="toggle">
+            <input type="checkbox" id="remote-toggle">
+            <div class="toggle-track"></div>
+            <div class="toggle-knob"></div>
+          </label>
+          <span class="toggle-label">Remote only</span>
+        </div>
+        <button class="btn btn-primary" onclick="runSearch()" style="white-space:nowrap;">Search Jobs</button>
+      </div>
+      <!-- Quick pills -->
+      <div class="filter-tabs" style="margin-top: 0.75rem;">
+        <button class="filter-tab" onclick="quickSearch('Software Engineer')">Software Engineer</button>
+        <button class="filter-tab" onclick="quickSearch('Data Analyst')">Data Analyst</button>
+        <button class="filter-tab" onclick="quickSearch('Marketing')">Marketing</button>
+        <button class="filter-tab" onclick="quickSearch('Designer')">Designer</button>
+        <button class="filter-tab" onclick="quickSearch('Writer')">Writer</button>
+        <button class="filter-tab" onclick="quickSearch('DevOps')">DevOps</button>
+        <button class="filter-tab" onclick="quickSearch('Remote')">Remote</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats bar -->
+  <div class="stats-bar" id="stats-bar">
+    <div class="stat-card">
+      <div class="stat-value" id="stat-total">--</div>
+      <div class="stat-label">Jobs Found</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="stat-remote">--</div>
+      <div class="stat-label">Remote</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="stat-skill">--</div>
+      <div class="stat-label">Top Skill</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="stat-sources">--</div>
+      <div class="stat-label">Sources</div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="filter-tabs" style="margin-bottom: 1.25rem;">
+    <button class="filter-tab active" onclick="switchTab('live')">Live Listings</button>
+    <button class="filter-tab" onclick="switchTab('sites')">Job Sites</button>
+    <button class="filter-tab" onclick="switchTab('insights')">Market Insights</button>
+  </div>
+
+  <!-- TAB: Live Listings -->
+  <div id="tab-live">
+    <!-- Source filter chips -->
+    <div class="filter-bar" id="source-filter">
+      <span class="source-chip active" data-source="" onclick="filterSource(this, '')">All</span>
+      <span class="source-chip" data-source="RemoteOK" onclick="filterSource(this, 'RemoteOK')">RemoteOK</span>
+      <span class="source-chip" data-source="Arbeitnow" onclick="filterSource(this, 'Arbeitnow')">Arbeitnow</span>
+    </div>
+
+    <div id="job-list">
+      <div style="display:flex;flex-direction:column;gap:0.75rem;">
+        <div class="card skeleton" style="height:100px;"></div>
+        <div class="card skeleton" style="height:100px;"></div>
+        <div class="card skeleton" style="height:100px;"></div>
+      </div>
+    </div>
+
+    <div class="load-more-wrap" id="load-more-wrap" style="display:none;">
+      <button class="btn" id="load-more-btn" onclick="loadMore()">Load More Jobs</button>
+    </div>
+  </div>
+
+  <!-- TAB: Job Sites -->
+  <div id="tab-sites" style="display:none;">
+    <div class="grid-2" style="gap: 1rem;">
+      <a href="https://www.linkedin.com/jobs/" target="_blank" rel="noopener noreferrer" class="card" style="text-decoration:none;">
+        <div class="card-body">
+          <div class="site-card">
+            <div class="site-icon" style="background:#0077b5;">in</div>
+            <div>
+              <h3 style="font-size:0.95rem;margin-bottom:0.2rem;">LinkedIn Jobs</h3>
+              <p style="font-size:0.82rem;color:var(--text-muted);margin:0;">Professional network. Best for white-collar and tech roles.</p>
+              <span class="badge badge-info" style="margin-top:0.4rem;">Global</span>
+            </div>
+          </div>
+        </div>
+      </a>
+      <a href="https://www.indeed.com/" target="_blank" rel="noopener noreferrer" class="card" style="text-decoration:none;">
+        <div class="card-body">
+          <div class="site-card">
+            <div class="site-icon" style="background:#2164f3;">iD</div>
+            <div>
+              <h3 style="font-size:0.95rem;margin-bottom:0.2rem;">Indeed</h3>
+              <p style="font-size:0.82rem;color:var(--text-muted);margin:0;">World's largest job site. Aggregates from thousands of sources.</p>
+              <span class="badge badge-info" style="margin-top:0.4rem;">Global</span>
+            </div>
+          </div>
+        </div>
+      </a>
+      <a href="https://www.bdjobs.com/" target="_blank" rel="noopener noreferrer" class="card" style="text-decoration:none;">
+        <div class="card-body">
+          <div class="site-card">
+            <div class="site-icon" style="background:#e8430a;">BD</div>
+            <div>
+              <h3 style="font-size:0.95rem;margin-bottom:0.2rem;">BDJobs</h3>
+              <p style="font-size:0.82rem;color:var(--text-muted);margin:0;">Bangladesh's #1 job site. Local openings across all industries.</p>
+              <span class="badge badge-accent" style="margin-top:0.4rem;">Bangladesh</span>
+            </div>
+          </div>
+        </div>
+      </a>
+      <a href="https://www.glassdoor.com/Job/" target="_blank" rel="noopener noreferrer" class="card" style="text-decoration:none;">
+        <div class="card-body">
+          <div class="site-card">
+            <div class="site-icon" style="background:#0caa41;">GD</div>
+            <div>
+              <h3 style="font-size:0.95rem;margin-bottom:0.2rem;">Glassdoor</h3>
+              <p style="font-size:0.82rem;color:var(--text-muted);margin:0;">Jobs with company reviews and salary data.</p>
+              <span class="badge badge-info" style="margin-top:0.4rem;">Global</span>
+            </div>
+          </div>
+        </div>
+      </a>
+      <a href="https://remoteok.com/" target="_blank" rel="noopener noreferrer" class="card" style="text-decoration:none;">
+        <div class="card-body">
+          <div class="site-card">
+            <div class="site-icon" style="background:#1a1a2e;">RO</div>
+            <div>
+              <h3 style="font-size:0.95rem;margin-bottom:0.2rem;">RemoteOK</h3>
+              <p style="font-size:0.82rem;color:var(--text-muted);margin:0;">Remote-only jobs in tech, design, marketing, and more.</p>
+              <span class="badge badge-highlight" style="margin-top:0.4rem;">Remote</span>
+            </div>
+          </div>
+        </div>
+      </a>
+      <a href="https://weworkremotely.com/" target="_blank" rel="noopener noreferrer" class="card" style="text-decoration:none;">
+        <div class="card-body">
+          <div class="site-card">
+            <div class="site-icon" style="background:#2d2d2d;">WR</div>
+            <div>
+              <h3 style="font-size:0.95rem;margin-bottom:0.2rem;">We Work Remotely</h3>
+              <p style="font-size:0.82rem;color:var(--text-muted);margin:0;">Curated remote jobs from top companies.</p>
+              <span class="badge badge-highlight" style="margin-top:0.4rem;">Remote</span>
+            </div>
+          </div>
+        </div>
+      </a>
+      <a href="https://www.upwork.com/" target="_blank" rel="noopener noreferrer" class="card" style="text-decoration:none;">
+        <div class="card-body">
+          <div class="site-card">
+            <div class="site-icon" style="background:#14a800;">Up</div>
+            <div>
+              <h3 style="font-size:0.95rem;margin-bottom:0.2rem;">Upwork</h3>
+              <p style="font-size:0.82rem;color:var(--text-muted);margin:0;">Freelance marketplace. Build portfolio and find clients.</p>
+              <span class="badge badge-success" style="margin-top:0.4rem;">Freelance</span>
+            </div>
+          </div>
+        </div>
+      </a>
+      <a href="https://www.fiverr.com/" target="_blank" rel="noopener noreferrer" class="card" style="text-decoration:none;">
+        <div class="card-body">
+          <div class="site-card">
+            <div class="site-icon" style="background:#1dbf73;">Fv</div>
+            <div>
+              <h3 style="font-size:0.95rem;margin-bottom:0.2rem;">Fiverr</h3>
+              <p style="font-size:0.82rem;color:var(--text-muted);margin:0;">Sell your skills as services. Design, dev, writing, and more.</p>
+              <span class="badge badge-success" style="margin-top:0.4rem;">Freelance</span>
+            </div>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <!-- Tips -->
+    <div style="margin-top: 1.5rem;">
+      <div class="card">
+        <div class="card-body">
+          <h3 style="font-size:0.95rem;margin-bottom:1rem;">Job Search Tips</h3>
+          <div style="display:flex;flex-direction:column;gap:0.75rem;">
+            <div class="tip-card"><span class="tip-num">1</span><div><strong>Tailor every application</strong> &mdash; customize your resume for each job. Use keywords from the description. Generic resumes get rejected by ATS.</div></div>
+            <div class="tip-card"><span class="tip-num">2</span><div><strong>Follow up</strong> &mdash; send a polite email 5-7 days after applying. Most people skip this.</div></div>
+            <div class="tip-card"><span class="tip-num">3</span><div><strong>Network actively</strong> &mdash; 70% of jobs are never posted publicly. Connect on LinkedIn.</div></div>
+            <div class="tip-card"><span class="tip-num">4</span><div><strong>Track applications</strong> &mdash; use a spreadsheet: company, role, date, status, follow-up.</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: Market Insights -->
+  <div id="tab-insights" style="display:none;">
+    <div class="chart-grid">
+      <div class="chart-box">
+        <h3>Top Skills in Demand</h3>
+        <canvas id="chart-skills" height="250"></canvas>
+      </div>
+      <div class="chart-box">
+        <h3>Remote vs On-Site</h3>
+        <canvas id="chart-remote" height="250"></canvas>
+      </div>
+      <div class="chart-box">
+        <h3>Jobs by Source</h3>
+        <canvas id="chart-sources" height="250"></canvas>
+      </div>
+      <div class="chart-box">
+        <h3>Top Locations</h3>
+        <canvas id="chart-locations" height="250"></canvas>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script>
+var currentPage = 1;
+var currentSource = '';
+var currentKeyword = '';
+var currentLocation = '';
+var currentRemote = false;
+var totalPages = 1;
+var allJobs = [];
+var chartInstances = {};
+
+// --- Tab switching ---
+function switchTab(tab) {
+  document.querySelectorAll('.filter-tabs .filter-tab').forEach(function(t) { t.classList.remove('active'); });
+  event.target.classList.add('active');
+  ['live','sites','insights'].forEach(function(t) {
+    var el = document.getElementById('tab-' + t);
+    if (el) el.style.display = t === tab ? 'block' : 'none';
+  });
+  if (tab === 'insights') loadInsights();
+}
+
+// --- Search ---
+function quickSearch(kw) {
+  document.getElementById('job-keyword').value = kw;
+  runSearch();
+}
+
+function runSearch() {
+  currentKeyword = document.getElementById('job-keyword').value.trim();
+  currentLocation = document.getElementById('job-location').value.trim();
+  currentRemote = document.getElementById('remote-toggle').checked;
+  currentPage = 1;
+  allJobs = [];
+  loadJobs();
+  loadStats();
+}
+
+function filterSource(el, src) {
+  currentSource = src;
+  document.querySelectorAll('.source-chip').forEach(function(c) { c.classList.remove('active'); });
+  el.classList.add('active');
+  currentPage = 1;
+  allJobs = [];
+  loadJobs();
+}
+
+// --- Load jobs ---
+function loadJobs() {
+  var listEl = document.getElementById('job-list');
+  if (currentPage === 1) {
+    listEl.innerHTML = '<div style="display:flex;flex-direction:column;gap:0.75rem;">' +
+      '<div class="card skeleton" style="height:100px;"></div>' +
+      '<div class="card skeleton" style="height:100px;"></div>' +
+      '<div class="card skeleton" style="height:100px;"></div></div>';
+  }
+
+  var params = new URLSearchParams();
+  if (currentKeyword) params.set('keyword', currentKeyword);
+  if (currentLocation) params.set('location', currentLocation);
+  if (currentRemote) params.set('remote', 'true');
+  if (currentSource) params.set('source', currentSource);
+  params.set('page', currentPage);
+  params.set('per_page', 20);
+
+  fetch('/jobs/api/list?' + params)
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      totalPages = data.pages || 1;
+      if (currentPage === 1) allJobs = [];
+      allJobs = allJobs.concat(data.items || []);
+      renderJobs(data.total);
+    })
+    .catch(function() {
+      if (currentPage === 1) {
+        listEl.innerHTML = '<div class="empty-state"><div class="icon">!</div><p>Failed to load jobs. Please try again.</p></div>';
+      }
+    });
+}
+
+function renderJobs(total) {
+  var listEl = document.getElementById('job-list');
+  if (allJobs.length === 0) {
+    listEl.innerHTML = '<div class="empty-state"><div class="icon">?</div><p>No jobs found. Try a different keyword or location.</p></div>';
+    document.getElementById('load-more-wrap').style.display = 'none';
+    return;
+  }
+
+  var html = '<div style="display:flex;flex-direction:column;gap:0.75rem;">';
+  allJobs.forEach(function(job, i) {
+    var initials = (job.company || '?').substring(0, 2).toUpperCase();
+    var tagsHtml = '';
+    (job.tags || []).slice(0, 5).forEach(function(t) {
+      tagsHtml += '<span class="job-tag" onclick="quickSearch(\'' + t.replace(/'/g, "\\'") + '\')">' + t + '</span>';
+    });
+
+    var salaryHtml = '';
+    if (job.salary) {
+      salaryHtml = '<span class="salary-badge">' + job.salary + '</span>';
+    }
+
+    var postedHtml = '';
+    if (job.posted_at) {
+      var d = new Date(job.posted_at);
+      if (!isNaN(d)) {
+        var diff = Math.floor((Date.now() - d) / 86400000);
+        postedHtml = diff === 0 ? 'Today' : diff === 1 ? 'Yesterday' : diff + 'd ago';
+      }
+    }
+
+    html += '<div class="card"><div class="card-body">';
+    html += '<div class="job-card">';
+    html += '<div class="job-logo">' + initials + '</div>';
+    html += '<div class="job-body" style="flex:1;min-width:0;">';
+    html += '<h3><a href="' + (job.url || '#') + '" target="_blank" rel="noopener noreferrer">' + escHtml(job.title) + '</a></h3>';
+    html += '<div class="job-meta">';
+    html += '<span>' + escHtml(job.company) + '</span>';
+    if (job.location) html += '<span> &middot; ' + escHtml(job.location) + '</span>';
+    if (job.remote) html += '<span> &middot; Remote</span>';
+    if (postedHtml) html += '<span> &middot; ' + postedHtml + '</span>';
+    if (salaryHtml) html += ' &middot; ' + salaryHtml;
+    html += '</div>';
+    if (job.description) html += '<div class="job-desc">' + escHtml(job.description) + '</div>';
+    if (tagsHtml) html += '<div class="job-tags">' + tagsHtml + '</div>';
+    html += '</div>';
+    html += '<a href="' + (job.url || '#') + '" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm job-apply">Apply</a>';
+    html += '</div></div></div>';
+  });
+  html += '</div>';
+
+  if (total) {
+    html = '<div style="font-size:0.82rem;color:var(--text-muted);margin-bottom:0.75rem;">Showing ' + allJobs.length + ' of ' + total + ' jobs</div>' + html;
+  }
+
+  listEl.innerHTML = html;
+
+  var moreWrap = document.getElementById('load-more-wrap');
+  moreWrap.style.display = currentPage < totalPages ? 'block' : 'none';
+}
+
+function loadMore() {
+  currentPage++;
+  loadJobs();
+}
+
+// --- Load stats ---
+function loadStats() {
+  var params = new URLSearchParams();
+  if (currentKeyword) params.set('keyword', currentKeyword);
+  if (currentLocation) params.set('location', currentLocation);
+
+  fetch('/jobs/api/stats?' + params)
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      document.getElementById('stat-total').textContent = data.total || 0;
+      document.getElementById('stat-remote').textContent = (data.remote_pct || 0) + '%';
+      var topSkill = (data.top_skills && data.top_skills.length) ? data.top_skills[0].name : '-';
+      document.getElementById('stat-skill').textContent = topSkill;
+      var srcCount = data.sources ? Object.keys(data.sources).length : 0;
+      document.getElementById('stat-sources').textContent = srcCount;
+    });
+}
+
+// --- Load insights (charts) ---
+function loadInsights() {
+  var params = new URLSearchParams();
+  if (currentKeyword) params.set('keyword', currentKeyword);
+  if (currentLocation) params.set('location', currentLocation);
+
+  fetch('/jobs/api/stats?' + params)
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      renderCharts(data);
+    });
+}
+
+function renderCharts(data) {
+  // Destroy existing charts
+  Object.keys(chartInstances).forEach(function(k) {
+    if (chartInstances[k]) chartInstances[k].destroy();
+  });
+
+  var colors = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#06b6d4','#84cc16','#f97316','#6366f1'];
+
+  // Skills bar chart
+  if (data.top_skills && data.top_skills.length) {
+    var skills = data.top_skills.slice(0, 10);
+    chartInstances.skills = new Chart(document.getElementById('chart-skills'), {
+      type: 'bar',
+      data: {
+        labels: skills.map(function(s) { return s.name; }),
+        datasets: [{
+          data: skills.map(function(s) { return s.count; }),
+          backgroundColor: colors.slice(0, skills.length),
+          borderRadius: 4,
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: { x: { grid: { display: false } } }
+      }
+    });
+  }
+
+  // Remote donut
+  var remotePct = data.remote_pct || 0;
+  chartInstances.remote = new Chart(document.getElementById('chart-remote'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Remote', 'On-Site'],
+      datasets: [{
+        data: [remotePct, 100 - remotePct],
+        backgroundColor: ['#10b981', '#e5e7eb'],
+        borderWidth: 0,
+      }]
+    },
+    options: {
+      responsive: true,
+      cutout: '65%',
+      plugins: {
+        legend: { position: 'bottom' }
+      }
+    }
+  });
+
+  // Sources pie
+  if (data.sources) {
+    var srcLabels = Object.keys(data.sources);
+    var srcValues = srcLabels.map(function(k) { return data.sources[k]; });
+    chartInstances.sources = new Chart(document.getElementById('chart-sources'), {
+      type: 'pie',
+      data: {
+        labels: srcLabels,
+        datasets: [{
+          data: srcValues,
+          backgroundColor: colors.slice(0, srcLabels.length),
+          borderWidth: 0,
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { position: 'bottom' } }
+      }
+    });
+  }
+
+  // Locations bar
+  if (data.locations && data.locations.length) {
+    var locs = data.locations.slice(0, 10);
+    chartInstances.locations = new Chart(document.getElementById('chart-locations'), {
+      type: 'bar',
+      data: {
+        labels: locs.map(function(l) { return l.name; }),
+        datasets: [{
+          data: locs.map(function(l) { return l.count; }),
+          backgroundColor: '#3b82f6',
+          borderRadius: 4,
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: { x: { grid: { display: false } } }
+      }
+    });
+  }
+}
+
+// --- Utility ---
+function escHtml(s) {
+  if (!s) return '';
+  var d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+// Enter key search
+document.getElementById('job-keyword').addEventListener('keypress', function(e) {
+  if (e.key === 'Enter') runSearch();
+});
+document.getElementById('job-location').addEventListener('keypress', function(e) {
+  if (e.key === 'Enter') runSearch();
+});
+
+// Initial load
+runSearch();
+</script>
+{% endblock %}

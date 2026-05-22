@@ -1,41 +1,128 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Global News Aggregator{% endblock %}</title>
-    <link rel="stylesheet" href="/static/css/style.css">
-    {% block extra_css %}{% endblock %}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}GlobalNews{% endblock %}</title>
+  <meta name="description" content="{% block meta_desc %}AI-curated news, finance, and open source updates.{% endblock %}">
+  <meta property="og:site_name" content="GlobalNews">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/style.css">
+  {% block extra_head %}{% endblock %}
+  {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <header>
-        <nav>
-            <a href="/" class="logo">GlobalNews</a>
-            <div class="nav-links">
-                <a href="/">Home</a>
-                <a href="/articles">Articles</a>
-                <a href="/categories">Categories</a>
-                <a href="/tags">Tags</a>
-                <a href="/trending">Trending</a>
-                <a href="/search">Search</a>
-                <a href="/github">GitHub Watch</a>
-                <a href="/opportunities">Opportunities</a>
-                <a href="/oss">OSS Alternatives</a>
-                <a href="/finance">Finance</a>
-                <a href="/ai-tips">AI Tips</a>
-                <a href="/admin">Admin</a>
-            </div>
-        </nav>
-    </header>
 
-    <main class="{% block main_class %}container{% endblock %}">
-        {% block content %}{% endblock %}
-    </main>
+<nav class="topnav">
+  <div class="topnav-inner page-wrapper">
+    <a href="/" class="nav-logo">
+      <span class="nav-logo-icon">*</span>
+      GlobalNews
+    </a>
+    <div class="nav-links">
+      <a href="/" class="nav-link {% if active_page == 'home' %}active{% endif %}">Home</a>
+      <a href="/trending" class="nav-link {% if active_page == 'trending' %}active{% endif %}">Trending</a>
+      <a href="/categories" class="nav-link {% if active_page == 'categories' %}active{% endif %}">Categories</a>
+      <a href="/github" class="nav-link {% if active_page == 'github' %}active{% endif %}">GitHub</a>
+      <a href="/finance" class="nav-link {% if active_page == 'finance' %}active{% endif %}">Finance</a>
+      <a href="/ai-tips" class="nav-link {% if active_page == 'ai_tips' %}active{% endif %}">AI Hub</a>
+      <a href="/jobs" class="nav-link {% if active_page == 'jobs' %}active{% endif %}">Jobs</a>
+      <a href="/prompts" class="nav-link {% if active_page == 'prompts' %}active{% endif %}">Prompts</a>
+      <a href="/oss" class="nav-link {% if active_page == 'oss' %}active{% endif %}">OSS</a>
+    </div>
+    <div class="nav-controls">
+      <a href="/search" class="btn btn-ghost btn-sm btn-icon" title="Search">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        </svg>
+      </a>
+      <button class="btn btn-ghost btn-sm btn-icon" id="theme-toggle" title="Toggle theme">
+        <svg id="icon-sun" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+        </svg>
+        <svg id="icon-moon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+    </div>
+    <button class="nav-hamburger" id="nav-toggle" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
 
-    <footer>
-        <p>Global News Aggregator</p>
-    </footer>
+<div class="nav-drawer" id="nav-drawer">
+  <a href="/" class="nav-link">Home</a>
+  <a href="/trending" class="nav-link">Trending</a>
+  <a href="/categories" class="nav-link">Categories</a>
+  <a href="/github" class="nav-link">GitHub</a>
+  <a href="/finance" class="nav-link">Finance</a>
+  <a href="/ai-tips" class="nav-link">AI Hub</a>
+  <a href="/jobs" class="nav-link">Jobs</a>
+  <a href="/prompts" class="nav-link">Prompts</a>
+  <a href="/oss" class="nav-link">OSS</a>
+  <a href="/search" class="nav-link">Search</a>
+</div>
 
-    {% block extra_js %}{% endblock %}
+<main class="main-content">
+  {% block content %}{% endblock %}
+</main>
+
+<footer class="site-footer">
+  <div class="page-wrapper">
+    <div class="footer-inner">
+      <span class="footer-logo">GlobalNews</span>
+      <nav class="footer-links">
+        <a href="/trending">Trending</a>
+        <a href="/categories">Categories</a>
+        <a href="/tags">Tags</a>
+        <a href="/finance">Finance</a>
+        <a href="/ai-tips">AI Hub</a>
+        <a href="/jobs">Jobs</a>
+        <a href="/prompts">Prompts</a>
+        <a href="/oss">OSS</a>
+        <a href="/github">GitHub Tracker</a>
+      </nav>
+      <span class="footer-meta">Auto-curated &middot; Refreshed every 15 min</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function() {
+  var html    = document.documentElement;
+  var toggle  = document.getElementById('theme-toggle');
+  var sunIcon = document.getElementById('icon-sun');
+  var moonIcon= document.getElementById('icon-moon');
+  var saved   = localStorage.getItem('gn-theme') || 'light';
+
+  html.dataset.theme = saved;
+  applyIcons(saved);
+
+  toggle.addEventListener('click', function() {
+    var next = html.dataset.theme === 'light' ? 'dark' : 'light';
+    html.dataset.theme = next;
+    localStorage.setItem('gn-theme', next);
+    applyIcons(next);
+  });
+
+  function applyIcons(t) {
+    sunIcon.style.display  = t === 'dark'  ? 'none'  : 'block';
+    moonIcon.style.display = t === 'light' ? 'none'  : 'block';
+  }
+
+  document.getElementById('nav-toggle').addEventListener('click', function() {
+    document.getElementById('nav-drawer').classList.toggle('open');
+  });
+})();
+</script>
+{% block extra_scripts %}{% endblock %}
+{% block extra_js %}{% endblock %}
 </body>
 </html>
