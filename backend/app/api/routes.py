@@ -17,7 +17,7 @@ from app.models import (
     Article, Source, ScrapeLog, Category, Tag, ArticleTag,
     GithubUpdate, GithubRepo, GithubRepoSnapshot, GithubWeeklyDigest,
     FinanceResource, FinanceQuizQuestion,
-    PromptPattern, AIModelCard, AITool, AITip, OSSAlternative,
+    PromptPattern, AIModelCard, AITool, AITip,
     ArticleView, ArticleViewDaily, SiteViewDaily,
     PromptLibrary, ArticleSEO,
     DiscoveredProject, DiscoveredProjectScore,
@@ -681,94 +681,6 @@ async def finance_digest(limit: int = 30, db: Session = Depends(get_db)):
     } for a in articles]
 
 
-# ── OSS Alternatives ─────────────────────────────────────────────
-
-@router.get("/oss", response_class=HTMLResponse)
-async def oss_page(request: Request, category: str = "", search: str = "", sort: str = "stars", db: Session = Depends(get_db)):
-    query = db.query(OSSAlternative)
-    if category:
-        query = query.filter(OSSAlternative.category == category)
-    if search:
-        term = f"%{search}%"
-        query = query.filter(
-            (OSSAlternative.oss_name.ilike(term)) |
-            (OSSAlternative.paid_name.ilike(term)) |
-            (OSSAlternative.oss_description.ilike(term))
-        )
-    if sort == "stars":
-        query = query.order_by(desc(OSSAlternative.gh_stars))
-    elif sort == "upvotes":
-        query = query.order_by(desc(OSSAlternative.upvotes))
-    else:
-        query = query.order_by(desc(OSSAlternative.created_at))
-    alternatives = query.all()
-    categories = db.query(OSSAlternative.category, func.count()).group_by(OSSAlternative.category).all()
-    total = db.query(OSSAlternative).count()
-    return templates.TemplateResponse("oss.html", {
-        "request": request, "alternatives": alternatives,
-        "categories": categories, "total": total,
-        "current_category": category, "current_search": search, "current_sort": sort,
-        "active_page": "oss",
-    })
-
-
-@router.get("/oss/{slug}", response_class=HTMLResponse)
-async def oss_detail_page(request: Request, slug: str, db: Session = Depends(get_db)):
-    alt = db.query(OSSAlternative).filter(OSSAlternative.slug == slug).first()
-    if not alt:
-        raise HTTPException(status_code=404, detail="Not found")
-    alt.views = (alt.views or 0) + 1
-    db.commit()
-    # Same paid tool alternatives
-    related = db.query(OSSAlternative).filter(
-        OSSAlternative.paid_name == alt.paid_name, OSSAlternative.id != alt.id
-    ).limit(5).all()
-    # Same category
-    same_cat = db.query(OSSAlternative).filter(
-        OSSAlternative.category == alt.category, OSSAlternative.id != alt.id
-    ).limit(3).all()
-    return templates.TemplateResponse("oss_detail.html", {
-        "request": request, "alt": alt, "related": related, "same_cat": same_cat,
-        "active_page": "oss",
-    })
-
-
-@router.get("/oss/api/list")
-async def oss_api_list(category: str = "", search: str = "", sort: str = "stars", db: Session = Depends(get_db)):
-    query = db.query(OSSAlternative)
-    if category:
-        query = query.filter(OSSAlternative.category == category)
-    if search:
-        term = f"%{search}%"
-        query = query.filter(
-            (OSSAlternative.oss_name.ilike(term)) |
-            (OSSAlternative.paid_name.ilike(term))
-        )
-    if sort == "stars":
-        query = query.order_by(desc(OSSAlternative.gh_stars))
-    elif sort == "upvotes":
-        query = query.order_by(desc(OSSAlternative.upvotes))
-    else:
-        query = query.order_by(desc(OSSAlternative.created_at))
-    alts = query.limit(100).all()
-    return [{
-        "id": a.id, "slug": a.slug, "oss_name": a.oss_name, "paid_name": a.paid_name,
-        "category": a.category, "gh_stars": a.gh_stars, "gh_forks": a.gh_forks,
-        "why_better": a.why_better, "difficulty": a.difficulty,
-        "self_hostable": a.self_hostable, "upvotes": a.upvotes, "featured": a.featured,
-    } for a in alts]
-
-
-@router.post("/oss/api/{slug}/upvote")
-async def oss_upvote(slug: str, db: Session = Depends(get_db)):
-    alt = db.query(OSSAlternative).filter(OSSAlternative.slug == slug).first()
-    if not alt:
-        raise HTTPException(status_code=404, detail="Not found")
-    alt.upvotes = (alt.upvotes or 0) + 1
-    db.commit()
-    return {"upvotes": alt.upvotes}
-
-
 @router.get("/jobs", response_class=HTMLResponse)
 async def jobs_page(request: Request):
     return templates.TemplateResponse("jobs.html", {
@@ -966,7 +878,7 @@ def llms_txt():
         "- **Finance Hub** (`/finance`): Market data, finance concepts, quiz, resources, calculators.\n"
         "- **AI Hub** (`/ai-tips`): Prompt patterns, AI model comparison, tools directory, tips feed.\n"
         "- **Job Search** (`/jobs`): Live job listings from RemoteOK and Arbeitnow, with market insights.\n"
-        "- **OSS Alternatives** (`/oss`): Open-source alternatives to paid software.\n"
+        "- **OS Radar** (`/radar`): Hidden gem open-source project discovery.\n"
         "- **AI Prompt Library** (`/prompts`): Copy-paste ready prompts for ChatGPT, Claude, Gemini, and more.\n\n"
         "## API Endpoints\n\n"
         "- `GET /api/prompts` — JSON list of AI prompts\n"
