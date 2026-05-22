@@ -1006,7 +1006,7 @@ from datetime import timedelta
 def radar_page(
     request: Request,
     language: str = None,
-    min_score: float = 0,
+    min_score: str = "",
     source: str = None,
     hidden_gems: bool = False,
     search: str = None,
@@ -1014,12 +1014,13 @@ def radar_page(
     page: int = 1,
     db: Session = Depends(get_db),
 ):
+    min_score_val = float(min_score) if min_score else 0
     query = db.query(DiscoveredProject).filter_by(is_active=True)
 
     if language:
         query = query.filter(DiscoveredProject.language == language)
-    if min_score > 0:
-        query = query.filter(DiscoveredProject.potential_score >= min_score)
+    if min_score_val > 0:
+        query = query.filter(DiscoveredProject.potential_score >= min_score_val)
     if source:
         query = query.filter(DiscoveredProject.discovery_source == source)
     if hidden_gems:
@@ -1107,7 +1108,7 @@ def radar_page(
         "has_more": (page * 20) < total,
         "filters": {
             "language": language,
-            "min_score": min_score,
+            "min_score": min_score_val,
             "source": source,
             "hidden_gems": hidden_gems,
             "search": search,
@@ -1120,17 +1121,18 @@ def radar_page(
 @router.get("/radar/api/projects")
 def radar_api(
     language: str = None,
-    min_score: float = 0,
+    min_score: str = "",
     hidden_gems: bool = False,
     limit: int = 20,
     db: Session = Depends(get_db),
 ):
     from fastapi.responses import JSONResponse
+    min_score_val = float(min_score) if min_score else 0
     query = db.query(DiscoveredProject).filter_by(is_active=True)
     if language:
         query = query.filter(DiscoveredProject.language == language)
-    if min_score:
-        query = query.filter(DiscoveredProject.potential_score >= min_score)
+    if min_score_val:
+        query = query.filter(DiscoveredProject.potential_score >= min_score_val)
     if hidden_gems:
         query = query.filter(
             DiscoveredProject.potential_score > 70,
