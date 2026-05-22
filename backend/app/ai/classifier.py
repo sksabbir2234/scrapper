@@ -52,7 +52,7 @@ def _get_model():
     if _model is None:
         try:
             from sentence_transformers import CrossEncoder
-            _model = CrossEncoder("cross-encoder/nli-MiniLM-L2-mnli", max_length=512)
+            _model = CrossEncoder("cross-encoder/nli-deberta-v3-small", max_length=512)
             logger.info("Loaded zero-shot classification model")
         except Exception as e:
             logger.error(f"Failed to load classification model: {e}")

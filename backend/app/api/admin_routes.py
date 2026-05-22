@@ -132,7 +132,9 @@ async def feature_status(user: str = Depends(verify_admin)):
         from pathlib import Path
         model_cache = Path.home() / ".cache" / "huggingface" / "hub"
         if model_cache.exists():
-            model_dirs = list(model_cache.glob("*nli-MiniLM*"))
+            model_dirs = list(model_cache.glob("*nli-deberta*"))
+            if not model_dirs:
+                model_dirs = list(model_cache.glob("*nli*MiniLM*"))
             if model_dirs:
                 status["classifier"]["available"] = True
             else:
