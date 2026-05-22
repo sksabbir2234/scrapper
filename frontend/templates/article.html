@@ -94,7 +94,7 @@
       <!-- Article Body -->
       <div class="article-body">
         {% if article.content_text %}
-        {{ article.content_text | replace('\n', '<br>') | safe }}
+        {{ article.content_text | replace('\n', '<br>') | sanitize | safe }}
         {% else %}
         <p>No content available. Visit the original article for full details.</p>
         {% endif %}
@@ -111,6 +111,14 @@
       </div>
       {% endif %}
 
+      <!-- Footer Actions -->
+      <div style="margin-top: 2rem; display: flex; gap: 0.75rem; flex-wrap: wrap;">
+        <a href="{{ article.original_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-primary">
+          Read Original Article
+        </a>
+        <a href="/" class="btn btn-ghost">Back to Home</a>
+      </div>
+
       <!-- AI Prompt Widget -->
       <div class="card" style="margin-top: 2rem;">
         <div class="card-body">
@@ -123,14 +131,6 @@
           </div>
           <a href="/prompts" class="btn btn-sm" style="margin-top: 0.75rem;">Browse all prompts</a>
         </div>
-      </div>
-
-      <!-- Footer Actions -->
-      <div style="margin-top: 2rem; display: flex; gap: 0.75rem; flex-wrap: wrap;">
-        <a href="{{ article.original_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-primary">
-          Read Original Article
-        </a>
-        <a href="/" class="btn btn-ghost">Back to Home</a>
       </div>
 
     </div>
@@ -181,28 +181,41 @@ window.addEventListener('scroll', function() {
 </script>
 {% endif %}
 <script>
-fetch('/api/prompts?limit=3')
-  .then(function(r) { return r.json(); })
-  .then(function(data) {
-    var grid = document.getElementById('prompt-widget-cards');
-    if (!data.prompts || !data.prompts.length) { grid.innerHTML = ''; return; }
-    grid.innerHTML = data.prompts.map(function(p) {
-      return '<div class="card card-flat" style="cursor:pointer;">' +
-        '<div class="card-body" style="padding:0.75rem;">' +
-        '<div style="font-size:0.85rem;font-weight:600;margin-bottom:0.25rem;">' + escHTML(p.title) + '</div>' +
-        '<div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:0.5rem;">' + escHTML(p.use_case || '') + '</div>' +
-        '<div style="display:flex;gap:0.5rem;align-items:center;">' +
-        '<span class="badge badge-neutral" style="font-size:0.7rem;">' + escHTML(p.category) + '</span>' +
-        '<button class="btn btn-sm" style="margin-left:auto;font-size:0.75rem;" onclick="event.stopPropagation();copyArticlePrompt(' + p.id + ',this,' + JSON.stringify(p.prompt_text).replace(/'/g, "\\'") + ')">Copy</button>' +
-        '</div></div></div>';
-    }).join('');
-  });
-function escHTML(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-function copyArticlePrompt(id, btn, text) {
+var _articleMeta = {
+  title: {{ article.title | tojson }},
+  url: {{ article.original_url | tojson }}
+};
+
+var _articlePrompts = [
+  { title: 'Summarize this article', use_case: 'Get a concise summary of the key points', category: 'Reading', prompt: 'Summarize this article in 3-5 bullet points. Focus on the most important facts and takeaways.' },
+  { title: 'Explain simply', use_case: 'Break down complex topics for any audience', category: 'Learning', prompt: 'Explain the main topic of this article in simple terms that anyone can understand. Use analogies if helpful.' },
+  { title: 'Extract key facts', use_case: 'Pull out the important data points and claims', category: 'Research', prompt: 'Extract all key facts, statistics, and claims from this article. For each claim, note whether it is backed by evidence or is an opinion.' },
+  { title: 'Social media post', use_case: 'Turn this into a shareable post', category: 'Writing', prompt: 'Write a compelling social media post (under 280 characters) that captures the essence of this article and makes people want to read it.' },
+  { title: 'Critical analysis', use_case: 'Evaluate strengths and weaknesses', category: 'Analysis', prompt: 'Provide a critical analysis of this article. What are its strengths? What questions does it leave unanswered? Is the evidence convincing?' },
+  { title: 'Write discussion questions', use_case: 'Generate questions for debate or study', category: 'Education', prompt: 'Generate 5 thought-provoking discussion questions based on this article that could be used in a classroom or book club setting.' }
+];
+
+var grid = document.getElementById('prompt-widget-cards');
+grid.innerHTML = _articlePrompts.map(function(p, i) {
+  return '<div class="card card-flat" style="cursor:pointer;">' +
+    '<div class="card-body" style="padding:0.75rem;">' +
+    '<div style="font-size:0.85rem;font-weight:600;margin-bottom:0.25rem;">' + p.title + '</div>' +
+    '<div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:0.5rem;">' + p.use_case + '</div>' +
+    '<div style="display:flex;gap:0.5rem;align-items:center;">' +
+    '<span class="badge badge-neutral" style="font-size:0.7rem;">' + p.category + '</span>' +
+    '<button class="btn btn-sm" style="margin-left:auto;font-size:0.75rem;" onclick="event.stopPropagation();copyArticlePrompt(' + i + ',this)">Copy</button>' +
+    '</div></div></div>';
+}).join('');
+
+function copyArticlePrompt(idx, btn) {
+  var p = _articlePrompts[idx];
+  if (!p) return;
+  var text = 'Article: ' + _articleMeta.title + '\n' +
+             'URL: ' + _articleMeta.url + '\n\n' +
+             p.prompt;
   navigator.clipboard.writeText(text).then(function() {
     btn.textContent = 'Copied!';
     setTimeout(function() { btn.textContent = 'Copy'; }, 2000);
-    fetch('/api/prompts/' + id + '/copy', {method: 'POST'});
   });
 }
 </script>

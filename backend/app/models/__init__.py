@@ -16,7 +16,7 @@ class Source(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(100), unique=True, nullable=False)
     domain = Column(String(100), nullable=False)
-    rss_url = Column(String(255), unique=True, nullable=False)
+    rss_url = Column(String(500), unique=True, nullable=False)
     category = Column(String(50))
     country_code = Column(String(2))
     is_active = Column(Boolean, default=True)
@@ -78,7 +78,7 @@ class Article(Base):
     source_id = Column(Integer, ForeignKey("sources.id"), nullable=False)
     title = Column(Text, nullable=False)
     slug = Column(String(255), unique=True, nullable=False)
-    original_url = Column(String(500), unique=True, nullable=False)
+    original_url = Column(String(1000), unique=True, nullable=False)
     url_hash = Column(String(64), nullable=False)
     content_text = Column(Text)
     author = Column(String(150))
@@ -90,7 +90,7 @@ class Article(Base):
     seo_title = Column(String(60))
     seo_description = Column(String(155))
     summary_ai = Column(Text)
-    image_url = Column(String(500))
+    image_url = Column(String(1000))
     deleted_at = Column(DateTime(timezone=True), nullable=True)
     tags = None  # TEXT[] column - handled by raw SQL if needed
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -171,11 +171,11 @@ class GithubUpdate(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     repo_id = Column(Integer, ForeignKey("github_repos.id"), nullable=True)
     repo_name = Column(String(200), nullable=False)
-    repo_url = Column(String(500), nullable=False)
+    repo_url = Column(String(1000), nullable=False)
     update_type = Column(String(30), nullable=False)  # release, commit, pr
     title = Column(Text, nullable=False)
     body = Column(Text)
-    external_url = Column(String(500), nullable=False)
+    external_url = Column(String(1000), nullable=False)
     url_hash = Column(String(64), unique=True, nullable=False)
     is_breaking = Column(Boolean, default=False)
     label = Column(String(200))
@@ -223,6 +223,7 @@ class FinanceResource(Base):
     url = Column(String(500))
     resource_type = Column(String(50))  # book, course, article, video, tool
     level = Column(String(20))  # beginner, intermediate, advanced
+    cost_level = Column(String(20), default="any")  # zero_cost, low_cost, any
     topic = Column(String(50))
     description = Column(Text)
     is_active = Column(Boolean, default=True)

@@ -6,6 +6,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy import text
 
 from app.api import routes
 from app.api import admin_routes
@@ -23,6 +24,19 @@ BASE_DIR = Path(__file__).parent.parent.parent / "frontend"
 app = FastAPI(title="NewsAI Scraper", version="0.2.0")
 
 Base.metadata.create_all(bind=engine)
+
+# Lightweight column migration for new fields
+with engine.connect() as conn:
+    try:
+        conn.execute(text("ALTER TABLE finance_resources ADD COLUMN IF NOT EXISTS cost_level VARCHAR(20) DEFAULT 'any'"))
+        conn.execute(text("ALTER TABLE articles ALTER COLUMN original_url TYPE VARCHAR(1000)"))
+        conn.execute(text("ALTER TABLE articles ALTER COLUMN image_url TYPE VARCHAR(1000)"))
+        conn.execute(text("ALTER TABLE github_updates ALTER COLUMN repo_url TYPE VARCHAR(1000)"))
+        conn.execute(text("ALTER TABLE github_updates ALTER COLUMN external_url TYPE VARCHAR(1000)"))
+        conn.execute(text("ALTER TABLE sources ALTER COLUMN rss_url TYPE VARCHAR(500)"))
+        conn.commit()
+    except Exception:
+        pass  # Column already exists or SQLite (SQLite doesn't support IF NOT EXISTS on ALTER)
 
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
 app.include_router(routes.router)

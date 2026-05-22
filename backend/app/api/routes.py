@@ -1,13 +1,14 @@
 import sys
 import hashlib
 from pathlib import Path
-from datetime import datetime, timezone, date as date_cls
+from datetime import datetime, timezone, timedelta, date as date_cls
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Query
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
+import bleach
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, func, text
 
@@ -25,6 +26,20 @@ from app.models import (
 
 BASE_DIR = Path(__file__).parent.parent.parent.parent / "frontend"
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
+
+# Safe HTML filter — strips dangerous tags, keeps safe formatting
+_ALLOWED_TAGS = list(bleach.ALLOWED_TAGS) + ['p', 'br', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+    'img', 'figure', 'figcaption', 'picture', 'source', 'video', 'audio',
+    'pre', 'code', 'span', 'div', 'table', 'thead', 'tbody', 'tr', 'th', 'td',
+    'ul', 'ol', 'li', 'dl', 'dt', 'dd', 'blockquote', 'hr', 'sup', 'sub', 'u', 's']
+_ALLOWED_ATTRS = dict(bleach.ALLOWED_ATTRIBUTES)
+_ALLOWED_ATTRS['img'] = ['src', 'alt', 'title', 'width', 'height']
+_ALLOWED_ATTRS['a'] = ['href', 'title', 'target', 'rel']
+
+def _sanitize_html(value):
+    return bleach.clean(value, tags=_ALLOWED_TAGS, attributes=_ALLOWED_ATTRS, strip=True)
+
+templates.env.filters['sanitize'] = _sanitize_html
 
 router = APIRouter()
 
@@ -330,7 +345,7 @@ async def github_page(
     # Global stats
     total_stars = db.query(func.sum(GithubRepo.stars)).scalar() or 0
     updates_this_week = db.query(GithubUpdate).filter(
-        GithubUpdate.published_at >= datetime.now(timezone.utc) - __import__('datetime').timedelta(days=7)
+        GithubUpdate.published_at >= datetime.now(timezone.utc) - timedelta(days=7)
     ).count()
     breaking_count = db.query(GithubUpdate).filter(GithubUpdate.is_breaking == True).count()
     trending_count = db.query(GithubRepo).filter(GithubRepo.trending_score > 0).count()
@@ -543,16 +558,19 @@ async def finance_quiz(db: Session = Depends(get_db)):
 
 
 @router.get("/finance/api/resources")
-async def finance_resources(level: str = "", topic: str = "", db: Session = Depends(get_db)):
+async def finance_resources(level: str = "", topic: str = "", cost_level: str = "", db: Session = Depends(get_db)):
     query = db.query(FinanceResource).filter(FinanceResource.is_active == True)
     if level:
         query = query.filter(FinanceResource.level == level)
     if topic:
         query = query.filter(FinanceResource.topic == topic)
+    if cost_level:
+        query = query.filter(FinanceResource.cost_level == cost_level)
     resources = query.all()
     return [{
         "id": r.id, "title": r.title, "url": r.url,
         "resource_type": r.resource_type, "level": r.level,
+        "cost_level": r.cost_level,
         "topic": r.topic, "description": r.description,
     } for r in resources]
 

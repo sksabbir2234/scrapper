@@ -4,16 +4,16 @@ import threading
 from pathlib import Path
 from datetime import datetime, timezone, timedelta
 
-sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
-
+import jwt
 from fastapi import APIRouter, Depends, HTTPException, Request, Query
 from fastapi.responses import HTMLResponse, JSONResponse
-from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, func, or_, text
 
+sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 from app.db.database import get_db
 from app.models import Article, Source, ScrapeLog, Tag, ArticleTag, ArticleViewDaily, SiteViewDaily, Category, ArticleCategory, DiscoveredProject, GithubRepo
 from config.settings import get_settings
@@ -22,20 +22,49 @@ router = APIRouter()
 BASE_DIR = Path(__file__).parent.parent.parent.parent / "frontend"
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 
-security = HTTPBasic()
+security = HTTPBearer()
 
 
-def verify_admin(credentials: HTTPBasicCredentials = Depends(security)):
+def _create_token(username: str) -> str:
     settings = get_settings()
-    correct_user = secrets.compare_digest(credentials.username, settings.admin_user)
-    correct_pass = secrets.compare_digest(credentials.password, settings.admin_password)
+    payload = {
+        "sub": username,
+        "exp": datetime.now(timezone.utc) + timedelta(hours=settings.admin_token_expire_hours),
+        "iat": datetime.now(timezone.utc),
+    }
+    return jwt.encode(payload, settings.admin_secret_key, algorithm="HS256")
+
+
+def verify_admin(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    settings = get_settings()
+    try:
+        payload = jwt.decode(credentials.credentials, settings.admin_secret_key, algorithms=["HS256"])
+        return payload.get("sub", "admin")
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+
+@router.post("/admin/login")
+async def admin_login(body: LoginRequest):
+    settings = get_settings()
+    correct_user = secrets.compare_digest(body.username, settings.admin_user)
+    correct_pass = secrets.compare_digest(body.password, settings.admin_password)
     if not (correct_user and correct_pass):
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid credentials",
-            headers={"WWW-Authenticate": "Basic"},
-        )
-    return credentials.username
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    token = _create_token(body.username)
+    return JSONResponse({"token": token, "expires_hours": settings.admin_token_expire_hours})
+
+
+@router.get("/admin/verify")
+async def admin_verify(user: str = Depends(verify_admin)):
+    return JSONResponse({"valid": True, "user": user})
 
 
 class SourceCreate(BaseModel):
@@ -78,7 +107,7 @@ class BulkDelete(BaseModel):
 # ─── Dashboard Page ───
 
 @router.get("/admin", response_class=HTMLResponse)
-async def admin_page(request: Request, user: str = Depends(verify_admin)):
+async def admin_page(request: Request):
     return templates.TemplateResponse("admin.html", {"request": request})
 
 
@@ -506,6 +535,26 @@ async def trigger_scrape(options: ScrapeOptions = ScrapeOptions(), user: str = D
     return {"status": "ok", "message": msg}
 
 
+@router.post("/admin/scrape/finance")
+async def trigger_finance_scrape(user: str = Depends(verify_admin)):
+    """Manually trigger finance education scrape."""
+    from app.scheduler import run_finance_scrape
+
+    thread = threading.Thread(target=run_finance_scrape, daemon=True)
+    thread.start()
+    return {"status": "ok", "message": "Finance education scrape triggered"}
+
+
+@router.post("/admin/scrape/prompts")
+async def trigger_prompts_scrape(user: str = Depends(verify_admin)):
+    """Manually trigger awesome-chatgpt-prompts scrape."""
+    from app.scheduler import run_prompts_scrape
+
+    thread = threading.Thread(target=run_prompts_scrape, daemon=True)
+    thread.start()
+    return {"status": "ok", "message": "Prompts CSV scrape triggered"}
+
+
 # ─── Analytics Endpoints ───
 
 @router.get("/admin/analytics/views")
@@ -742,3 +791,102 @@ def admin_radar_stats(user: str = Depends(verify_admin), db: Session = Depends(g
             for r in recent_runs
         ],
     })
+
+
+# ── Scheduler Jobs ─────────────────────────────────────────────
+
+def _format_trigger(trigger) -> tuple[str, str]:
+    """Return (type, human-readable schedule) for an APScheduler trigger."""
+    from apscheduler.triggers.cron import CronTrigger
+    from apscheduler.triggers.interval import IntervalTrigger
+
+    if isinstance(trigger, CronTrigger):
+        field_map = {f.name: str(f) for f in trigger.fields}
+        parts = []
+        hour = field_map.get("hour", "*")
+        minute = field_map.get("minute", "*")
+        dow = field_map.get("day_of_week", "*")
+
+        if hour != "*":
+            parts.append(f"at {hour.zfill(2)}:{minute.zfill(2)}")
+        if dow != "*":
+            days = {"0": "Sun", "1": "Mon", "2": "Tue", "3": "Wed", "4": "Thu", "5": "Fri", "6": "Sat"}
+            parts.append(f"on {days.get(dow, dow)}")
+
+        if not parts:
+            return "cron", field_map.get("hour", "*") + ":" + field_map.get("minute", "*")
+        return "cron", " ".join(parts)
+
+    elif isinstance(trigger, IntervalTrigger):
+        interval = trigger.interval
+        total_seconds = int(interval.total_seconds())
+        if total_seconds >= 86400:
+            days = total_seconds // 86400
+            return "interval", f"every {days}d"
+        elif total_seconds >= 3600:
+            hours = total_seconds // 3600
+            return "interval", f"every {hours}h"
+        elif total_seconds >= 60:
+            minutes = total_seconds // 60
+            return "interval", f"every {minutes}m"
+        else:
+            return "interval", f"every {total_seconds}s"
+    return "unknown", str(trigger)
+
+
+def _categorize_job(job_id: str) -> str:
+    """Categorize a job by its ID prefix."""
+    if job_id.startswith("radar_"):
+        return "radar"
+    if job_id.startswith("github_"):
+        return "github"
+    if job_id.startswith("source_"):
+        return "sources"
+    if job_id.startswith("seo"):
+        return "seo"
+    if job_id.startswith("finance"):
+        return "finance"
+    if job_id.startswith("prompt"):
+        return "prompts"
+    return "other"
+
+
+@router.get("/admin/scheduler/jobs")
+async def scheduler_jobs(request: Request, user: str = Depends(verify_admin)):
+    """List all registered APScheduler jobs with their status."""
+    scheduler = request.app.state.scheduler
+    jobs = scheduler.get_jobs()
+
+    result = []
+    for job in jobs:
+        trigger_type, trigger_detail = _format_trigger(job.trigger)
+        result.append({
+            "id": job.id,
+            "name": job.name or job.id,
+            "category": _categorize_job(job.id),
+            "trigger_type": trigger_type,
+            "schedule": trigger_detail,
+            "next_run_time": job.next_run_time.isoformat() if job.next_run_time else None,
+            "running": getattr(job, "pending", False),
+        })
+
+    # Sort: by category then name
+    order = {"sources": 0, "github": 1, "finance": 2, "prompts": 3, "seo": 4, "radar": 5, "other": 6}
+    result.sort(key=lambda x: (order.get(x["category"], 9), x["name"]))
+
+    return JSONResponse({"jobs": result, "total": len(result)})
+
+
+@router.post("/admin/scheduler/jobs/{job_id}/run")
+async def run_scheduler_job(job_id: str, request: Request, user: str = Depends(verify_admin)):
+    """Trigger any scheduler job immediately by its ID."""
+    scheduler = request.app.state.scheduler
+    job = scheduler.get_job(job_id)
+    if not job:
+        raise HTTPException(404, f"Job '{job_id}' not found")
+
+    try:
+        job.func(*job.args, **job.kwargs)
+        return JSONResponse({"status": "ok", "message": f"Job '{job_id}' triggered"})
+    except Exception as e:
+        raise HTTPException(500, f"Job failed: {e}")

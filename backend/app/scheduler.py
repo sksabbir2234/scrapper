@@ -12,7 +12,7 @@ from apscheduler.triggers.interval import IntervalTrigger
 from sqlalchemy.orm import Session
 
 from app.db.database import SessionLocal
-from app.models import Source, Article, ScrapeLog, GithubUpdate, GithubRepo, GithubRepoSnapshot, GithubWeeklyDigest, GithubScrapeLog
+from app.models import Source, Article, ScrapeLog, GithubUpdate, GithubRepo, GithubRepoSnapshot, GithubWeeklyDigest, GithubScrapeLog, FinanceResource, PromptLibrary
 from app.scrapers.rss_scraper import scrape_rss_feed
 from app.scrapers.playwright_scraper import scrape_with_playwright
 from app.ai.summarizer import summarize_article
@@ -132,14 +132,23 @@ def scrape_single_source(source_id: int, summarize: bool = False, classify: bool
             errors = []
             new_articles = []
 
+            seen_urls = set()
             for article_data in articles:
+                # Check DB for existing by url_hash OR original_url
                 existing = db.query(Article).filter(
-                    Article.url_hash == article_data["url_hash"]
+                    (Article.url_hash == article_data["url_hash"]) |
+                    (Article.original_url == article_data["original_url"])
                 ).first()
 
                 if existing:
                     skipped += 1
                     continue
+
+                # Also skip in-batch duplicates
+                if article_data["original_url"] in seen_urls:
+                    skipped += 1
+                    continue
+                seen_urls.add(article_data["original_url"])
 
                 try:
                     article = Article(**article_data)
@@ -491,6 +500,120 @@ def schedule_github_jobs(scheduler: BackgroundScheduler):
     logger.info("Scheduled GitHub weekly digest on Sunday 00:00")
 
 
+def run_finance_scrape():
+    """Scrape free financial education RSS feeds and store in FinanceResource."""
+    from app.scrapers.finance_scraper import scrape_all_finance_feeds
+
+    db = SessionLocal()
+    start = time.time()
+    try:
+        items = scrape_all_finance_feeds()
+        inserted = 0
+        skipped = 0
+
+        for item in items:
+            existing = db.query(FinanceResource).filter(
+                FinanceResource.url == item["url"]
+            ).first()
+            if existing:
+                skipped += 1
+                continue
+
+            resource = FinanceResource(
+                title=item["title"],
+                url=item["url"],
+                resource_type=item["resource_type"],
+                level=item["level"],
+                cost_level=item["cost_level"],
+                topic=item["topic"],
+                description=item["description"],
+            )
+            db.add(resource)
+            inserted += 1
+
+        db.commit()
+        duration = int(time.time() - start)
+        logger.info(
+            f"Finance scrape: {inserted} inserted, {skipped} skipped, "
+            f"{len(items)} total, {duration}s"
+        )
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Finance scrape failed: {e}")
+    finally:
+        db.close()
+
+
+def run_prompts_scrape():
+    """Fetch awesome-chatgpt-prompts CSV and store in PromptLibrary."""
+    from app.scrapers.prompts_scraper import scrape_prompts
+
+    db = SessionLocal()
+    start = time.time()
+    try:
+        prompts = scrape_prompts()
+        inserted = 0
+        skipped = 0
+
+        for p in prompts:
+            existing = db.query(PromptLibrary).filter(
+                PromptLibrary.title == p["title"]
+            ).first()
+            if existing:
+                skipped += 1
+                continue
+
+            prompt = PromptLibrary(
+                title=p["title"],
+                prompt_text=p["prompt_text"],
+                category=p["category"],
+                tags=p["tags"],
+                difficulty=p["difficulty"],
+            )
+            db.add(prompt)
+            inserted += 1
+
+        db.commit()
+        duration = int(time.time() - start)
+        logger.info(
+            f"Prompts scrape: {inserted} inserted, {skipped} skipped, "
+            f"{len(prompts)} total, {duration}s"
+        )
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Prompts scrape failed: {e}")
+    finally:
+        db.close()
+
+
+def schedule_finance_jobs(scheduler: BackgroundScheduler):
+    """Schedule daily finance education scrape at 6 AM."""
+    from apscheduler.triggers.cron import CronTrigger
+
+    scheduler.add_job(
+        run_finance_scrape,
+        trigger=CronTrigger(hour=6, minute=0),
+        id="finance_daily_scrape",
+        name="Finance Education Scrape",
+        replace_existing=True,
+    )
+    logger.info("Scheduled finance education scrape daily at 6:00 AM")
+
+
+def schedule_prompts_jobs(scheduler: BackgroundScheduler):
+    """Schedule weekly prompts scrape on Monday at 3 AM."""
+    from apscheduler.triggers.cron import CronTrigger
+
+    scheduler.add_job(
+        run_prompts_scrape,
+        trigger=CronTrigger(day_of_week="mon", hour=3, minute=0),
+        id="prompts_weekly_scrape",
+        name="Prompts CSV Scrape",
+        replace_existing=True,
+    )
+    logger.info("Scheduled prompts CSV scrape weekly on Monday 3:00 AM")
+
+
 def start_scheduler(interval_minutes: int = 30, cron_expression: str = None):
     """Start the background scheduler with per-source jobs.
 
@@ -502,6 +625,8 @@ def start_scheduler(interval_minutes: int = 30, cron_expression: str = None):
     schedule_github_jobs(scheduler)
     schedule_seo_jobs(scheduler)
     schedule_radar_jobs(scheduler)
+    schedule_finance_jobs(scheduler)
+    schedule_prompts_jobs(scheduler)
     scheduler.start()
     logger.info("Scheduler started with per-source intervals")
     return scheduler

@@ -228,6 +228,15 @@
 }
 .form-actions { display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.5rem; }
 
+/* ── Quick Actions Grid ── */
+.quick-actions-grid { display: flex; flex-direction: column; gap: 1rem; }
+.quick-action-group { display: flex; flex-direction: column; gap: 0.5rem; }
+.quick-action-label {
+  font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--text-muted);
+}
+.quick-action-btns { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+
 /* ── Mobile ── */
 @media (max-width: 900px) {
   .admin-wrapper { flex-direction: column; }

@@ -86,18 +86,24 @@ def scrape_rss_feed(rss_url: str, source_id: int, source_name: str, category: st
         
         content_text = " ".join(filter(None, content_parts)).strip()
 
+        # Append short hash to slug to prevent collisions on same-titled articles
+        url_hash = compute_url_hash(url)
+        base_slug = slugify(title)[:230]
+        short_hash = url_hash[:8]
+        slug = f"{base_slug}-{short_hash}"
+
         article = {
             "source_id": source_id,
             "title": title,
-            "slug": slugify(title)[:250],
-            "original_url": url,
-            "url_hash": compute_url_hash(url),
+            "slug": slug,
+            "original_url": url[:1000],
+            "url_hash": url_hash,
             "content_text": content_text[:10000],
             "author": entry.get("author", ""),
             "published_at": parse_published_date(entry),
             "language": "en",
             "category": category,
-            "image_url": extract_image_url(entry),
+            "image_url": extract_image_url(entry)[:1000] if extract_image_url(entry) else None,
         }
         articles.append(article)
 

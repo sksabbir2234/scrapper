@@ -103,12 +103,16 @@ def scrape_with_playwright(url: str, source_id: int, source_name: str, category:
                             parsed = urlparse(url)
                             img_url = f"{parsed.scheme}://{parsed.netloc}{img_url}"
 
+                    url_hash = compute_url_hash(href)
+                    base_slug = slugify(title)[:230]
+                    slug = f"{base_slug}-{url_hash[:8]}"
+
                     article = {
                         "source_id": source_id,
                         "title": title[:500],
-                        "slug": slugify(title)[:250],
-                        "original_url": href,
-                        "url_hash": compute_url_hash(href),
+                        "slug": slug,
+                        "original_url": href[:1000],
+                        "url_hash": url_hash,
                         "content_text": content[:10000],
                         "author": "",
                         "published_at": datetime.now(timezone.utc),

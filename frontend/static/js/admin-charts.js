@@ -26,9 +26,11 @@
 
   // ── Fetch with admin auth ──
   function fetchJSON(url) {
+    var token = localStorage.getItem('admin_token');
     return fetch(url, {
-      headers: { 'Authorization': 'Basic ' + btoa('admin:newsadmin2026') }
+      headers: token ? { 'Authorization': 'Bearer ' + token } : {}
     }).then(function(r) {
+      if (r.status === 401) { localStorage.removeItem('admin_token'); location.reload(); }
       if (!r.ok) throw new Error('HTTP ' + r.status);
       return r.json();
     });

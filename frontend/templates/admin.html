@@ -8,7 +8,21 @@
 {% endblock %}
 
 {% block content %}
-<div class="admin-wrapper">
+
+<!-- Login Form -->
+<div id="admin-login" style="display:none; max-width: 380px; margin: 4rem auto; padding: 2rem;">
+  <div class="card" style="padding: 2rem;">
+    <h2 style="font-family: var(--font-serif); margin-bottom: 1.5rem; text-align: center;">Admin Login</h2>
+    <div style="display: flex; flex-direction: column; gap: 1rem;">
+      <input type="text" id="login-user" placeholder="Username" class="search-input" style="width: 100%; box-sizing: border-box;">
+      <input type="password" id="login-pass" placeholder="Password" class="search-input" style="width: 100%; box-sizing: border-box;">
+      <button class="btn btn-primary" onclick="doLogin()" style="width: 100%;">Sign In</button>
+      <div id="login-error" style="color: var(--danger); font-size: 0.85rem; text-align: center; display: none;"></div>
+    </div>
+  </div>
+</div>
+
+<div class="admin-wrapper" id="admin-app" style="display:none;">
 
   <!-- Sidebar -->
   <aside class="admin-sidebar">
@@ -17,6 +31,7 @@
     <div class="admin-sidebar-section">
       <div class="admin-sidebar-label">Management</div>
       <button class="admin-nav-link active" data-tab="dashboard"><span class="nav-icon">D</span> Dashboard</button>
+      <button class="admin-nav-link" data-tab="scrapers"><span class="nav-icon">G</span> Scrapers</button>
       <button class="admin-nav-link" data-tab="analytics"><span class="nav-icon">A</span> Analytics</button>
       <button class="admin-nav-link" data-tab="sources"><span class="nav-icon">S</span> Sources</button>
       <button class="admin-nav-link" data-tab="articles"><span class="nav-icon">R</span> Articles</button>
@@ -27,13 +42,18 @@
     <div class="scraper-status-widget">
       <div class="scraper-status-row">
         <span class="status-dot online" id="status-dot"></span>
-        <span class="status-label">Scraper:</span>
-        <span class="status-value" id="scraper-status">Active</span>
+        <span class="status-label">Scheduler:</span>
+        <span class="status-value" id="scraper-status">Loading...</span>
+      </div>
+      <div class="scraper-status-row">
+        <span class="status-label">Jobs:</span>
+        <span class="status-value" id="scheduler-job-count">—</span>
       </div>
       <div class="scraper-status-row">
         <span class="status-label">Last run:</span>
         <span class="status-value" id="last-scrape">—</span>
       </div>
+      <button onclick="doLogout()" class="btn btn-sm" style="margin-top:0.75rem;width:100%;font-size:0.75rem;">Logout</button>
     </div>
   </aside>
 
@@ -62,13 +82,35 @@
       <!-- Quick Actions -->
       <div class="card" style="padding: 1.25rem; margin-top: 1rem;">
         <div class="section-title" style="margin-bottom: 0.75rem;">Quick Actions</div>
-        <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.75rem;">Scrape all sources with optional AI features</p>
-        <div class="table-toolbar">
-          <button class="btn btn-primary" onclick="triggerFullScrape()">Scrape All Sources</button>
-          <label style="font-size: 0.85rem; color: var(--text-light); cursor: pointer;"><input type="checkbox" id="q-summarize"> AI Summary</label>
-          <label style="font-size: 0.85rem; color: var(--text-light); cursor: pointer;"><input type="checkbox" id="q-classify"> Auto Category</label>
-          <label style="font-size: 0.85rem; color: var(--text-light); cursor: pointer;"><input type="checkbox" id="q-tags"> Extract Tags</label>
+        <div class="quick-actions-grid">
+          <div class="quick-action-group">
+            <div class="quick-action-label">News Scrapers</div>
+            <div class="quick-action-btns">
+              <button class="btn btn-primary" onclick="triggerFullScrape()">Scrape All Sources</button>
+              <label style="font-size: 0.85rem; color: var(--text-light); cursor: pointer;"><input type="checkbox" id="q-summarize"> AI Summary</label>
+              <label style="font-size: 0.85rem; color: var(--text-light); cursor: pointer;"><input type="checkbox" id="q-classify"> Auto Category</label>
+              <label style="font-size: 0.85rem; color: var(--text-light); cursor: pointer;"><input type="checkbox" id="q-tags"> Extract Tags</label>
+            </div>
+          </div>
+          <div class="quick-action-group">
+            <div class="quick-action-label">Specialized Scrapers</div>
+            <div class="quick-action-btns">
+              <button class="btn btn-ghost" onclick="triggerScraper('finance')">Finance Education</button>
+              <button class="btn btn-ghost" onclick="triggerScraper('prompts')">AI Prompts</button>
+              <button class="btn btn-ghost" onclick="triggerScraper('radar')">OS Radar</button>
+            </div>
+          </div>
         </div>
+      </div>
+    </div>
+
+    <!-- ═══ SCRAPERS TAB ═══ -->
+    <div id="panel-scrapers" class="tab-panel">
+      <h2 class="admin-page-title">Scraper Scheduler</h2>
+      <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">All registered scheduler jobs. New scrapers appear here automatically.</p>
+
+      <div class="scraper-category-grid" id="scraper-categories">
+        <div class="chart-empty">Loading scheduler jobs...</div>
       </div>
     </div>
 
@@ -262,18 +304,62 @@ var logInterval = null;
 var currentArticlePage = 1;
 
 // ─── Auth ───
-function getAuth() {
-    return 'Basic ' + btoa('admin:newsadmin2026');
+function getToken() {
+    return localStorage.getItem('admin_token');
 }
+
+function doLogin() {
+    var user = document.getElementById('login-user').value;
+    var pass = document.getElementById('login-pass').value;
+    var errEl = document.getElementById('login-error');
+    errEl.style.display = 'none';
+
+    fetch('/admin/login', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({username: user, password: pass})
+    }).then(function(r) { return r.json().then(function(d) { return {ok: r.ok, data: d}; }); })
+    .then(function(res) {
+        if (!res.ok) {
+            errEl.textContent = res.data.detail || 'Login failed';
+            errEl.style.display = 'block';
+            return;
+        }
+        localStorage.setItem('admin_token', res.data.token);
+        showAdmin();
+    });
+}
+
+function doLogout() {
+    localStorage.removeItem('admin_token');
+    location.reload();
+}
+
+function showAdmin() {
+    document.getElementById('admin-login').style.display = 'none';
+    document.getElementById('admin-app').style.display = 'flex';
+    loadStats();
+    loadSchedulerJobs();
+}
+
+function showLogin() {
+    document.getElementById('admin-login').style.display = 'block';
+    document.getElementById('admin-app').style.display = 'none';
+}
+
 function apiFetch(url, opts) {
     opts = opts || {};
     opts.headers = opts.headers || {};
-    opts.headers['Authorization'] = getAuth();
+    var token = getToken();
+    if (token) opts.headers['Authorization'] = 'Bearer ' + token;
     if (opts.body && typeof opts.body === 'object') {
         opts.headers['Content-Type'] = 'application/json';
         opts.body = JSON.stringify(opts.body);
     }
-    return fetch(url, opts);
+    return fetch(url, opts).then(function(r) {
+        if (r.status === 401) { doLogout(); }
+        return r;
+    });
 }
 
 // ─── Sidebar Navigation ───
@@ -285,6 +371,7 @@ document.querySelectorAll('.admin-nav-link[data-tab]').forEach(function(link) {
         document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
         document.getElementById('panel-' + tab).classList.add('active');
         if (tab === 'dashboard') loadStats();
+        if (tab === 'scrapers') { loadSchedulerJobs(); startScraperRefresh(); } else { stopScraperRefresh(); }
         if (tab === 'analytics' && typeof initCharts === 'function') initCharts();
         if (tab === 'sources') loadSources();
         if (tab === 'articles') loadArticles();
@@ -577,7 +664,111 @@ function timeAgo(isoStr) {
     return Math.floor(diff / 86400) + 'd ago';
 }
 
-// Init
-loadStats();
+// ─── Scrapers Tab ───
+var scraperRefreshInterval = null;
+
+async function loadSchedulerJobs() {
+    var r = await apiFetch('/admin/scheduler/jobs');
+    if (!r.ok) return;
+    var d = await r.json();
+    var container = document.getElementById('scraper-categories');
+
+    // Group by category
+    var groups = {};
+    var categoryLabels = {
+        sources: 'RSS Sources',
+        github: 'GitHub Watch',
+        finance: 'Finance Education',
+        prompts: 'AI Prompts',
+        seo: 'SEO Pipeline',
+        radar: 'OS Radar',
+        other: 'Other'
+    };
+    d.jobs.forEach(function(job) {
+        var cat = job.category || 'other';
+        if (!groups[cat]) groups[cat] = [];
+        groups[cat].push(job);
+    });
+
+    var html = '';
+    var order = ['sources', 'github', 'finance', 'prompts', 'seo', 'radar', 'other'];
+    order.forEach(function(cat) {
+        if (!groups[cat]) return;
+        var jobs = groups[cat];
+        html += '<div class="card" style="padding: 1.25rem; margin-bottom: 1rem;">';
+        html += '<div class="section-title" style="margin-bottom: 0.75rem;">' + esc(categoryLabels[cat] || cat) + ' <span class="badge badge-neutral">' + jobs.length + '</span></div>';
+        html += '<div class="admin-table-wrap"><table class="admin-table">';
+        html += '<thead><tr><th>Job Name</th><th>Schedule</th><th>Next Run</th><th>Status</th><th>Actions</th></tr></thead>';
+        html += '<tbody>';
+        jobs.forEach(function(job) {
+            var nextRun = job.next_run_time ? timeAgo(job.next_run_time) : '—';
+            var statusBadge = job.running ?
+                '<span class="badge badge-warning">Running</span>' :
+                '<span class="badge badge-success">Idle</span>';
+            html += '<tr>' +
+                '<td class="table-cell-primary">' + esc(job.name) + '</td>' +
+                '<td><span class="badge badge-info">' + esc(job.trigger_type) + '</span> ' + esc(job.schedule) + '</td>' +
+                '<td>' + nextRun + '</td>' +
+                '<td>' + statusBadge + '</td>' +
+                '<td><button class="btn btn-sm btn-primary" onclick="runSchedulerJob(\'' + esc(job.id) + '\')">Run Now</button></td>' +
+                '</tr>';
+        });
+        html += '</tbody></table></div></div>';
+    });
+
+    container.innerHTML = html || '<div class="chart-empty">No scheduler jobs found</div>';
+
+    // Update sidebar widget
+    document.getElementById('scraper-status').textContent = 'Active';
+    document.getElementById('scheduler-job-count').textContent = d.total + ' jobs';
+}
+
+async function runSchedulerJob(jobId) {
+    var r = await apiFetch('/admin/scheduler/jobs/' + encodeURIComponent(jobId) + '/run', { method: 'POST' });
+    var d = await r.json();
+    if (r.ok) {
+        loadSchedulerJobs();
+    } else {
+        alert('Error: ' + (d.detail || 'Failed to trigger job'));
+    }
+}
+
+function startScraperRefresh() {
+    stopScraperRefresh();
+    scraperRefreshInterval = setInterval(loadSchedulerJobs, 30000);
+}
+function stopScraperRefresh() {
+    if (scraperRefreshInterval) { clearInterval(scraperRefreshInterval); scraperRefreshInterval = null; }
+}
+
+// ─── Quick Action Scraper Triggers ───
+async function triggerScraper(type) {
+    var endpoints = {
+        finance: '/admin/scrape/finance',
+        prompts: '/admin/scrape/prompts',
+        radar: '/admin/radar/run?strategy=star_accelerators'
+    };
+    var url = endpoints[type];
+    if (!url) return;
+    var r = await apiFetch(url, { method: 'POST' });
+    var d = await r.json();
+    if (r.ok) {
+        alert(d.message || type + ' scraper triggered');
+    } else {
+        alert('Error: ' + (d.detail || 'Failed'));
+    }
+}
+
+// Init — check token on load
+if (getToken()) {
+    // Verify token is still valid
+    fetch('/admin/verify', { headers: {'Authorization': 'Bearer ' + getToken()} })
+        .then(function(r) {
+            if (r.ok) { showAdmin(); }
+            else { showLogin(); }
+        });
+} else {
+    showLogin();
+}
 </script>
 {% endblock %}
