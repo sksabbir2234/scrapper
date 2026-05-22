@@ -12,7 +12,7 @@ from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from sqlalchemy import desc, func, or_
+from sqlalchemy import desc, func, or_, text
 
 from app.db.database import get_db
 from app.models import Article, Source, ScrapeLog, Tag, ArticleTag, ArticleViewDaily, SiteViewDaily, Category, ArticleCategory, DiscoveredProject, GithubRepo
@@ -712,7 +712,7 @@ def admin_radar_promote(
 @router.get("/admin/radar/stats")
 def admin_radar_stats(user: str = Depends(verify_admin), db: Session = Depends(get_db)):
     """Radar health and coverage stats."""
-    stats = db.execute(func.text(
+    stats = db.execute(text(
         "SELECT COUNT(*) as total_discovered, "
         "COUNT(*) FILTER (WHERE is_active) as active, "
         "COUNT(*) FILTER (WHERE potential_score > 70 AND stars < 5000) as hidden_gems, "
