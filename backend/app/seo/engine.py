@@ -150,8 +150,12 @@ def score_seo(seo_data: dict, article_word_count: int, article_slug: str) -> tup
 
 
 def generate_rule_based_seo(article) -> dict:
-    """Rule-based SEO generation — no AI needed. Fallback when Groq unavailable."""
+    """Rule-based SEO generation — uses Groq seo_title/seo_description when available."""
     title = article.title or ""
+
+    # Prefer Groq-generated SEO fields if available
+    groq_seo_title = getattr(article, 'seo_title', None)
+    groq_seo_desc = getattr(article, 'seo_description', None)
     source_name = article.source.name if hasattr(article, "source") and article.source else "GlobalNews"
     category = article.source.category if hasattr(article, "source") and article.source else "News"
     date_str = ""
@@ -163,23 +167,29 @@ def generate_rule_based_seo(article) -> dict:
     else:
         date_str = "Today"
 
-    # SEO title
-    seo_title = title
-    if len(title) > 60:
-        seo_title = title[:57] + "..."
-    elif len(title) < 40:
-        seo_title = f"{title} | {category} News"
-    if len(seo_title) > 70:
-        seo_title = seo_title[:67] + "..."
+    # SEO title — prefer Groq if available and valid length
+    if groq_seo_title and 30 <= len(groq_seo_title) <= 70:
+        seo_title = groq_seo_title
+    else:
+        seo_title = title
+        if len(title) > 60:
+            seo_title = title[:57] + "..."
+        elif len(title) < 40:
+            seo_title = f"{title} | {category} News"
+        if len(seo_title) > 70:
+            seo_title = seo_title[:67] + "..."
 
-    # SEO description
-    headline_short = title[:80] + "..." if len(title) > 80 else title
-    seo_desc = (
-        f"{headline_short} - Reported by {source_name} on {date_str}. "
-        f"Stay up to date with GlobalNews: AI-curated {category} news updated every 15 minutes."
-    )
-    if len(seo_desc) > 165:
-        seo_desc = seo_desc[:162] + "..."
+    # SEO description — prefer Groq if available and valid length
+    if groq_seo_desc and 100 <= len(groq_seo_desc) <= 165:
+        seo_desc = groq_seo_desc
+    else:
+        headline_short = title[:80] + "..." if len(title) > 80 else title
+        seo_desc = (
+            f"{headline_short} - Reported by {source_name} on {date_str}. "
+            f"Stay up to date with GlobalNews: AI-curated {category} news updated every 15 minutes."
+        )
+        if len(seo_desc) > 165:
+            seo_desc = seo_desc[:162] + "..."
 
     # Keywords from tags
     keywords = []

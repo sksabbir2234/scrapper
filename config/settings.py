@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     groq_api_key: str | None = None
     admin_user: str = "admin"
     admin_password: str = "changeme"
+    site_url: str = "http://localhost:8000"
     github_token: str | None = None
     github_watch_interval_minutes: int = 60
     market_cache_ttl_seconds: int = 300

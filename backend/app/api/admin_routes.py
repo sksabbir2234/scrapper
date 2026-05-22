@@ -82,6 +82,79 @@ async def admin_page(request: Request, user: str = Depends(verify_admin)):
     return templates.TemplateResponse("admin.html", {"request": request})
 
 
+# ─── Feature Status ───
+
+@router.get("/admin/status")
+async def feature_status(user: str = Depends(verify_admin)):
+    """Check which features are configured and available."""
+    settings = get_settings()
+    status = {}
+
+    # Groq API
+    status["groq"] = {
+        "configured": bool(settings.groq_api_key),
+        "available": False,
+    }
+    if settings.groq_api_key:
+        try:
+            import groq
+            status["groq"]["available"] = True
+        except ImportError:
+            status["groq"]["error"] = "groq package not installed"
+
+    # Playwright
+    status["playwright"] = {
+        "configured": False,
+        "available": False,
+    }
+    try:
+        import playwright
+        status["playwright"]["configured"] = True
+        # Check if browser is installed
+        from pathlib import Path
+        cache_dir = Path.home() / ".cache" / "ms-playwright"
+        if cache_dir.exists() and any(cache_dir.iterdir()):
+            status["playwright"]["available"] = True
+        else:
+            status["playwright"]["error"] = "Run: playwright install chromium"
+    except ImportError:
+        status["playwright"]["error"] = "playwright package not installed"
+
+    # Classifier
+    status["classifier"] = {
+        "configured": False,
+        "available": False,
+    }
+    try:
+        from sentence_transformers import CrossEncoder
+        status["classifier"]["configured"] = True
+        # Check if model is cached
+        from pathlib import Path
+        model_cache = Path.home() / ".cache" / "huggingface" / "hub"
+        if model_cache.exists():
+            model_dirs = list(model_cache.glob("*nli-MiniLM*"))
+            if model_dirs:
+                status["classifier"]["available"] = True
+            else:
+                status["classifier"]["error"] = "Model not downloaded yet"
+        else:
+            status["classifier"]["error"] = "Model not downloaded yet"
+    except ImportError:
+        status["classifier"]["error"] = "sentence-transformers package not installed"
+
+    # SEO Pipeline
+    status["seo"] = {
+        "configured": True,
+        "available": True,
+        "note": "Rule-based, no external dependencies",
+    }
+
+    # Site URL
+    status["site_url"] = settings.site_url
+
+    return status
+
+
 # ─── Stats API ───
 
 @router.get("/admin/stats")

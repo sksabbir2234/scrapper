@@ -19,7 +19,9 @@ from app.models import Article, ArticleSEO
 
 logger = logging.getLogger("seo_pipeline")
 
-SITE_URL = "http://localhost:8000"
+def _get_site_url():
+    from config.settings import get_settings
+    return get_settings().site_url
 
 
 def process_article_seo(article_id: int, db: Session) -> bool:
@@ -37,7 +39,8 @@ def process_article_seo(article_id: int, db: Session) -> bool:
         seo_data = generate_rule_based_seo(article)
 
         # JSON-LD schema
-        schema = generate_schema_json(article, SITE_URL)
+        site_url = _get_site_url()
+        schema = generate_schema_json(article, site_url)
 
         # Score
         word_count = len((article.content_text or "").split())
@@ -51,7 +54,7 @@ def process_article_seo(article_id: int, db: Session) -> bool:
             existing.og_title = seo_data.get("og_title")
             existing.og_description = seo_data.get("og_description")
             existing.og_image_url = seo_data.get("og_image_url")
-            existing.canonical_url = f"{SITE_URL}/articles/{article.slug}"
+            existing.canonical_url = f"{site_url}/articles/{article.slug}"
             existing.schema_json = schema
             existing.reading_time = compute_reading_time(article.content_text or "")
             existing.seo_score = score
@@ -68,7 +71,7 @@ def process_article_seo(article_id: int, db: Session) -> bool:
                 og_title=seo_data.get("og_title"),
                 og_description=seo_data.get("og_description"),
                 og_image_url=seo_data.get("og_image_url"),
-                canonical_url=f"{SITE_URL}/articles/{article.slug}",
+                canonical_url=f"{site_url}/articles/{article.slug}",
                 schema_json=schema,
                 reading_time=compute_reading_time(article.content_text or ""),
                 seo_score=score,

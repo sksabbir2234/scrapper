@@ -16,7 +16,7 @@ from app.models import Source, Article, ScrapeLog, GithubUpdate, GithubRepo, Git
 from app.scrapers.rss_scraper import scrape_rss_feed
 from app.scrapers.playwright_scraper import scrape_with_playwright
 from app.ai.summarizer import summarize_article
-from app.ai.classifier import classify_article, CATEGORIES
+from app.ai.classifier import classify_article, classify_and_store
 from app.ai.keyword_extractor import _extract_tags_batch
 
 logger = logging.getLogger(__name__)
@@ -35,10 +35,7 @@ def _classify_new_articles(articles_data: list[dict]):
                 if not article or article.category:
                     continue
 
-                results = classify_article(article.title, article.content_text, top_n=1)
-                if results and results[0]["confidence"] > 0.3:
-                    article.category = results[0]["category"].lower()
-                    logger.info(f"Classified '{article.title[:40]}...' as {article.category}")
+                classify_and_store(article.id, article.title, article.content_text, db)
 
             db.commit()
         except Exception as e:
@@ -51,9 +48,11 @@ def _classify_new_articles(articles_data: list[dict]):
 
 
 def _summarize_new_articles(articles_data: list[dict]):
-    """Run Groq summarization on newly inserted articles in a background thread."""
+    """Run Groq summarization on newly inserted articles in a background thread.
+    After summarization, feeds results into SEO pipeline."""
     def _run():
         db = SessionLocal()
+        processed_ids = []
         try:
             for article_data in articles_data:
                 url_hash = article_data.get("url_hash")
@@ -68,9 +67,25 @@ def _summarize_new_articles(articles_data: list[dict]):
                     article.summary_ai = result["summary_ai"]
                     article.seo_title = result["seo_title"]
                     article.seo_description = result["seo_description"]
+                    processed_ids.append(article.id)
                     logger.info(f"Summarized: {article.title[:50]}...")
 
             db.commit()
+
+            # Feed summarized articles into SEO pipeline
+            if processed_ids:
+                try:
+                    from app.seo.pipeline import process_article_seo
+                    seo_db = SessionLocal()
+                    try:
+                        for aid in processed_ids:
+                            process_article_seo(aid, seo_db)
+                    finally:
+                        seo_db.close()
+                    logger.info(f"SEO pipeline processed {len(processed_ids)} summarized articles")
+                except Exception as seo_err:
+                    logger.error(f"SEO pipeline after summarization failed: {seo_err}")
+
         except Exception as e:
             db.rollback()
             logger.error(f"Summarization batch failed: {e}")

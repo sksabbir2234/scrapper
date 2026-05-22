@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import desc, func, text
 
 from app.db.database import get_db
+from config.settings import get_settings
 from app.models import (
     Article, Source, ScrapeLog, Category, Tag, ArticleTag,
     GithubUpdate, GithubRepo, GithubRepoSnapshot, GithubWeeklyDigest,
@@ -820,7 +821,7 @@ def sitemap_xml(db: Session = Depends(get_db)):
             and (now - SITEMAP_CACHE["generated_at"]).total_seconds() < SITEMAP_TTL):
         return Response(SITEMAP_CACHE["xml"], media_type="application/xml")
 
-    site_url = "http://localhost:8000"
+    site_url = get_settings().site_url
 
     static_pages = [
         {"url": site_url, "priority": "1.0", "changefreq": "always"},
@@ -870,7 +871,7 @@ def sitemap_xml(db: Session = Depends(get_db)):
 
 @router.get("/sitemap-news.xml")
 def sitemap_news_xml(db: Session = Depends(get_db)):
-    site_url = "http://localhost:8000"
+    site_url = get_settings().site_url
     cutoff = datetime.now(timezone.utc) - timedelta(hours=48)
 
     articles = db.execute(text(
@@ -904,14 +905,14 @@ def robots_txt():
     return PlainTextResponse(
         "User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /admin/\n\n"
         "User-agent: Googlebot\nAllow: /\n\n"
-        "Sitemap: http://localhost:8000/sitemap.xml\n"
-        "Sitemap: http://localhost:8000/sitemap-news.xml\n"
+        f"Sitemap: {get_settings().site_url}/sitemap.xml\n"
+        f"Sitemap: {get_settings().site_url}/sitemap-news.xml\n"
     )
 
 
 @router.get("/feed.xml")
 def rss_feed(db: Session = Depends(get_db)):
-    site_url = "http://localhost:8000"
+    site_url = get_settings().site_url
     now_rfc = datetime.now(timezone.utc).strftime("%a, %d %b %Y %H:%M:%S +0000")
 
     articles = db.execute(text(
