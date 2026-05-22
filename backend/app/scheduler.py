@@ -501,6 +501,7 @@ def start_scheduler(interval_minutes: int = 30, cron_expression: str = None):
     schedule_source_jobs(scheduler)
     schedule_github_jobs(scheduler)
     schedule_seo_jobs(scheduler)
+    schedule_radar_jobs(scheduler)
     scheduler.start()
     logger.info("Scheduler started with per-source intervals")
     return scheduler
@@ -529,3 +530,49 @@ def schedule_seo_jobs(scheduler):
         replace_existing=True,
     )
     logger.info("Scheduled SEO pipeline job every 30 min")
+
+
+def _radar_strategy_job(strategy: str):
+    """Sync wrapper for radar strategy — never crashes the scheduler."""
+    try:
+        from config.settings import get_settings
+        from app.scrapers.os_radar import run_discovery_strategy
+        settings = get_settings()
+        db = SessionLocal()
+        try:
+            run_discovery_strategy(strategy, settings.github_token, db)
+        finally:
+            db.close()
+    except Exception as e:
+        logger.error(f"Radar scheduler job [{strategy}] crashed: {e}")
+
+
+def schedule_radar_jobs(scheduler):
+    """Schedule OS Radar discovery strategies staggered across 6h."""
+    from config.settings import get_settings
+    settings = get_settings()
+
+    if not settings.github_token:
+        logger.warning("GITHUB_TOKEN not set — OS Radar disabled")
+        return
+
+    strategies = [
+        ("trending_languages", 0),
+        ("topic_surfing", 90),
+        ("star_accelerators", 180),
+        ("fresh_active", 270),
+        ("fork_signals", 270),
+    ]
+
+    for name, delay_min in strategies:
+        scheduler.add_job(
+            _radar_strategy_job,
+            kwargs={"strategy": name},
+            trigger=IntervalTrigger(hours=6),
+            start_date=datetime.now() + timedelta(minutes=delay_min),
+            id=f"radar_{name}",
+            name=f"Radar: {name}",
+            replace_existing=True,
+            max_instances=1,
+        )
+        logger.info(f"Scheduled radar strategy: {name} (offset {delay_min}min)")

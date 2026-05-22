@@ -20,6 +20,7 @@ from app.models import (
     PromptPattern, AIModelCard, AITool, AITip, OSSAlternative,
     ArticleView, ArticleViewDaily, SiteViewDaily,
     PromptLibrary, ArticleSEO,
+    DiscoveredProject, DiscoveredProjectScore,
 )
 
 BASE_DIR = Path(__file__).parent.parent.parent.parent / "frontend"
@@ -1082,3 +1083,209 @@ def upvote_prompt(prompt_id: int, db: Session = Depends(get_db)):
         p.upvotes = (p.upvotes or 0) + 1
         db.commit()
     return {"ok": True}
+
+
+# ── OS Radar — Hidden Gem Discovery ──────────────────────────────
+
+from datetime import timedelta
+
+
+@router.get("/radar", response_class=HTMLResponse)
+def radar_page(
+    request: Request,
+    language: str = None,
+    min_score: float = 0,
+    source: str = None,
+    hidden_gems: bool = False,
+    search: str = None,
+    sort: str = "score",
+    page: int = 1,
+    db: Session = Depends(get_db),
+):
+    query = db.query(DiscoveredProject).filter_by(is_active=True)
+
+    if language:
+        query = query.filter(DiscoveredProject.language == language)
+    if min_score > 0:
+        query = query.filter(DiscoveredProject.potential_score >= min_score)
+    if source:
+        query = query.filter(DiscoveredProject.discovery_source == source)
+    if hidden_gems:
+        query = query.filter(
+            DiscoveredProject.potential_score > 70,
+            DiscoveredProject.stars < 5000,
+        )
+    if search:
+        query = query.filter(
+            DiscoveredProject.description.ilike(f"%{search}%")
+            | DiscoveredProject.repo.ilike(f"%{search}%")
+        )
+
+    if sort == "stars":
+        query = query.order_by(DiscoveredProject.stars.desc())
+    elif sort == "newest":
+        query = query.order_by(DiscoveredProject.first_seen.desc())
+    elif sort == "rising":
+        week_ago = date_cls.today() - timedelta(days=7)
+        subq = (
+            db.query(
+                DiscoveredProjectScore.project_id,
+                (func.max(DiscoveredProjectScore.score)
+                 - func.min(DiscoveredProjectScore.score)).label("gain"),
+            )
+            .filter(DiscoveredProjectScore.scored_at >= week_ago)
+            .group_by(DiscoveredProjectScore.project_id)
+            .subquery()
+        )
+        query = query.outerjoin(subq, DiscoveredProject.id == subq.c.project_id)
+        query = query.order_by(subq.c.gain.desc().nullslast())
+    else:
+        query = query.order_by(DiscoveredProject.potential_score.desc())
+
+    total = query.count()
+    projects = query.offset((page - 1) * 20).limit(20).all()
+
+    # Rising This Week
+    week_ago = date_cls.today() - timedelta(days=7)
+    rising_subq = (
+        db.query(
+            DiscoveredProjectScore.project_id,
+            (func.max(DiscoveredProjectScore.score)
+             - func.min(DiscoveredProjectScore.score)).label("gain"),
+        )
+        .filter(DiscoveredProjectScore.scored_at >= week_ago)
+        .group_by(DiscoveredProjectScore.project_id)
+        .having(
+            (func.max(DiscoveredProjectScore.score)
+             - func.min(DiscoveredProjectScore.score)) >= 10
+        )
+        .subquery()
+    )
+    rising_projects = (
+        db.query(DiscoveredProject)
+        .join(rising_subq, DiscoveredProject.id == rising_subq.c.project_id)
+        .filter(DiscoveredProject.is_active == True)
+        .order_by(rising_subq.c.gain.desc())
+        .limit(5)
+        .all()
+    )
+
+    languages = db.execute(text(
+        "SELECT language, COUNT(*) as count FROM discovered_projects "
+        "WHERE is_active=true AND language IS NOT NULL "
+        "GROUP BY language ORDER BY count DESC LIMIT 15"
+    )).fetchall()
+
+    stats = db.execute(text(
+        "SELECT COUNT(*) as total, "
+        "COUNT(*) FILTER (WHERE potential_score > 70 AND stars < 5000) as hidden_gems, "
+        "ROUND(AVG(potential_score)::numeric, 1) as avg_score, "
+        "MAX(first_seen) as last_found "
+        "FROM discovered_projects WHERE is_active=true"
+    )).fetchone()
+
+    return templates.TemplateResponse("radar.html", {
+        "request": request,
+        "projects": projects,
+        "rising_projects": rising_projects,
+        "languages": languages,
+        "stats": dict(stats._mapping) if stats else {},
+        "total": total,
+        "page": page,
+        "has_more": (page * 20) < total,
+        "filters": {
+            "language": language,
+            "min_score": min_score,
+            "source": source,
+            "hidden_gems": hidden_gems,
+            "search": search,
+            "sort": sort,
+        },
+        "active_page": "radar",
+    })
+
+
+@router.get("/radar/api/projects")
+def radar_api(
+    language: str = None,
+    min_score: float = 0,
+    hidden_gems: bool = False,
+    limit: int = 20,
+    db: Session = Depends(get_db),
+):
+    from fastapi.responses import JSONResponse
+    query = db.query(DiscoveredProject).filter_by(is_active=True)
+    if language:
+        query = query.filter(DiscoveredProject.language == language)
+    if min_score:
+        query = query.filter(DiscoveredProject.potential_score >= min_score)
+    if hidden_gems:
+        query = query.filter(
+            DiscoveredProject.potential_score > 70,
+            DiscoveredProject.stars < 5000,
+        )
+    projects = query.order_by(
+        DiscoveredProject.potential_score.desc()
+    ).limit(min(limit, 100)).all()
+
+    return JSONResponse({"projects": [
+        {
+            "full_name": p.full_name,
+            "description": p.description,
+            "language": p.language,
+            "stars": p.stars,
+            "forks": p.forks,
+            "potential_score": p.potential_score,
+            "score_breakdown": p.score_breakdown,
+            "discovery_source": p.discovery_source,
+            "topics": p.topics,
+            "repo_url": p.repo_url,
+            "first_seen": p.first_seen.isoformat() if p.first_seen else None,
+        }
+        for p in projects
+    ]})
+
+
+@router.get("/radar/digest")
+def radar_digest(db: Session = Depends(get_db)):
+    from fastapi.responses import JSONResponse
+    week_ago = date_cls.today() - timedelta(days=7)
+    subq = (
+        db.query(
+            DiscoveredProjectScore.project_id,
+            (func.max(DiscoveredProjectScore.score)
+             - func.min(DiscoveredProjectScore.score)).label("gain"),
+        )
+        .filter(DiscoveredProjectScore.scored_at >= week_ago)
+        .group_by(DiscoveredProjectScore.project_id)
+        .subquery()
+    )
+    top5 = (
+        db.query(DiscoveredProject, subq.c.gain)
+        .join(subq, DiscoveredProject.id == subq.c.project_id)
+        .filter(
+            DiscoveredProject.is_active == True,
+            DiscoveredProject.potential_score >= 60,
+            DiscoveredProject.stars < 10000,
+        )
+        .order_by(subq.c.gain.desc())
+        .limit(5)
+        .all()
+    )
+    return JSONResponse({
+        "week_of": str(date_cls.today()),
+        "gems": [
+            {
+                "rank": i + 1,
+                "full_name": p.full_name,
+                "description": p.description,
+                "language": p.language,
+                "stars": p.stars,
+                "potential_score": p.potential_score,
+                "score_gain": round(gain, 1),
+                "repo_url": p.repo_url,
+                "topics": (p.topics or [])[:5],
+            }
+            for i, (p, gain) in enumerate(top5)
+        ],
+    })

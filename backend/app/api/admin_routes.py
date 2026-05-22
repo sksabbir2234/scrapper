@@ -15,7 +15,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import desc, func, or_
 
 from app.db.database import get_db
-from app.models import Article, Source, ScrapeLog, Tag, ArticleTag, ArticleViewDaily, SiteViewDaily, Category, ArticleCategory
+from app.models import Article, Source, ScrapeLog, Tag, ArticleTag, ArticleViewDaily, SiteViewDaily, Category, ArticleCategory, DiscoveredProject, GithubRepo
 from config.settings import get_settings
 
 router = APIRouter()
@@ -642,4 +642,103 @@ async def analytics_engagement(days: int = 7, user: str = Depends(verify_admin),
         "top_articles": [{"title": r[0], "slug": r[1], "views": r[2]} for r in top_articles],
         "top_tags": [{"name": r[0], "count": r[1]} for r in top_tags],
         "days": days,
+    })
+
+
+# ── OS Radar Admin ───────────────────────────────────────────────
+
+@router.post("/admin/radar/run")
+def admin_radar_run(
+    strategy: str = "star_accelerators",
+    user: str = Depends(verify_admin),
+    db: Session = Depends(get_db),
+):
+    """Trigger immediate radar strategy run in background thread."""
+    settings = get_settings()
+    if not settings.github_token:
+        raise HTTPException(400, "GITHUB_TOKEN not set")
+
+    valid = [
+        "trending_languages", "topic_surfing", "star_accelerators",
+        "fresh_active", "fork_signals",
+    ]
+    if strategy not in valid:
+        raise HTTPException(400, f"Unknown strategy. Valid: {valid}")
+
+    def run():
+        from app.db.database import SessionLocal
+        from app.scrapers.os_radar import run_discovery_strategy
+        bg_db = SessionLocal()
+        try:
+            run_discovery_strategy(strategy, settings.github_token, bg_db)
+        finally:
+            bg_db.close()
+
+    threading.Thread(target=run, daemon=True).start()
+    return JSONResponse({"status": "started", "strategy": strategy})
+
+
+@router.post("/admin/radar/promote/{project_id}")
+def admin_radar_promote(
+    project_id: int,
+    user: str = Depends(verify_admin),
+    db: Session = Depends(get_db),
+):
+    """Promote a discovered project to the GitHub watch list."""
+    project = db.query(DiscoveredProject).get(project_id)
+    if not project:
+        raise HTTPException(404, "Project not found")
+    if project.promoted_to_watch:
+        raise HTTPException(400, "Already promoted to watch list")
+
+    existing = db.query(GithubRepo).filter_by(full_name=project.full_name).first()
+    if not existing:
+        db.add(GithubRepo(
+            owner=project.owner,
+            name=project.repo,
+            full_name=project.full_name,
+            description=project.description,
+            stars=project.stars,
+            language=project.language or "General",
+            category=project.language or "General",
+            is_active=True,
+        ))
+
+    project.promoted_to_watch = True
+    db.commit()
+    return JSONResponse({"status": "promoted", "full_name": project.full_name})
+
+
+@router.get("/admin/radar/stats")
+def admin_radar_stats(user: str = Depends(verify_admin), db: Session = Depends(get_db)):
+    """Radar health and coverage stats."""
+    stats = db.execute(func.text(
+        "SELECT COUNT(*) as total_discovered, "
+        "COUNT(*) FILTER (WHERE is_active) as active, "
+        "COUNT(*) FILTER (WHERE potential_score > 70 AND stars < 5000) as hidden_gems, "
+        "COUNT(*) FILTER (WHERE promoted_to_watch) as promoted, "
+        "ROUND(AVG(potential_score)::numeric, 1) as avg_score, "
+        "COUNT(DISTINCT language) as languages_covered, "
+        "COUNT(DISTINCT discovery_source) as strategies_used, "
+        "MAX(last_scored) as last_scored "
+        "FROM discovered_projects"
+    )).fetchone()
+
+    from app.models import RadarRunLog
+    recent_runs = db.query(RadarRunLog).order_by(
+        RadarRunLog.started_at.desc()
+    ).limit(10).all()
+
+    return JSONResponse({
+        "stats": dict(stats._mapping) if stats else {},
+        "recent_runs": [
+            {
+                "strategy": r.strategy,
+                "status": r.status,
+                "repos_found": r.repos_found,
+                "repos_new": r.repos_new,
+                "finished_at": r.finished_at.isoformat() if r.finished_at else None,
+            }
+            for r in recent_runs
+        ],
     })

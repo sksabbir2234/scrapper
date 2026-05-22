@@ -3,8 +3,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
-from datetime import datetime
-from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, Date, ForeignKey, Index, SmallInteger, Float, JSON
+from datetime import datetime, date
+from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, Date, ForeignKey, Index, SmallInteger, Float, JSON, ARRAY
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.db.database import Base
@@ -409,3 +409,63 @@ class PromptLibrary(Base):
     is_featured = Column(Boolean, default=False)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class DiscoveredProject(Base):
+    __tablename__ = "discovered_projects"
+
+    id               = Column(Integer, primary_key=True)
+    full_name        = Column(String, unique=True, nullable=False)
+    repo_url         = Column(String, nullable=False)
+    owner            = Column(String, nullable=False)
+    repo             = Column(String, nullable=False)
+    description      = Column(Text)
+    language         = Column(String)
+    license_name     = Column(String)
+    topics           = Column(ARRAY(String), default=[])
+    stars            = Column(Integer, default=0)
+    forks            = Column(Integer, default=0)
+    open_issues      = Column(Integer, default=0)
+    watchers         = Column(Integer, default=0)
+    contributors     = Column(Integer, default=0)
+    repo_created_at  = Column(DateTime)
+    repo_pushed_at   = Column(DateTime)
+    first_seen       = Column(DateTime, default=datetime.utcnow)
+    last_scored      = Column(DateTime, default=datetime.utcnow)
+    potential_score  = Column(Float, default=0)
+    score_breakdown  = Column(JSON)
+    discovery_source = Column(String)
+    consecutive_low_score_days = Column(Integer, default=0)
+    is_active        = Column(Boolean, default=True)
+    promoted_to_watch = Column(Boolean, default=False)
+
+    score_history = relationship("DiscoveredProjectScore", back_populates="project",
+                                 cascade="all, delete-orphan")
+
+
+class DiscoveredProjectScore(Base):
+    __tablename__ = "discovered_project_scores"
+
+    project_id = Column(Integer, ForeignKey("discovered_projects.id",
+                        ondelete="CASCADE"), primary_key=True)
+    scored_at  = Column(Date, primary_key=True, default=date.today)
+    score      = Column(Float, nullable=False)
+    stars      = Column(Integer)
+
+    project = relationship("DiscoveredProject", back_populates="score_history")
+
+
+class RadarRunLog(Base):
+    __tablename__ = "radar_run_log"
+
+    id             = Column(Integer, primary_key=True)
+    started_at     = Column(DateTime, default=datetime.utcnow)
+    finished_at    = Column(DateTime)
+    strategy       = Column(String)
+    repos_found    = Column(Integer, default=0)
+    repos_new      = Column(Integer, default=0)
+    repos_updated  = Column(Integer, default=0)
+    repos_skipped  = Column(Integer, default=0)
+    api_calls_used = Column(Integer, default=0)
+    status         = Column(String, default="running")
+    error_message  = Column(Text)

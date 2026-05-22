@@ -1,0 +1,449 @@
+{% extends "base.html" %}
+
+{% block title %}OS Radar - Hidden Gem Discovery{% endblock %}
+
+{% block extra_css %}
+<style>
+.stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+.stat-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem;
+    text-align: center;
+}
+.stat-card .stat-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--accent);
+    line-height: 1.2;
+}
+.stat-card .stat-label {
+    font-size: 0.8rem;
+    color: var(--text-light);
+    margin-top: 0.25rem;
+}
+
+/* Rising section */
+.rising-section {
+    margin-bottom: 1.5rem;
+}
+.rising-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1rem;
+}
+.rising-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem;
+    position: relative;
+}
+.rising-card .repo-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--text);
+    text-decoration: none;
+    display: block;
+    margin-bottom: 0.4rem;
+}
+.rising-card .repo-name:hover { color: var(--accent); }
+.rising-card .repo-meta {
+    font-size: 0.8rem;
+    color: var(--text-light);
+    margin-bottom: 0.4rem;
+}
+.rising-indicator {
+    display: inline-block;
+    background: var(--success-subtle, #e6f9ee);
+    color: var(--success, #16a34a);
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.15rem 0.5rem;
+    border-radius: 99px;
+}
+
+/* Filters sidebar */
+.radar-layout {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 1.5rem;
+    align-items: start;
+}
+@media (max-width: 768px) {
+    .radar-layout { grid-template-columns: 1fr; }
+}
+.filter-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem;
+}
+.filter-card h3 {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.filter-group { margin-bottom: 1rem; }
+.filter-group label {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--text-light);
+    margin-bottom: 0.3rem;
+}
+.filter-group select,
+.filter-group input[type="number"] {
+    width: 100%;
+    padding: 0.4rem 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 0.85rem;
+}
+.btn-filter {
+    width: 100%;
+    padding: 0.5rem;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: var(--accent);
+    color: #fff;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    margin-bottom: 0.5rem;
+}
+.btn-filter:hover { opacity: 0.9; }
+.btn-reset {
+    width: 100%;
+    padding: 0.4rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-light);
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+.btn-reset:hover { border-color: var(--text-light); }
+
+/* Score gauge */
+.score-gauge {
+    height: 6px;
+    border-radius: 3px;
+    background: var(--border);
+    margin: 6px 0;
+    overflow: hidden;
+}
+.score-gauge-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.6s ease;
+}
+.score-high   { background: var(--success, #16a34a); }
+.score-medium { background: var(--warning, #eab308); }
+.score-low    { background: var(--danger, #dc2626); }
+
+/* Sort tabs */
+.sort-tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    align-items: center;
+}
+.sort-tabs a {
+    padding: 0.35rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 99px;
+    font-size: 0.8rem;
+    color: var(--text-light);
+    text-decoration: none;
+    transition: all 0.15s;
+}
+.sort-tabs a:hover { border-color: var(--accent); color: var(--accent); }
+.sort-tabs a.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+/* Topic pills */
+.tag-pill {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: 99px;
+    font-size: 0.7rem;
+    color: var(--text-light);
+    text-decoration: none;
+    margin: 0.15rem;
+}
+.tag-pill:hover { border-color: var(--accent); color: var(--accent); }
+
+/* Project card */
+.project-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.1rem;
+    transition: border-color 0.15s;
+}
+.project-card:hover { border-color: var(--accent); }
+.project-card .repo-name {
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--text);
+    text-decoration: none;
+}
+.project-card .repo-name:hover { color: var(--accent); }
+.project-card .repo-desc {
+    font-size: 0.85rem;
+    color: var(--text-light);
+    margin: 0.4rem 0;
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.project-card .repo-stats {
+    display: flex;
+    gap: 0.75rem;
+    font-size: 0.8rem;
+    color: var(--text-light);
+    margin: 0.5rem 0;
+}
+.project-card .repo-stats span { white-space: nowrap; }
+.project-card .card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.6rem;
+}
+.score-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+.btn-promote {
+    padding: 0.3rem 0.6rem;
+    border: 1px solid var(--accent);
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--accent);
+    font-size: 0.75rem;
+    cursor: pointer;
+    text-decoration: none;
+}
+.btn-promote:hover { background: var(--accent); color: #fff; }
+
+.hidden-gem-badge {
+    display: inline-block;
+    background: var(--highlight-subtle, #fef9c3);
+    color: var(--highlight, #a16207);
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.15rem 0.5rem;
+    border-radius: 99px;
+    margin-left: 0.5rem;
+}
+
+.section-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 0.75rem;
+}
+
+.load-more {
+    text-align: center;
+    margin-top: 1.5rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+
+    <!-- Header -->
+    <div style="text-align: center; padding: 1.5rem 0 1rem;">
+        <h1>OS Radar</h1>
+        <p style="color: var(--text-light); margin: 0.25rem 0 0;">
+            Discovering open-source projects with hidden potential
+        </p>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-value">{{ stats.get('total', 0) }}</div>
+            <div class="stat-label">Analyzed</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ stats.get('hidden_gems', 0) }}</div>
+            <div class="stat-label">Hidden Gems</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ stats.get('avg_score', '—') }}</div>
+            <div class="stat-label">Avg Score</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ languages|length }}</div>
+            <div class="stat-label">Languages</div>
+        </div>
+    </div>
+
+    <!-- Rising This Week -->
+    {% if rising_projects %}
+    <div class="rising-section">
+        <h2 class="section-title">Rising This Week</h2>
+        <div class="rising-grid">
+            {% for p in rising_projects %}
+            <div class="rising-card">
+                <a href="{{ p.repo_url }}" target="_blank" class="repo-name">{{ p.full_name }}</a>
+                <div class="repo-meta">
+                    {% if p.language %}{{ p.language }} · {% endif %}
+                    {{ "{:,}".format(p.stars) }} stars · Score {{ p.potential_score }}
+                </div>
+                <span class="rising-indicator">trending</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Main Layout -->
+    <div class="radar-layout">
+
+        <!-- Filters Sidebar -->
+        <div class="filter-card">
+            <h3>Filters</h3>
+            <form method="get" action="/radar">
+                <div class="filter-group">
+                    <label>Language</label>
+                    <select name="language">
+                        <option value="">All languages</option>
+                        {% for lang in languages %}
+                        <option value="{{ lang[0] }}" {% if filters.language == lang[0] %}selected{% endif %}>
+                            {{ lang[0] }} ({{ lang[1] }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Min Score</label>
+                    <input type="number" name="min_score" min="0" max="100" step="5"
+                           value="{{ filters.min_score or '' }}" placeholder="0">
+                </div>
+                <div class="filter-group">
+                    <label>Discovery Source</label>
+                    <select name="source">
+                        <option value="">All sources</option>
+                        <option value="trending_languages" {% if filters.source == 'trending_languages' %}selected{% endif %}>Trending Languages</option>
+                        <option value="topic_surfing" {% if filters.source == 'topic_surfing' %}selected{% endif %}>Topic Surfing</option>
+                        <option value="star_accelerators" {% if filters.source == 'star_accelerators' %}selected{% endif %}>Star Accelerators</option>
+                        <option value="fresh_active" {% if filters.source == 'fresh_active' %}selected{% endif %}>Fresh & Active</option>
+                        <option value="fork_signals" {% if filters.source == 'fork_signals' %}selected{% endif %}>Fork Signals</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer;">
+                        <input type="checkbox" name="hidden_gems" value="true"
+                               {% if filters.hidden_gems %}checked{% endif %}>
+                        Hidden Gems Only
+                    </label>
+                </div>
+                <input type="hidden" name="sort" value="{{ filters.sort }}">
+                <button type="submit" class="btn-filter">Apply</button>
+                <a href="/radar" class="btn-reset" style="display: block; text-align: center;">Reset</a>
+            </form>
+        </div>
+
+        <!-- Projects -->
+        <div>
+            <!-- Search -->
+            <form method="get" action="/radar" style="margin-bottom: 1rem;">
+                <input type="hidden" name="language" value="{{ filters.language or '' }}">
+                <input type="hidden" name="min_score" value="{{ filters.min_score or '' }}">
+                <input type="hidden" name="source" value="{{ filters.source or '' }}">
+                <input type="hidden" name="hidden_gems" value="{{ 'true' if filters.hidden_gems else '' }}">
+                <input type="hidden" name="sort" value="{{ filters.sort }}">
+                <input type="text" name="search" value="{{ filters.search or '' }}"
+                       placeholder="Search repos..." class="search-input"
+                       style="width: 100%; margin-bottom: 0.75rem;">
+
+                <!-- Sort tabs -->
+                <div class="sort-tabs">
+                    <span style="font-size: 0.8rem; color: var(--text-light);">Sort:</span>
+                    <a href="/radar?sort=score{% if filters.language %}&language={{ filters.language }}{% endif %}{% if filters.min_score %}&min_score={{ filters.min_score }}{% endif %}{% if filters.source %}&source={{ filters.source }}{% endif %}{% if filters.hidden_gems %}&hidden_gems=true{% endif %}"
+                       class="{% if filters.sort == 'score' %}active{% endif %}">Score</a>
+                    <a href="/radar?sort=stars{% if filters.language %}&language={{ filters.language }}{% endif %}{% if filters.min_score %}&min_score={{ filters.min_score }}{% endif %}{% if filters.source %}&source={{ filters.source }}{% endif %}{% if filters.hidden_gems %}&hidden_gems=true{% endif %}"
+                       class="{% if filters.sort == 'stars' %}active{% endif %}">Stars</a>
+                    <a href="/radar?sort=newest{% if filters.language %}&language={{ filters.language }}{% endif %}{% if filters.min_score %}&min_score={{ filters.min_score }}{% endif %}{% if filters.source %}&source={{ filters.source }}{% endif %}{% if filters.hidden_gems %}&hidden_gems=true{% endif %}"
+                       class="{% if filters.sort == 'newest' %}active{% endif %}">Newest</a>
+                    <a href="/radar?sort=rising{% if filters.language %}&language={{ filters.language }}{% endif %}{% if filters.min_score %}&min_score={{ filters.min_score }}{% endif %}{% if filters.source %}&source={{ filters.source }}{% endif %}{% if filters.hidden_gems %}&hidden_gems=true{% endif %}"
+                       class="{% if filters.sort == 'rising' %}active{% endif %}">Rising</a>
+                </div>
+            </form>
+
+            <!-- Project Grid -->
+            {% if projects %}
+            <div class="grid-auto">
+                {% for p in projects %}
+                <div class="project-card">
+                    <div>
+                        <a href="{{ p.repo_url }}" target="_blank" class="repo-name">
+                            {{ p.repo }}
+                        </a>
+                        {% if p.potential_score > 70 and p.stars < 5000 %}
+                        <span class="hidden-gem-badge">Hidden Gem</span>
+                        {% endif %}
+                        <div style="font-size: 0.75rem; color: var(--text-light);">{{ p.owner }}</div>
+                    </div>
+                    {% if p.description %}
+                    <div class="repo-desc">{{ p.description }}</div>
+                    {% endif %}
+                    <div class="repo-stats">
+                        <span>{{ "{:,}".format(p.stars) }} stars</span>
+                        <span>{{ "{:,}".format(p.forks) }} forks</span>
+                        {% if p.language %}<span>{{ p.language }}</span>{% endif %}
+                    </div>
+                    <div class="score-gauge">
+                        <div class="score-gauge-fill {% if p.potential_score > 70 %}score-high{% elif p.potential_score > 40 %}score-medium{% else %}score-low{% endif %}"
+                             style="width: {{ p.potential_score }}%"></div>
+                    </div>
+                    <div class="card-footer">
+                        <span class="score-label">Score: {{ p.potential_score }}</span>
+                        <div style="display: flex; gap: 0.4rem; align-items: center;">
+                            {% if p.topics %}
+                                {% for topic in p.topics[:3] %}
+                                <a href="/radar?search={{ topic }}" class="tag-pill">{{ topic }}</a>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            {% if has_more %}
+            <div class="load-more">
+                <a href="/radar?page={{ page + 1 }}{% if filters.language %}&language={{ filters.language }}{% endif %}{% if filters.min_score %}&min_score={{ filters.min_score }}{% endif %}{% if filters.source %}&source={{ filters.source }}{% endif %}{% if filters.hidden_gems %}&hidden_gems=true{% endif %}{% if filters.search %}&search={{ filters.search }}{% endif %}&sort={{ filters.sort }}"
+                   class="btn btn-outline">Load More</a>
+            </div>
+            {% endif %}
+
+            {% else %}
+            <div class="card card-flat" style="text-align: center; padding: 2rem;">
+                <p style="color: var(--text-light);">No projects found. The radar scans every 6 hours — check back soon.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+{% endblock %}
