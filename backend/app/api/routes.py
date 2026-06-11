@@ -699,6 +699,64 @@ async def finance_digest(limit: int = 30, db: Session = Depends(get_db)):
     } for a in articles]
 
 
+# ── AI Blogs ─────────────────────────────────────────────────────
+
+AI_BLOG_CATEGORIES = [
+    "ai_tutorial", "ai_news", "ai_research", "ai_money",
+    "ai_business", "ai_automation", "ai_tools", "prompt_engineering",
+]
+
+
+@router.get("/ai-blogs", response_class=HTMLResponse)
+async def ai_blogs_page(request: Request, category: str = "", db: Session = Depends(get_db)):
+    return templates.TemplateResponse(request, "ai_blogs.html", {
+        "active_page": "ai_blogs",
+        "selected_category": category,
+        "categories": AI_BLOG_CATEGORIES,
+    })
+
+
+@router.get("/ai-blogs/api/list")
+async def ai_blogs_api(
+    category: str = "",
+    limit: int = 20,
+    offset: int = 0,
+    db: Session = Depends(get_db),
+):
+    query = db.query(Article).filter(
+        Article.category.in_(AI_BLOG_CATEGORIES),
+        Article.deleted_at.is_(None),
+    )
+    if category:
+        query = query.filter(Article.category == category)
+
+    total = query.count()
+    articles = (
+        query.order_by(desc(Article.published_at))
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
+    return {
+        "articles": [{
+            "id": a.id,
+            "title": a.title,
+            "slug": a.slug,
+            "content": (a.content_text or "")[:300],
+            "source": a.source.name if a.source else "Unknown",
+            "category": a.category,
+            "image_url": a.image_url,
+            "published_at": a.published_at.strftime("%b %d, %Y") if a.published_at else "",
+            "original_url": a.original_url,
+            "summary_ai": a.summary_ai,
+            "author": a.author,
+        } for a in articles],
+        "total": total,
+        "offset": offset,
+        "limit": limit,
+    }
+
+
 @router.get("/jobs", response_class=HTMLResponse)
 async def jobs_page(request: Request):
     return templates.TemplateResponse(request, "jobs.html", {

@@ -631,6 +631,24 @@ def schedule_prompts_jobs(scheduler: BackgroundScheduler):
     logger.info("Scheduled prompts CSV scrape weekly on Monday 3:00 AM")
 
 
+def run_ai_blog_scrape():
+    """Scrape AI-focused blog articles from RSS feeds and store in Article table."""
+    from app.scrapers.ai_blog_scraper import run_ai_blog_scrape as _run
+    _run()
+
+
+def schedule_ai_blog_jobs(scheduler: BackgroundScheduler):
+    """Schedule AI blog scrape every 3 hours."""
+    scheduler.add_job(
+        run_ai_blog_scrape,
+        trigger=IntervalTrigger(hours=3),
+        id="ai_blog_scrape",
+        name="AI Blog Scrape",
+        replace_existing=True,
+    )
+    logger.info("Scheduled AI blog scrape every 3 hours")
+
+
 def start_scheduler(interval_minutes: int = 30, cron_expression: str = None):
     """Start the background scheduler with per-source jobs.
 
@@ -644,6 +662,7 @@ def start_scheduler(interval_minutes: int = 30, cron_expression: str = None):
     schedule_radar_jobs(scheduler)
     schedule_finance_jobs(scheduler)
     schedule_prompts_jobs(scheduler)
+    schedule_ai_blog_jobs(scheduler)
     scheduler.start()
     logger.info("Scheduler started with per-source intervals")
     return scheduler

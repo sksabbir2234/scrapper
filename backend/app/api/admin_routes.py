@@ -1,8 +1,11 @@
 import sys
 import secrets
 import threading
+import logging
 from pathlib import Path
 from datetime import datetime, timezone, timedelta
+
+logger = logging.getLogger(__name__)
 
 import jwt
 from fastapi import APIRouter, Depends, HTTPException, Request, Query
@@ -553,6 +556,24 @@ async def trigger_prompts_scrape(user: str = Depends(verify_admin)):
     thread = threading.Thread(target=run_prompts_scrape, daemon=True)
     thread.start()
     return {"status": "ok", "message": "Prompts CSV scrape triggered"}
+
+
+@router.post("/admin/scrape/ai-blogs")
+async def trigger_ai_blog_scrape(user: str = Depends(verify_admin)):
+    """Manually trigger AI blog scrape from admin panel."""
+    from app.scrapers.ai_blog_scraper import scrape_ai_blogs
+    from app.db.database import SessionLocal
+
+    def _run():
+        bg_db = SessionLocal()
+        try:
+            result = scrape_ai_blogs(bg_db, max_per_source=20)
+            logger.info("Admin triggered ai_blog_scrape: %s", result)
+        finally:
+            bg_db.close()
+
+    threading.Thread(target=_run, daemon=True).start()
+    return {"status": "ok", "message": "AI blog scrape running in background"}
 
 
 # ─── Analytics Endpoints ───

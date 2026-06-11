@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+
+{% block title %}AI Blog Feed - GlobalNews{% endblock %}
+
+{% block extra_css %}
+<style>
+.blog-card { transition: border-color 0.15s; }
+.blog-card:hover { border-color: var(--accent); }
+.blog-card .source-badge { font-size: 0.7rem; font-weight: 600; padding: 0.2rem 0.5rem; border-radius: 4px; }
+.category-ai_tutorial { background: #dbeafe; color: #1e40af; }
+.category-ai_news { background: #fef3c7; color: #92400e; }
+.category-ai_research { background: #ede9fe; color: #5b21b6; }
+.category-ai_money { background: #d1fae5; color: #065f46; }
+.category-ai_business { background: #fce7f3; color: #9d174d; }
+.category-ai_automation { background: #e0e7ff; color: #3730a3; }
+.category-ai_tools { background: #f3e8ff; color: #6b21a8; }
+.category-prompt_engineering { background: #fff7ed; color: #9a3412; }
+[data-theme="dark"] .category-ai_tutorial { background: #1e3a5f; color: #93c5fd; }
+[data-theme="dark"] .category-ai_news { background: #78350f; color: #fcd34d; }
+[data-theme="dark"] .category-ai_research { background: #3b0764; color: #c4b5fd; }
+[data-theme="dark"] .category-ai_money { background: #064e3b; color: #6ee7b7; }
+[data-theme="dark"] .category-ai_business { background: #831843; color: #f9a8d4; }
+[data-theme="dark"] .category-ai_automation { background: #1e1b4b; color: #a5b4fc; }
+[data-theme="dark"] .category-ai_tools { background: #581c87; color: #d8b4fe; }
+[data-theme="dark"] .category-prompt_engineering { background: #7c2d12; color: #fdba74; }
+.blog-stats { display: flex; gap: 1.5rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+.blog-stat { font-size: 0.85rem; color: var(--text-light); }
+.blog-stat strong { color: var(--text); }
+#loading { text-align: center; padding: 2rem; color: var(--text-muted); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+
+    <h1 style="margin-bottom: 0.25rem;">AI Blog Feed</h1>
+    <p style="color: var(--text-light); margin-bottom: 1rem;">
+        Curated articles from 18 top AI blogs — tutorials, research, tools, and news.
+    </p>
+
+    <div class="blog-stats" id="blog-stats"></div>
+
+    <div class="filter-tabs" style="margin-bottom: 1.5rem;">
+        <button class="filter-tab active" onclick="filterCategory('', event)">All</button>
+        <button class="filter-tab" onclick="filterCategory('ai_tutorial', event)">Tutorials</button>
+        <button class="filter-tab" onclick="filterCategory('ai_news', event)">News</button>
+        <button class="filter-tab" onclick="filterCategory('ai_research', event)">Research</button>
+        <button class="filter-tab" onclick="filterCategory('ai_money', event)">Make Money</button>
+        <button class="filter-tab" onclick="filterCategory('ai_automation', event)">Automation</button>
+        <button class="filter-tab" onclick="filterCategory('ai_tools', event)">Tools</button>
+        <button class="filter-tab" onclick="filterCategory('prompt_engineering', event)">Prompts</button>
+    </div>
+
+    <div id="blog-list" class="grid-auto">
+        <div id="loading">Loading articles...</div>
+    </div>
+
+    <div id="load-more-wrap" style="text-align: center; margin-top: 1.5rem; display: none;">
+        <button class="btn btn-outline" id="load-more-btn" onclick="loadMore()">Load more</button>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentCategory = '';
+let currentOffset = 0;
+const PAGE_SIZE = 20;
+let totalArticles = 0;
+
+const CATEGORY_LABELS = {
+    ai_tutorial: 'Tutorial',
+    ai_news: 'News',
+    ai_research: 'Research',
+    ai_money: 'Make Money',
+    ai_business: 'Business',
+    ai_automation: 'Automation',
+    ai_tools: 'Tools',
+    prompt_engineering: 'Prompts',
+};
+
+async function loadBlogs(reset = true) {
+    if (reset) {
+        currentOffset = 0;
+        document.getElementById('blog-list').innerHTML = '<div id="loading">Loading articles...</div>';
+        document.getElementById('load-more-wrap').style.display = 'none';
+    }
+
+    const params = new URLSearchParams({
+        limit: PAGE_SIZE,
+        offset: currentOffset,
+    });
+    if (currentCategory) params.set('category', currentCategory);
+
+    try {
+        const resp = await fetch(`/ai-blogs/api/list?${params}`);
+        const data = await resp.json();
+        totalArticles = data.total;
+
+        if (reset) document.getElementById('blog-list').innerHTML = '';
+
+        if (!data.articles.length && reset) {
+            document.getElementById('blog-list').innerHTML = '<p style="color: var(--text-muted); padding: 2rem; text-align: center;">No articles found. The AI blog scraper may need to be run from the admin panel.</p>';
+            return;
+        }
+
+        const container = document.getElementById('blog-list');
+        data.articles.forEach(a => {
+            const catLabel = CATEGORY_LABELS[a.category] || a.category;
+            const card = document.createElement('div');
+            card.className = 'card blog-card';
+            card.innerHTML = `
+                <div class="card-body">
+                    <div style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap;">
+                        <span class="source-badge category-${a.category}">${escapeHtml(catLabel)}</span>
+                        <span style="font-size: 0.78rem; color: var(--text-muted);">${escapeHtml(a.source)}</span>
+                        ${a.author ? `<span style="font-size: 0.78rem; color: var(--text-muted);">by ${escapeHtml(a.author)}</span>` : ''}
+                    </div>
+                    <h3 style="margin-bottom: 0.5rem;">
+                        <a href="${a.original_url}" target="_blank" rel="noopener noreferrer">${escapeHtml(a.title)}</a>
+                    </h3>
+                    ${a.summary_ai ? `<p style="color: var(--text-light); font-size: 0.9rem; margin-bottom: 0.5rem;">${escapeHtml(a.summary_ai)}</p>` : ''}
+                    ${a.content ? `<p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">${truncate(a.content, 250)}</p>` : ''}
+                    <div class="flex-between" style="margin-top: 0.75rem;">
+                        <span style="font-size: 0.78rem; color: var(--text-muted);">${a.published_at}</span>
+                        <a href="${a.original_url}" target="_blank" rel="noopener noreferrer" class="btn btn-ghost btn-sm">Read original</a>
+                    </div>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+
+        currentOffset += data.articles.length;
+        const loadMoreWrap = document.getElementById('load-more-wrap');
+        loadMoreWrap.style.display = currentOffset < totalArticles ? 'block' : 'none';
+
+        updateStats(data.total);
+    } catch (e) {
+        document.getElementById('blog-list').innerHTML = '<p style="color: var(--text-muted); padding: 2rem; text-align: center;">Error loading articles.</p>';
+    }
+}
+
+function loadMore() {
+    loadBlogs(false);
+}
+
+function filterCategory(cat, evt) {
+    currentCategory = cat;
+    document.querySelectorAll('.filter-tab').forEach(el => el.classList.remove('active'));
+    (evt || event).target.classList.add('active');
+    loadBlogs(true);
+}
+
+function updateStats(total) {
+    const statsEl = document.getElementById('blog-stats');
+    statsEl.innerHTML = `<span class="blog-stat"><strong>${total}</strong> articles</span>`;
+}
+
+loadBlogs();
+</script>
+{% endblock %}
