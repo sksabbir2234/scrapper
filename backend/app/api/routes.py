@@ -54,8 +54,8 @@ async def index(request: Request, db: Session = Depends(get_db)):
         .all()
     )
     categories = db.query(Category).filter(Category.is_active == True).all()
-    return templates.TemplateResponse("index.html", {
-        "request": request, "articles": articles, "categories": categories,
+    return templates.TemplateResponse(request, "index.html", {
+        "articles": articles, "categories": categories,
         "active_page": "home",
     })
 
@@ -78,8 +78,8 @@ async def articles_list(request: Request, page: int = 1, db: Session = Depends(g
     total_pages = (total + per_page - 1) // per_page
     categories = db.query(Category).filter(Category.is_active == True).all()
 
-    return templates.TemplateResponse("articles.html", {
-        "request": request, "articles": articles, "page": page,
+    return templates.TemplateResponse(request, "articles.html", {
+        "articles": articles, "page": page,
         "total_pages": total_pages, "total": total, "categories": categories,
         "active_page": "",
     })
@@ -137,8 +137,8 @@ async def article_detail(request: Request, slug: str, db: Session = Depends(get_
         .all()
     )
 
-    return templates.TemplateResponse("article.html", {
-        "request": request, "article": article, "article_tags": article_tags,
+    return templates.TemplateResponse(request, "article.html", {
+        "article": article, "article_tags": article_tags,
         "active_page": "",
     })
 
@@ -150,8 +150,8 @@ async def categories_list(request: Request, db: Session = Depends(get_db)):
     for cat in categories:
         count = db.query(Article).filter(Article.category == cat.slug, Article.deleted_at.is_(None)).count()
         category_counts.append({"category": cat, "count": count})
-    return templates.TemplateResponse("categories.html", {
-        "request": request, "category_counts": category_counts,
+    return templates.TemplateResponse(request, "categories.html", {
+        "category_counts": [{"category": item["category"], "count": item["count"]} for item in category_counts],
         "active_page": "categories",
     })
 
@@ -175,8 +175,8 @@ async def category_detail(request: Request, slug: str, page: int = 1, db: Sessio
 
     total_pages = (total + per_page - 1) // per_page
 
-    return templates.TemplateResponse("category.html", {
-        "request": request, "category": category, "articles": articles,
+    return templates.TemplateResponse(request, "category.html", {
+        "category": category, "articles": articles,
         "page": page, "total_pages": total_pages, "total": total,
         "active_page": "categories",
     })
@@ -188,8 +188,8 @@ async def search(request: Request, q: str = Query(default=""), page: int = 1, db
     offset = (page - 1) * per_page
 
     if not q.strip():
-        return templates.TemplateResponse("search.html", {
-            "request": request, "articles": [], "query": "", "total": 0, "page": 1, "total_pages": 0,
+        return templates.TemplateResponse(request, "search.html", {
+            "articles": [], "query": "", "total": 0, "page": 1, "total_pages": 0,
             "active_page": "",
         })
 
@@ -208,8 +208,8 @@ async def search(request: Request, q: str = Query(default=""), page: int = 1, db
 
     total_pages = (total + per_page - 1) // per_page
 
-    return templates.TemplateResponse("search.html", {
-        "request": request, "articles": articles, "query": q,
+    return templates.TemplateResponse(request, "search.html", {
+        "articles": articles, "query": q,
         "total": total, "page": page, "total_pages": total_pages,
         "active_page": "",
     })
@@ -240,8 +240,8 @@ async def trending(request: Request, db: Session = Depends(get_db)):
     )
     articles = [a for a, _ in top_articles]
 
-    return templates.TemplateResponse("trending.html", {
-        "request": request, "articles": articles, "active_page": "trending",
+    return templates.TemplateResponse(request, "trending.html", {
+        "articles": articles, "active_page": "trending",
     })
 
 
@@ -255,8 +255,8 @@ async def tag_list(request: Request, db: Session = Depends(get_db)):
         .all()
     )
     tag_counts = [{"tag": row[0], "count": row[1]} for row in tag_rows]
-    return templates.TemplateResponse("tags.html", {
-        "request": request, "tags": tag_counts, "active_page": "",
+    return templates.TemplateResponse(request, "tags.html", {
+        "tags": tag_counts, "active_page": "",
     })
 
 
@@ -276,8 +276,8 @@ async def tag_detail(slug: str, request: Request, page: int = Query(1, ge=1), db
     articles = query.order_by(desc(Article.published_at)).offset((page - 1) * per_page).limit(per_page).all()
     total_pages = max(1, (total + per_page - 1) // per_page)
 
-    return templates.TemplateResponse("tag_detail.html", {
-        "request": request, "tag": tag, "articles": articles,
+    return templates.TemplateResponse(request, "tag_detail.html", {
+        "tag": tag, "articles": articles,
         "total": total, "page": page, "total_pages": total_pages,
         "active_page": "",
     })
@@ -350,8 +350,8 @@ async def github_page(
     breaking_count = db.query(GithubUpdate).filter(GithubUpdate.is_breaking == True).count()
     trending_count = db.query(GithubRepo).filter(GithubRepo.trending_score > 0).count()
 
-    return templates.TemplateResponse("github_updates.html", {
-        "request": request, "repos": repos,
+    return templates.TemplateResponse(request, "github_updates.html", {
+        "repos": repos,
         "cat_counts": cat_counts, "current_category": category,
         "current_sort": sort, "current_search": search,
         "current_type": update_type,
@@ -450,8 +450,8 @@ async def github_api_updates(
 
 @router.get("/opportunities", response_class=HTMLResponse)
 async def opportunities_page(request: Request, q: str = ""):
-    return templates.TemplateResponse("opportunities.html", {
-        "request": request, "query": q, "results": [],
+    return templates.TemplateResponse(request, "opportunities.html", {
+        "query": q, "results": [],
         "active_page": "",
     })
 
@@ -464,8 +464,8 @@ async def opportunities_search(request: Request, q: str = ""):
     results = []
     if q.strip():
         results = find_opportunities(q.strip(), settings.github_token)
-    return templates.TemplateResponse("opportunities.html", {
-        "request": request, "query": q, "results": results,
+    return templates.TemplateResponse(request, "opportunities.html", {
+        "query": q, "results": results,
         "active_page": "",
     })
 
@@ -516,8 +516,8 @@ async def opportunities_export(q: str = ""):
 
 @router.get("/finance", response_class=HTMLResponse)
 async def finance_page(request: Request):
-    return templates.TemplateResponse("finance.html", {
-        "request": request, "active_page": "finance",
+    return templates.TemplateResponse(request, "finance.html", {
+        "active_page": "finance",
     })
 
 
@@ -589,8 +589,8 @@ async def finance_glossary():
 
 @router.get("/ai-tips", response_class=HTMLResponse)
 async def ai_tips_page(request: Request):
-    return templates.TemplateResponse("ai_tips.html", {
-        "request": request, "active_page": "ai_tips",
+    return templates.TemplateResponse(request, "ai_tips.html", {
+        "active_page": "ai_tips",
     })
 
 
@@ -701,8 +701,8 @@ async def finance_digest(limit: int = 30, db: Session = Depends(get_db)):
 
 @router.get("/jobs", response_class=HTMLResponse)
 async def jobs_page(request: Request):
-    return templates.TemplateResponse("jobs.html", {
-        "request": request, "active_page": "jobs",
+    return templates.TemplateResponse(request, "jobs.html", {
+        "active_page": "jobs",
     })
 
 
@@ -873,7 +873,7 @@ def rss_feed(db: Session = Depends(get_db)):
         if not row[1]:
             continue
         pub_date = row[2].strftime("%a, %d %b %Y %H:%M:%S +0000") if row[2] else now_rfc
-        desc = (row[5] or (row[3] or "")[:200]).replace("&", "&amp;")
+        desc = (row[5] or (row[3] or "")[:200]).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
         title = (row[0] or "").replace("&", "&amp;").replace("<", "&lt;")
         lines.append(f'    <item><title>{title}</title><link>{site_url}/articles/{row[1]}</link><guid isPermaLink="true">{site_url}/articles/{row[1]}</guid><pubDate>{pub_date}</pubDate><description>{desc}</description></item>')
 
@@ -959,8 +959,7 @@ async def prompts_page(
         "SELECT category, COUNT(*) as cnt FROM prompt_library WHERE is_active = true GROUP BY category ORDER BY cnt DESC"
     )).fetchall()
 
-    return templates.TemplateResponse("prompts.html", {
-        "request": request,
+    return templates.TemplateResponse(request, "prompts.html", {
         "prompts": prompts,
         "categories": categories,
         "selected_category": category,
@@ -1056,6 +1055,8 @@ def radar_page(
         query = query.order_by(DiscoveredProject.stars.desc())
     elif sort == "newest":
         query = query.order_by(DiscoveredProject.first_seen.desc())
+    elif sort == "activity":
+        query = query.order_by(DiscoveredProject.repo_pushed_at.desc().nullslast())
     elif sort == "rising":
         week_ago = date_cls.today() - timedelta(days=7)
         subq = (
@@ -1115,8 +1116,7 @@ def radar_page(
         "FROM discovered_projects WHERE is_active=true"
     )).fetchone()
 
-    return templates.TemplateResponse("radar.html", {
-        "request": request,
+    return templates.TemplateResponse(request, "radar.html", {
         "projects": projects,
         "rising_projects": rising_projects,
         "languages": languages,
@@ -1141,6 +1141,8 @@ def radar_api(
     language: str = None,
     min_score: str = "",
     hidden_gems: bool = False,
+    source: str = None,
+    sort: str = "score",
     limit: int = 20,
     db: Session = Depends(get_db),
 ):
@@ -1156,9 +1158,17 @@ def radar_api(
             DiscoveredProject.potential_score > 70,
             DiscoveredProject.stars < 5000,
         )
-    projects = query.order_by(
-        DiscoveredProject.potential_score.desc()
-    ).limit(min(limit, 100)).all()
+    if source:
+        query = query.filter(DiscoveredProject.discovery_source == source)
+    if sort == "stars":
+        query = query.order_by(DiscoveredProject.stars.desc())
+    elif sort == "activity":
+        query = query.order_by(DiscoveredProject.repo_pushed_at.desc().nullslast())
+    elif sort == "newest":
+        query = query.order_by(DiscoveredProject.first_seen.desc())
+    else:
+        query = query.order_by(DiscoveredProject.potential_score.desc())
+    projects = query.limit(min(limit, 100)).all()
 
     return JSONResponse({"projects": [
         {

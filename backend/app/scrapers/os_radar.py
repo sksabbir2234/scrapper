@@ -1,13 +1,16 @@
 """
-OS Radar — Hidden Gem Discovery Engine
+OS Radar v2 — Gemstone Hidden Gem Discovery Engine
 Finds open-source projects gaining momentum before mainstream attention.
 
-5 Discovery Strategies:
+8 Discovery Strategies:
   1. trending_languages  — new repos by language, sorted by stars
   2. topic_surfing       — repos matching hot tech topics
   3. star_accelerators   — fast-growing repos created in last 30 days
   4. fresh_active        — recently pushed repos created in last 60 days
   5. fork_signals        — high fork-to-star ratio (people using, not just starring)
+  6. rising_stars        — sweet spot repos gaining momentum (20-2000 stars)
+  7. deep_search         — hidden repos with low stars, sorted by activity
+  8. topic_deep_dive     — granular topic search in hidden star range
 """
 
 import httpx
@@ -29,13 +32,33 @@ REQUEST_TIMEOUT = 10
 
 TARGET_LANGUAGES = [
     "python", "typescript", "rust", "go",
-    "java", "cpp", "javascript", "csharp"
+    "java", "cpp", "javascript", "csharp",
+    "kotlin", "swift", "dart", "zig",
+    "ruby", "php", "elixir", "scala",
 ]
 
 HOT_TOPICS = [
     "ai", "llm", "machine-learning", "webassembly",
     "cli", "database", "devtools", "kubernetes",
-    "mcp", "agent", "rag", "vector-database"
+    "mcp", "agent", "rag", "vector-database",
+    "llm-inference", "function-calling", "tool-use",
+    "embedding", "fine-tuning", "local-llm", "ai-coding",
+    "self-hosted", "single-binary", "serverless", "edge-computing",
+    "observability", "security", "auth", "payments",
+    "real-time", "websocket", "graphql", "grpc",
+    "terraform", "pulumi", "docker", "wasm",
+]
+
+DEEP_TOPICS = [
+    "mcp-server", "mcp-client", "ai-agent", "code-generation",
+    "text-to-sql", "semantic-search", "prompt-engineering",
+    "image-generation", "voice-assistant", "chatbot",
+    "rust-cli", "go-cli", "python-cli", "typescript-cli",
+    "orm", "migration", "schema", "api-gateway",
+    "rate-limiter", "job-queue", "cache", "cdn",
+    "static-site", "blog-engine", "wiki", "note-taking",
+    "task-runner", "cron", "workflow", "pipeline",
+    "monitoring", "logging", "tracing", "metrics",
 ]
 
 WATCHED_REPO_CACHE: set[str] = set()
@@ -114,6 +137,25 @@ def _get_contributor_count(owner: str, repo: str, token: str) -> int:
         return 1
 
 
+def _fetch_repo_tree(owner: str, repo: str, token: str) -> list[str]:
+    """Fetch repo file tree for quality analysis. Returns list of file paths."""
+    if not has_rate_budget():
+        return []
+    try:
+        url = f"{GITHUB_API}/repos/{owner}/{repo}/git/trees/HEAD"
+        params = {"recursive": "1"}
+        with httpx.Client(timeout=REQUEST_TIMEOUT) as client:
+            resp = client.get(url, headers=_headers(token), params=params)
+        _check_rate_limit(resp)
+        if resp.status_code != 200:
+            return []
+        data = resp.json()
+        tree = data.get("tree", [])
+        return [item["path"] for item in tree if item.get("type") == "blob"]
+    except Exception:
+        return []
+
+
 # ── Strategy 1: Trending Languages ───────────────────────────────
 
 def discover_trending_languages(token: str, db) -> dict:
@@ -122,7 +164,7 @@ def discover_trending_languages(token: str, db) -> dict:
     cutoff = (datetime.now(timezone.utc) - timedelta(days=90)).strftime("%Y-%m-%d")
 
     for lang in TARGET_LANGUAGES:
-        query = f"language:{lang} created:>{cutoff} stars:>20"
+        query = f"language:{lang} created:>{cutoff} stars:>5"
         repos = _search_repos(query, "stars", "desc", 10, token)
 
         for repo in repos:
@@ -143,7 +185,7 @@ def discover_by_topics(token: str, db) -> dict:
     cutoff = (datetime.now(timezone.utc) - timedelta(days=120)).strftime("%Y-%m-%d")
 
     for topic in HOT_TOPICS:
-        query = f"topic:{topic} created:>{cutoff} stars:>30 pushed:>{cutoff}"
+        query = f"topic:{topic} created:>{cutoff} stars:>10 pushed:>{cutoff}"
         repos = _search_repos(query, "stars", "desc", 8, token)
 
         for repo in repos:
@@ -216,6 +258,71 @@ def discover_fork_signals(token: str, db) -> dict:
     return log
 
 
+# ── Strategy 6: Rising Stars (NEW) ───────────────────────────────
+
+def discover_rising_stars(token: str, db) -> dict:
+    """Sweet spot repos: 20-2000 stars, created recently, actively pushed.
+    These are the projects that are past the 'toy' stage but not yet mainstream."""
+    log = {"strategy": "rising_stars", "found": 0, "new": 0, "updated": 0, "skipped": 0}
+    created_cutoff = (datetime.now(timezone.utc) - timedelta(days=120)).strftime("%Y-%m-%d")
+    pushed_cutoff  = (datetime.now(timezone.utc) - timedelta(days=14)).strftime("%Y-%m-%d")
+    query = f"created:>{created_cutoff} stars:20..2000 pushed:>{pushed_cutoff}"
+    repos = _search_repos(query, "updated", "desc", 30, token)
+
+    for repo in repos:
+        log["found"] += 1
+        result = _process_repo(repo, "rising_stars", token, db)
+        log[result] = log.get(result, 0) + 1
+
+    return log
+
+
+# ── Strategy 7: Deep Search (NEW) ────────────────────────────────
+
+def discover_deep_search(token: str, db) -> dict:
+    """Hidden repos in more languages, <500 stars, sorted by activity.
+    This strategy deliberately searches for repos that other strategies miss
+    by using lower star thresholds and sorting by update time."""
+    log = {"strategy": "deep_search", "found": 0, "new": 0, "updated": 0, "skipped": 0}
+    pushed_cutoff = (datetime.now(timezone.utc) - timedelta(days=30)).strftime("%Y-%m-%d")
+
+    # Search across languages with low star range, sorted by activity
+    for lang in TARGET_LANGUAGES:
+        query = f"language:{lang} stars:5..500 pushed:>{pushed_cutoff}"
+        repos = _search_repos(query, "updated", "desc", 15, token)
+
+        for repo in repos:
+            log["found"] += 1
+            result = _process_repo(repo, "deep_search", token, db)
+            log[result] = log.get(result, 0) + 1
+
+        time.sleep(2)
+
+    return log
+
+
+# ── Strategy 8: Topic Deep Dive (NEW) ────────────────────────────
+
+def discover_topic_deep_dive(token: str, db) -> dict:
+    """Granular topic search in hidden star range.
+    Uses more specific topics than topic_surfing."""
+    log = {"strategy": "topic_deep_dive", "found": 0, "new": 0, "updated": 0, "skipped": 0}
+    pushed_cutoff = (datetime.now(timezone.utc) - timedelta(days=30)).strftime("%Y-%m-%d")
+
+    for topic in DEEP_TOPICS:
+        query = f"topic:{topic} stars:10..1000 pushed:>{pushed_cutoff}"
+        repos = _search_repos(query, "updated", "desc", 8, token)
+
+        for repo in repos:
+            log["found"] += 1
+            result = _process_repo(repo, "topic_deep_dive", token, db)
+            log[result] = log.get(result, 0) + 1
+
+        time.sleep(2)
+
+    return log
+
+
 # ── Core processing function ──────────────────────────────────────
 
 def _process_repo(repo: dict, source: str, token: str, db) -> str:
@@ -239,7 +346,23 @@ def _process_repo(repo: dict, source: str, token: str, db) -> str:
         return "skipped"
 
     contributors = _get_contributor_count(owner, repo_name, token)
-    score, breakdown = calculate_potential_score(repo, contributors)
+
+    # Fetch repo tree for quality analysis (Gemstone Algorithm)
+    repo_tree = _fetch_repo_tree(owner, repo_name, token)
+
+    # Get score history for momentum calculation
+    existing_project = db.query(DiscoveredProject).filter_by(full_name=full_name).first()
+    score_history = None
+    if existing_project:
+        from app.models import DiscoveredProjectScore
+        history_rows = db.query(DiscoveredProjectScore).filter_by(
+            project_id=existing_project.id
+        ).order_by(DiscoveredProjectScore.scored_at).all()
+        score_history = [(h.scored_at, h.score, h.stars) for h in history_rows]
+
+    score, breakdown = calculate_potential_score(
+        repo, contributors, repo_tree, score_history
+    )
 
     def parse_dt(s):
         if not s:
@@ -250,25 +373,23 @@ def _process_repo(repo: dict, source: str, token: str, db) -> str:
             return None
 
     try:
-        existing = db.query(DiscoveredProject).filter_by(full_name=full_name).first()
-
-        if existing:
-            existing.stars           = repo.get("stargazers_count", 0)
-            existing.forks           = repo.get("forks_count", 0)
-            existing.open_issues     = repo.get("open_issues_count", 0)
-            existing.watchers        = repo.get("watchers_count", 0)
-            existing.contributors    = contributors
-            existing.repo_pushed_at  = parse_dt(repo.get("pushed_at"))
-            existing.potential_score = score
-            existing.score_breakdown = breakdown
-            existing.last_scored     = datetime.utcnow()
+        if existing_project:
+            existing_project.stars           = repo.get("stargazers_count", 0)
+            existing_project.forks           = repo.get("forks_count", 0)
+            existing_project.open_issues     = repo.get("open_issues_count", 0)
+            existing_project.watchers        = repo.get("watchers_count", 0)
+            existing_project.contributors    = contributors
+            existing_project.repo_pushed_at  = parse_dt(repo.get("pushed_at"))
+            existing_project.potential_score = score
+            existing_project.score_breakdown = breakdown
+            existing_project.last_scored     = datetime.utcnow()
 
             if score < 20:
-                existing.consecutive_low_score_days += 1
-                if existing.consecutive_low_score_days >= 7:
-                    existing.is_active = False
+                existing_project.consecutive_low_score_days += 1
+                if existing_project.consecutive_low_score_days >= 7:
+                    existing_project.is_active = False
             else:
-                existing.consecutive_low_score_days = 0
+                existing_project.consecutive_low_score_days = 0
 
             result = "updated"
         else:
@@ -297,7 +418,7 @@ def _process_repo(repo: dict, source: str, token: str, db) -> str:
         db.flush()
 
         # Insert daily score snapshot
-        project_id = existing.id if existing else (
+        project_id = existing_project.id if existing_project else (
             db.query(DiscoveredProject).filter_by(full_name=full_name).first().id
         )
         from datetime import date
@@ -326,6 +447,114 @@ def _process_repo(repo: dict, source: str, token: str, db) -> str:
         return "error"
 
 
+# ── Single repo processor (for manual add) ────────────────────────
+
+def process_single_repo(repo_data: dict, token: str, db) -> dict:
+    """Process a single repo dict (from GitHub API). Returns result dict."""
+    from app.models import DiscoveredProject, DiscoveredProjectScore
+
+    full_name = repo_data.get("full_name", "")
+    if not full_name:
+        return {"status": "error", "message": "Invalid repo data"}
+
+    disqualified, reason = should_disqualify(repo_data)
+    if disqualified:
+        return {"status": "skipped", "reason": reason}
+
+    try:
+        owner, repo_name = full_name.split("/", 1)
+    except ValueError:
+        return {"status": "error", "message": "Invalid full_name format"}
+
+    contributors = _get_contributor_count(owner, repo_name, token)
+    repo_tree = _fetch_repo_tree(owner, repo_name, token)
+
+    existing_project = db.query(DiscoveredProject).filter_by(full_name=full_name).first()
+    score_history = None
+    if existing_project:
+        history_rows = db.query(DiscoveredProjectScore).filter_by(
+            project_id=existing_project.id
+        ).order_by(DiscoveredProjectScore.scored_at).all()
+        score_history = [(h.scored_at, h.score, h.stars) for h in history_rows]
+
+    score, breakdown = calculate_potential_score(
+        repo_data, contributors, repo_tree, score_history
+    )
+
+    def parse_dt(s):
+        if not s:
+            return None
+        try:
+            return datetime.fromisoformat(s.replace("Z", "+00:00")).replace(tzinfo=None)
+        except Exception:
+            return None
+
+    try:
+        if existing_project:
+            existing_project.stars           = repo_data.get("stargazers_count", 0)
+            existing_project.forks           = repo_data.get("forks_count", 0)
+            existing_project.open_issues     = repo_data.get("open_issues_count", 0)
+            existing_project.watchers        = repo_data.get("watchers_count", 0)
+            existing_project.contributors    = contributors
+            existing_project.repo_pushed_at  = parse_dt(repo_data.get("pushed_at"))
+            existing_project.potential_score = score
+            existing_project.score_breakdown = breakdown
+            existing_project.last_scored     = datetime.utcnow()
+            existing_project.discovery_source = "manual"
+            result = "updated"
+        else:
+            db.add(DiscoveredProject(
+                full_name        = full_name,
+                repo_url         = repo_data.get("html_url", f"https://github.com/{full_name}"),
+                owner            = owner,
+                repo             = repo_name,
+                description      = (repo_data.get("description") or "")[:500],
+                language         = repo_data.get("language"),
+                license_name     = (repo_data.get("license") or {}).get("spdx_id"),
+                topics           = repo_data.get("topics") or [],
+                stars            = repo_data.get("stargazers_count", 0),
+                forks            = repo_data.get("forks_count", 0),
+                open_issues      = repo_data.get("open_issues_count", 0),
+                watchers         = repo_data.get("watchers_count", 0),
+                contributors     = contributors,
+                repo_created_at  = parse_dt(repo_data.get("created_at")),
+                repo_pushed_at   = parse_dt(repo_data.get("pushed_at")),
+                potential_score  = score,
+                score_breakdown  = breakdown,
+                discovery_source = "manual",
+            ))
+            result = "new"
+
+        db.flush()
+
+        # Insert daily score snapshot
+        project = db.query(DiscoveredProject).filter_by(full_name=full_name).first()
+        from datetime import date
+        today = date.today()
+        existing_score_row = db.query(DiscoveredProjectScore).filter_by(
+            project_id=project.id, scored_at=today
+        ).first()
+
+        if existing_score_row:
+            existing_score_row.score = score
+            existing_score_row.stars = repo_data.get("stargazers_count", 0)
+        else:
+            db.add(DiscoveredProjectScore(
+                project_id = project.id,
+                scored_at  = today,
+                score      = score,
+                stars      = repo_data.get("stargazers_count", 0),
+            ))
+
+        db.commit()
+        return {"status": "ok", "action": result, "score": score, "breakdown": breakdown}
+
+    except Exception as e:
+        logger.error(f"Radar: error processing manual add {full_name}: {e}")
+        db.rollback()
+        return {"status": "error", "message": str(e)}
+
+
 # ── Orchestrator ──────────────────────────────────────────────────
 
 def run_discovery_strategy(strategy_name: str, token: str, db) -> dict:
@@ -350,6 +579,9 @@ def run_discovery_strategy(strategy_name: str, token: str, db) -> dict:
         "star_accelerators":  discover_star_accelerators,
         "fresh_active":       discover_fresh_active,
         "fork_signals":       discover_fork_signals,
+        "rising_stars":       discover_rising_stars,
+        "deep_search":        discover_deep_search,
+        "topic_deep_dive":    discover_topic_deep_dive,
     }
 
     fn = strategy_map.get(strategy_name)

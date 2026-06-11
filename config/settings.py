@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     github_watch_interval_minutes: int = 60
     market_cache_ttl_seconds: int = 300
 
-    model_config = {"env_file": str(PROJECT_ROOT / ".env"), "env_file_encoding": "utf-8"}
+    model_config = {"env_file": str(PROJECT_ROOT / ".env"), "env_file_encoding": "utf-8", "extra": "ignore"}
 
 
 @lru_cache()

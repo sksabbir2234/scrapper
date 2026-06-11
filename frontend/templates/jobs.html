@@ -12,7 +12,7 @@
   margin-bottom: 1.5rem;
 }
 .stat-card {
-  background: var(--card-bg);
+  background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   padding: 1rem;
@@ -184,7 +184,7 @@
   padding: 0.3rem 0.75rem;
   border-radius: 14px;
   border: 1px solid var(--border);
-  background: var(--card-bg);
+  background: var(--bg-card);
   color: var(--text-muted);
   cursor: pointer;
   transition: all 0.15s;
@@ -206,7 +206,7 @@
   .chart-grid { grid-template-columns: 1fr; }
 }
 .chart-box {
-  background: var(--card-bg);
+  background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   padding: 1.25rem;
@@ -367,9 +367,9 @@
 
   <!-- Tabs -->
   <div class="filter-tabs" style="margin-bottom: 1.25rem;">
-    <button class="filter-tab active" onclick="switchTab('live')">Live Listings</button>
-    <button class="filter-tab" onclick="switchTab('sites')">Job Sites</button>
-    <button class="filter-tab" onclick="switchTab('insights')">Market Insights</button>
+    <button class="filter-tab active" onclick="switchTab('live', event)">Live Listings</button>
+    <button class="filter-tab" onclick="switchTab('sites', event)">Job Sites</button>
+    <button class="filter-tab" onclick="switchTab('insights', event)">Market Insights</button>
   </div>
 
   <!-- TAB: Live Listings -->
@@ -536,7 +536,7 @@
 </div>
 {% endblock %}
 
-{% block extra_scripts %}
+{% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <script>
 var currentPage = 1;
@@ -549,9 +549,9 @@ var allJobs = [];
 var chartInstances = {};
 
 // --- Tab switching ---
-function switchTab(tab) {
+function switchTab(tab, evt) {
   document.querySelectorAll('.filter-tabs .filter-tab').forEach(function(t) { t.classList.remove('active'); });
-  event.target.classList.add('active');
+  (evt || event).target.classList.add('active');
   ['live','sites','insights'].forEach(function(t) {
     var el = document.getElementById('tab-' + t);
     if (el) el.style.display = t === tab ? 'block' : 'none';

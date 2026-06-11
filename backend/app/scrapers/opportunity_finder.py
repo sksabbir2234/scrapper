@@ -1,10 +1,13 @@
 """GitHub Opportunity Finder — search repos by keyword and rank by opportunity signals."""
+import logging
 import time
 from datetime import datetime, timezone
 
 import httpx
 
 GITHUB_API = "https://api.github.com"
+
+logger = logging.getLogger(__name__)
 
 
 def _headers(token: str | None = None) -> dict:
@@ -23,6 +26,7 @@ def search_repos(keyword: str, token: str | None = None, limit: int = 30) -> lis
         resp.raise_for_status()
         return resp.json().get("items", [])
     except Exception:
+        logger.exception("search_repos failed for keyword=%s", keyword)
         return []
 
 
@@ -40,6 +44,7 @@ def get_contributor_count(owner: str, repo: str, token: str | None = None) -> in
             return int(last_page)
         return len(resp.json())
     except Exception:
+        logger.exception("get_contributor_count failed for %s/%s", owner, repo)
         return 0
 
 

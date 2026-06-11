@@ -128,7 +128,81 @@ GROQ_API_KEY=gsk_your_key_here        # For AI summaries (free at console.groq.c
 
 Press `Ctrl+C` in the terminal running uvicorn.
 
-## 9. Troubleshooting
+## 9. Brainrot Video Generator
+
+Generates vertical TikTok/Shorts/Reels videos from your scraped articles.
+
+### One-Time Setup
+
+```bash
+# Dependencies (already installed if you ran the video generator setup)
+pip install moviepy pillow edge-tts anthropic
+
+# Download gameplay video — pick ONE option:
+pip install yt-dlp
+
+# Option A: Subway Surfers
+yt-dlp -f "bestvideo[height<=1080]+bestaudio/best" "YOUTUBE_URL" -o "D:\cse code\scrapper\video_generator\assets\gameplay.mp4"
+
+# Option B: Minecraft parkour / satisfying clips (search YouTube for "minecraft parkour gameplay no commentary")
+```
+
+Font is already included at `video_generator/assets/font.ttf`.
+
+### Add to .env
+
+```
+ANTHROPIC_API_KEY=sk-ant-your-key-here
+```
+
+### Generate a Video
+
+```bash
+cd "D:\cse code\scrapper\cd "
+
+# Test script only (no video rendered, fast)
+python brainrot.py --dry-run
+
+# Override story manually
+python brainrot.py --story "Google just open sourced Gemini Ultra"
+
+# Full video generation (picks best story from your API)
+python brainrot.py
+```
+
+Output goes to: `D:\cse code\scrapper\videos\brainrot_YYYY-MM-DD_HH-MM.mp4`
+
+### How It Works
+
+1. Fetches articles from your FastAPI (`/api/articles`)
+2. Scores by virality (category, keywords, source, recency)
+3. Claude writes a brainrot script (30-55s, punchy sentences)
+4. Edge-TTS generates voiceover with word-level timestamps
+5. PIL renders word-by-word text overlay (top half)
+6. MoviePy composites text + gameplay (bottom half) into 1080x1920 MP4
+
+### Auto-Runs Daily at 8:00 AM
+
+The scheduler in `backend/app/scheduler.py` runs `brainrot.py` automatically when the FastAPI server is running. No manual trigger needed.
+
+### CLI Flags
+
+| Flag | Description |
+|------|-------------|
+| `--dry-run` | Print script only, don't render video |
+| `--story "text"` | Override the story with custom text |
+
+### Troubleshooting
+
+| Problem | Fix |
+|---------|-----|
+| `gameplay.mp4 not found` | Download gameplay video (see setup above) |
+| `font.ttf not found` | Re-download Anton font to `video_generator/assets/` |
+| Video too short (<28s) | Script is too short — set ANTHROPIC_API_KEY for better scripts |
+| `Lock file exists` | Delete `video_generator/.brainrot.lock` if previous job crashed |
+| Video silent | Check voice_path exists before composing |
+
+## 10. Troubleshooting
 
 | Problem | Fix |
 |---------|-----|

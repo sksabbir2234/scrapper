@@ -1,18 +1,13 @@
 import time
-import re
 from datetime import datetime, timezone
 
 import httpx
 
+from app.scrapers import strip_html as _strip_html
+
 _cache: dict = {}
 _cache_ts: float = 0
 CACHE_TTL = 600  # 10 minutes
-
-
-def _strip_html(text: str) -> str:
-    """Remove HTML tags and collapse whitespace."""
-    clean = re.sub(r"<[^>]+>", " ", text or "")
-    return re.sub(r"\s+", " ", clean).strip()
 
 
 def _fetch_remoteok() -> list[dict]:
@@ -45,7 +40,7 @@ def _fetch_remoteok() -> list[dict]:
                 "remote": True,
                 "posted_at": item.get("date", ""),
                 "logo": item.get("company_logo") or item.get("logo", ""),
-                "description": _strip_html(item.get("description", ""))[:300],
+                "description": _strip_html(item.get("description", ""))[:500],
             })
         return jobs
     except Exception:
@@ -84,7 +79,7 @@ def _fetch_arbeitnow() -> list[dict]:
                 "remote": bool(item.get("remote")),
                 "posted_at": posted,
                 "logo": "",
-                "description": _strip_html(item.get("description", ""))[:300],
+                "description": _strip_html(item.get("description", ""))[:500],
             })
         return jobs
     except Exception:

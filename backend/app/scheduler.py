@@ -1,5 +1,6 @@
 import sys
 import time
+import subprocess
 import threading
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
@@ -151,8 +152,10 @@ def scrape_single_source(source_id: int, summarize: bool = False, classify: bool
                 seen_urls.add(article_data["original_url"])
 
                 try:
-                    article = Article(**article_data)
-                    db.add(article)
+                    with db.begin_nested():
+                        article = Article(**article_data)
+                        db.add(article)
+                        db.flush()
                     inserted += 1
                     new_articles.append(article_data)
                 except Exception as e:
@@ -309,9 +312,11 @@ def run_github_scrape():
                 u["repo_id"] = repo_obj.id
 
             try:
-                # Remove label before creating if it's not a column we set directly
-                update_data = {k: v for k, v in u.items()}
-                db.add(GithubUpdate(**update_data))
+                with db.begin_nested():
+                    # Remove label before creating if it's not a column we set directly
+                    update_data = {k: v for k, v in u.items()}
+                    db.add(GithubUpdate(**update_data))
+                    db.flush()
                 inserted += 1
             except Exception as e:
                 errors.append(str(e))
@@ -519,17 +524,23 @@ def run_finance_scrape():
                 skipped += 1
                 continue
 
-            resource = FinanceResource(
-                title=item["title"],
-                url=item["url"],
-                resource_type=item["resource_type"],
-                level=item["level"],
-                cost_level=item["cost_level"],
-                topic=item["topic"],
-                description=item["description"],
-            )
-            db.add(resource)
-            inserted += 1
+            try:
+                with db.begin_nested():
+                    resource = FinanceResource(
+                        title=item["title"],
+                        url=item["url"],
+                        resource_type=item["resource_type"],
+                        level=item["level"],
+                        cost_level=item["cost_level"],
+                        topic=item["topic"],
+                        description=item["description"],
+                    )
+                    db.add(resource)
+                    db.flush()
+                inserted += 1
+            except Exception as e:
+                logger.error(f"Failed to insert finance resource {item.get('title', 'unknown')}: {e}")
+                skipped += 1
 
         db.commit()
         duration = int(time.time() - start)
@@ -563,15 +574,21 @@ def run_prompts_scrape():
                 skipped += 1
                 continue
 
-            prompt = PromptLibrary(
-                title=p["title"],
-                prompt_text=p["prompt_text"],
-                category=p["category"],
-                tags=p["tags"],
-                difficulty=p["difficulty"],
-            )
-            db.add(prompt)
-            inserted += 1
+            try:
+                with db.begin_nested():
+                    prompt = PromptLibrary(
+                        title=p["title"],
+                        prompt_text=p["prompt_text"],
+                        category=p["category"],
+                        tags=p["tags"],
+                        difficulty=p["difficulty"],
+                    )
+                    db.add(prompt)
+                    db.flush()
+                inserted += 1
+            except Exception as e:
+                logger.error(f"Failed to insert prompt {p.get('title', 'unknown')}: {e}")
+                skipped += 1
 
         db.commit()
         duration = int(time.time() - start)
@@ -683,17 +700,20 @@ def schedule_radar_jobs(scheduler):
 
     strategies = [
         ("trending_languages", 0),
-        ("topic_surfing", 90),
-        ("star_accelerators", 180),
-        ("fresh_active", 270),
-        ("fork_signals", 270),
+        ("topic_surfing", 60),
+        ("star_accelerators", 120),
+        ("fresh_active", 180),
+        ("fork_signals", 240),
+        ("rising_stars", 300),
+        ("deep_search", 360),
+        ("topic_deep_dive", 420),
     ]
 
     for name, delay_min in strategies:
         scheduler.add_job(
             _radar_strategy_job,
             kwargs={"strategy": name},
-            trigger=IntervalTrigger(hours=6),
+            trigger=IntervalTrigger(hours=8),
             start_date=datetime.now() + timedelta(minutes=delay_min),
             id=f"radar_{name}",
             name=f"Radar: {name}",

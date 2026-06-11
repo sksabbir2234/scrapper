@@ -19,6 +19,9 @@ engine = create_engine(
     settings.database_url,
     connect_args=connect_args,
     pool_pre_ping=not is_sqlite,
+    pool_size=10,
+    max_overflow=20,
+    pool_timeout=60,
 )
 
 if is_sqlite:

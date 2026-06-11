@@ -8,9 +8,11 @@
   <meta property="og:site_name" content="GlobalNews">
   <meta property="og:type" content="website">
   <meta name="twitter:card" content="summary">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>*</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/css/style.css">
+  <script src="/static/js/utils.js" defer></script>
   {% block extra_head %}{% endblock %}
   {% block extra_css %}{% endblock %}
 </head>
@@ -66,8 +68,7 @@
   <a href="/ai-tips" class="nav-link">AI Hub</a>
   <a href="/jobs" class="nav-link">Jobs</a>
   <a href="/prompts" class="nav-link">Prompts</a>
-  <a href="/oss" class="nav-link">OSS</a>
-  <a href="/search" class="nav-link">Search</a>
+  <a href="/radar" class="nav-link">Radar</a>
 </div>
 
 <main class="main-content">
@@ -79,15 +80,15 @@
     <div class="footer-inner">
       <span class="footer-logo">GlobalNews</span>
       <nav class="footer-links">
+        <a href="/">Home</a>
         <a href="/trending">Trending</a>
         <a href="/categories">Categories</a>
-        <a href="/tags">Tags</a>
+        <a href="/github">GitHub</a>
         <a href="/finance">Finance</a>
         <a href="/ai-tips">AI Hub</a>
         <a href="/jobs">Jobs</a>
         <a href="/prompts">Prompts</a>
-        <a href="/oss">OSS</a>
-        <a href="/github">GitHub Tracker</a>
+        <a href="/radar">Radar</a>
       </nav>
       <span class="footer-meta">Auto-curated &middot; Refreshed every 15 min</span>
     </div>
@@ -122,7 +123,6 @@
   });
 })();
 </script>
-{% block extra_scripts %}{% endblock %}
 {% block extra_js %}{% endblock %}
 </body>
 </html>

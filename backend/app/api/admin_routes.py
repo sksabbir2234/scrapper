@@ -108,7 +108,7 @@ class BulkDelete(BaseModel):
 
 @router.get("/admin", response_class=HTMLResponse)
 async def admin_page(request: Request):
-    return templates.TemplateResponse("admin.html", {"request": request})
+    return templates.TemplateResponse(request, "admin.html")
 
 
 # ─── Feature Status ───
@@ -709,7 +709,8 @@ def admin_radar_run(
 
     valid = [
         "trending_languages", "topic_surfing", "star_accelerators",
-        "fresh_active", "fork_signals",
+        "fresh_active", "fork_signals", "rising_stars",
+        "deep_search", "topic_deep_dive",
     ]
     if strategy not in valid:
         raise HTTPException(400, f"Unknown strategy. Valid: {valid}")
@@ -725,6 +726,61 @@ def admin_radar_run(
 
     threading.Thread(target=run, daemon=True).start()
     return JSONResponse({"status": "started", "strategy": strategy})
+
+
+@router.post("/admin/radar/add")
+def admin_radar_add(
+    url: str = "",
+    user: str = Depends(verify_admin),
+    db: Session = Depends(get_db),
+):
+    """Add a repo to the radar by GitHub URL."""
+    import re as re_mod
+    settings = get_settings()
+    if not settings.github_token:
+        raise HTTPException(400, "GITHUB_TOKEN not set")
+
+    # Parse owner/repo from URL
+    match = re_mod.search(r"github\.com/([^/]+/[^/]+)", url)
+    if not match:
+        raise HTTPException(400, "Invalid GitHub URL. Use: https://github.com/owner/repo")
+    full_name = match.group(1).rstrip("/")
+
+    # Fetch repo from GitHub API
+    try:
+        import httpx
+        resp = httpx.get(
+            f"https://api.github.com/repos/{full_name}",
+            headers={
+                "Authorization": f"Bearer {settings.github_token}",
+                "Accept": "application/vnd.github+json",
+                "X-GitHub-Api-Version": "2022-11-28",
+            },
+            timeout=15,
+        )
+        if resp.status_code == 404:
+            raise HTTPException(404, f"Repo not found: {full_name}")
+        if resp.status_code != 200:
+            raise HTTPException(resp.status_code, f"GitHub API error: {resp.status_code}")
+        repo_data = resp.json()
+    except httpx.HTTPError as e:
+        raise HTTPException(500, f"Failed to fetch repo: {e}")
+
+    # Process and score
+    from app.scrapers.os_radar import process_single_repo
+    result = process_single_repo(repo_data, settings.github_token, db)
+
+    if result.get("status") == "error":
+        raise HTTPException(500, result.get("message", "Unknown error"))
+    if result.get("status") == "skipped":
+        return JSONResponse({"status": "skipped", "reason": result.get("reason")})
+
+    return JSONResponse({
+        "status": "ok",
+        "action": result.get("action"),
+        "score": result.get("score"),
+        "full_name": full_name,
+    })
 
 
 @router.post("/admin/radar/promote/{project_id}")
@@ -744,7 +800,8 @@ def admin_radar_promote(
     if not existing:
         db.add(GithubRepo(
             owner=project.owner,
-            name=project.repo,
+            repo=project.repo,
+            label=project.full_name,
             full_name=project.full_name,
             description=project.description,
             stars=project.stars,

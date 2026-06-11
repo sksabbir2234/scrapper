@@ -14,6 +14,7 @@ import httpx
 from slugify import slugify
 
 from config.settings import get_settings
+from app.scrapers import strip_html
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -179,7 +180,7 @@ def scrape_finance_feed(feed_cfg: dict) -> list[dict]:
             description_parts.append(entry.description)
         if hasattr(entry, "content") and entry.content:
             description_parts.append(entry.content[0].get("value", ""))
-        description = " ".join(filter(None, description_parts)).strip()
+        description = strip_html(" ".join(filter(None, description_parts)).strip())
 
         difficulty = _detect_difficulty(title, description, feed_cfg.get("default_level", "beginner"))
         cost_level = _detect_cost_level(title, description)

@@ -13,7 +13,7 @@
 .stat-card {
     background: var(--bg-card);
     border: 1px solid var(--border);
-    border-radius: var(--radius);
+    border-radius: var(--radius-md);
     padding: 1rem;
     text-align: center;
 }
@@ -41,7 +41,7 @@
 .rising-card {
     background: var(--bg-card);
     border: 1px solid var(--border);
-    border-radius: var(--radius);
+    border-radius: var(--radius-md);
     padding: 1rem;
     position: relative;
 }
@@ -82,7 +82,7 @@
 .filter-card {
     background: var(--bg-card);
     border: 1px solid var(--border);
-    border-radius: var(--radius);
+    border-radius: var(--radius-md);
     padding: 1rem;
 }
 .filter-card h3 {
@@ -189,7 +189,7 @@
 .project-card {
     background: var(--bg-card);
     border: 1px solid var(--border);
-    border-radius: var(--radius);
+    border-radius: var(--radius-md);
     padding: 1.1rem;
     transition: border-color 0.15s;
 }
@@ -277,6 +277,18 @@
         </p>
     </div>
 
+    <!-- Manual Add -->
+    <div style="max-width: 600px; margin: 0 auto 1.5rem; display: flex; gap: 0.5rem;">
+        <input type="text" id="add-radar-url" placeholder="Add repo: paste GitHub URL..."
+               style="flex: 1; padding: 0.5rem 0.75rem; border: 1px solid var(--border);
+                      border-radius: var(--radius-sm); background: var(--bg-card); color: var(--text);
+                      font-size: 0.85rem;">
+        <button onclick="addRadarRepo()" class="btn-filter" style="width: auto; padding: 0.5rem 1rem;">
+            Add to Radar
+        </button>
+    </div>
+    <div id="add-radar-msg" style="text-align: center; font-size: 0.85rem; margin-bottom: 1rem; display: none;"></div>
+
     <!-- Stats -->
     <div class="stats-row">
         <div class="stat-card">
@@ -348,6 +360,10 @@
                         <option value="star_accelerators" {% if filters.source == 'star_accelerators' %}selected{% endif %}>Star Accelerators</option>
                         <option value="fresh_active" {% if filters.source == 'fresh_active' %}selected{% endif %}>Fresh & Active</option>
                         <option value="fork_signals" {% if filters.source == 'fork_signals' %}selected{% endif %}>Fork Signals</option>
+                        <option value="rising_stars" {% if filters.source == 'rising_stars' %}selected{% endif %}>Rising Stars</option>
+                        <option value="deep_search" {% if filters.source == 'deep_search' %}selected{% endif %}>Deep Search</option>
+                        <option value="topic_deep_dive" {% if filters.source == 'topic_deep_dive' %}selected{% endif %}>Topic Deep Dive</option>
+                        <option value="manual" {% if filters.source == 'manual' %}selected{% endif %}>Manual Add</option>
                     </select>
                 </div>
                 <div class="filter-group">
@@ -387,6 +403,8 @@
                        class="{% if filters.sort == 'newest' %}active{% endif %}">Newest</a>
                     <a href="/radar?sort=rising{% if filters.language %}&language={{ filters.language }}{% endif %}{% if filters.min_score %}&min_score={{ filters.min_score }}{% endif %}{% if filters.source %}&source={{ filters.source }}{% endif %}{% if filters.hidden_gems %}&hidden_gems=true{% endif %}"
                        class="{% if filters.sort == 'rising' %}active{% endif %}">Rising</a>
+                    <a href="/radar?sort=activity{% if filters.language %}&language={{ filters.language }}{% endif %}{% if filters.min_score %}&min_score={{ filters.min_score }}{% endif %}{% if filters.source %}&source={{ filters.source }}{% endif %}{% if filters.hidden_gems %}&hidden_gems=true{% endif %}"
+                       class="{% if filters.sort == 'activity' %}active{% endif %}">Activity</a>
                 </div>
             </form>
 
@@ -439,11 +457,49 @@
 
             {% else %}
             <div class="card card-flat" style="text-align: center; padding: 2rem;">
-                <p style="color: var(--text-light);">No projects found. The radar scans every 6 hours — check back soon.</p>
+                <p style="color: var(--text-light);">No projects found. The radar scans every 8 hours across 8 strategies — check back soon, or paste a GitHub URL above to add manually.</p>
             </div>
             {% endif %}
         </div>
     </div>
 
 </div>
+
+<script>
+async function addRadarRepo() {
+    const input = document.getElementById('add-radar-url');
+    const msg = document.getElementById('add-radar-msg');
+    const url = input.value.trim();
+    if (!url) return;
+
+    msg.style.display = 'block';
+    msg.style.color = 'var(--text-light)';
+    msg.textContent = 'Adding...';
+
+    try {
+        const resp = await fetch('/admin/radar/add', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({url: url})
+        });
+        const data = await resp.json();
+        if (resp.ok) {
+            msg.style.color = 'var(--success, #16a34a)';
+            msg.textContent = 'Added! Score: ' + (data.score || '?') + ' — ' + data.full_name;
+            input.value = '';
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            msg.style.color = 'var(--danger, #dc2626)';
+            msg.textContent = data.detail || 'Failed to add';
+        }
+    } catch(e) {
+        msg.style.color = 'var(--danger, #dc2626)';
+        msg.textContent = 'Network error';
+    }
+}
+
+document.getElementById('add-radar-url').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') addRadarRepo();
+});
+</script>
 {% endblock %}

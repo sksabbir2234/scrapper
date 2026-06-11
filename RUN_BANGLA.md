@@ -20,6 +20,7 @@ Get-Service postgresql*
 
 ```bash
 cd "D:\cse code\scrapper\backend"
+python -m uvicorn app.main:app --reload --port 8000
 .
 ```
 
@@ -145,6 +146,69 @@ GROQ_API_KEY=gsk_আপনার_কী_এখানে
 
 ---
 
+## ব্রেইনরট ভিডিও জেনারেটর
+
+স্ক্র্যাপ করা আর্টিকেল থেকে TikTok/Shorts/Reels ভিডিও তৈরি করে।
+
+### একবার সেটআপ
+
+```bash
+# ডিপেন্ডেন্সি ইনস্টল
+pip install moviepy pillow edge-tts anthropic
+
+# গেমপ্লে ভিডিও ডাউনলোড — YouTube থেকে একটি নিন:
+pip install yt-dlp
+yt-dlp -f "bestvideo[height<=1080]+bestaudio/best" "YOUTUBE_URL" -o "D:\cse code\scrapper\video_generator\assets\gameplay.mp4"
+```
+
+ফন্ট আগে থেকেই আছে: `video_generator/assets/font.ttf`
+
+### .env এ যোগ করুন
+
+```
+ANTHROPIC_API_KEY=sk-ant-আপনার-কী
+```
+
+### ভিডিও তৈরি করুন
+
+```bash
+cd "D:\cse code\scrapper\video_generator"
+
+# শুধু স্ক্রিপ্ট দেখুন (ভিডিও তৈরি হবে না)
+python brainrot.py --dry-run
+
+# নিজের স্টোরি দিন
+python brainrot.py --story "Google just open sourced Gemini Ultra"
+
+# পুরো ভিডিও তৈরি (API থেকে সেরা স্টোরি বেছে নেয়)
+python brainrot.py
+```
+
+আউটপুট: `D:\cse code\scrapper\videos\brainrot_YYYY-MM-DD_HH-MM.mp4`
+
+### কীভাবে কাজ করে
+
+১. আপনার FastAPI থেকে আর্টিকেল আনে (`/api/articles`)
+২. ভাইরালিটি স্কোর করে (ক্যাটাগরি, কীওয়ার্ড, সোর্স, তাজাতা)
+৩. Claude ব্রেইনরট স্ক্রিপ্ট লেখে (৩০-৫৫ সেকেন্ড)
+৪. Edge-TTS ভয়েসওভার তৈরি করে (প্রতিটি শব্দের টাইমিং সহ)
+৫. PIL শব্দ-দর-শব্দ টেক্সট ওভারলে রেন্ডার করে (উপরের অংশ)
+৬. MoviePy টেক্সট + গেমপ্লে (নিচের অংশ) জোড়া দিয়ে 1080x1920 MP4 বানায়
+
+### প্রতিদিন সকাল ৮টায় অটো রান
+
+সার্ভার চালু থাকলে স্কেজুলার অটোমেটিক ভিডিও তৈরি করবে। আলাদা কিছু করতে হবে না।
+
+### সমস্যা সমাধান
+
+| সমস্যা | সমাধান |
+|--------|--------|
+| `gameplay.mp4 not found` | গেমপ্লে ভিডিও ডাউনলোড করুন (উপরে দেখুন) |
+| ভিডিও খুব ছোট (<28s) | ANTHROPIC_API_KEY সেট করুন — ভালো স্ক্রিপ্ট তৈরি হবে |
+| `Lock file exists` | `video_generator/.brainrot.lock` ডিলিট করুন |
+
+---
+
 ## সমস্যা সমাধান
 
 ### সমস্যা: Port 8000 ব্যস্ত আছে
@@ -200,4 +264,6 @@ python scripts/run_scraper.py
 | স্ক্র্যাপ | `python scripts/run_scraper.py` |
 | স্ক্র্যাপ + AI | `python scripts/run_scraper.py --summarize --classify` |
 | নির্দিষ্ট সোর্স | `python scripts/run_scraper.py --sources "BBC News"` |
+| ভিডিও ড্রাই রান | `cd "D:\cse code\scrapper\video_generator"` তারপর `python brainrot.py --dry-run` |
+| ভিডিও তৈরি | `python brainrot.py` |
 | সার্ভার বন্ধ | `Ctrl+C` |

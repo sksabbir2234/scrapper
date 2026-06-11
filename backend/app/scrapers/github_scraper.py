@@ -1,4 +1,5 @@
 import hashlib
+import logging
 import re
 import time
 from datetime import datetime, timezone, timedelta
@@ -10,6 +11,7 @@ from pathlib import Path
 GITHUB_API = "https://api.github.com"
 WATCH_FILE = Path(__file__).parent.parent.parent.parent / "config" / "github_watch.yaml"
 
+logger = logging.getLogger(__name__)
 _rate_remaining = 999
 
 _BREAKING_PATTERNS = [
@@ -84,6 +86,7 @@ def fetch_repo_metadata(owner: str, repo: str, token: str | None = None) -> dict
             "is_archived": data.get("archived", False),
         }
     except Exception:
+        logger.exception("fetch_repo_metadata failed for %s/%s", owner, repo)
         return None
 
 
@@ -101,17 +104,18 @@ def fetch_releases(owner: str, repo: str, token: str | None = None) -> list[dict
             body = (r.get("body") or "")[:5000]
             releases.append({
                 "repo_name": f"{owner}/{repo}",
-                "repo_url": f"https://github.com/{owner}/{repo}",
+                "repo_url": f"https://github.com/{owner}/{repo}"[:1000],
                 "update_type": "release",
                 "title": r.get("name") or r.get("tag_name", "Unknown Release"),
                 "body": body,
-                "external_url": r.get("html_url", ""),
+                "external_url": (r.get("html_url", ""))[:1000],
                 "url_hash": _hash(r.get("html_url", "")),
                 "published_at": _parse_date(r.get("published_at")),
                 "is_breaking": _is_breaking(body),
             })
         return releases
     except Exception:
+        logger.exception("fetch_releases failed for %s/%s", owner, repo)
         return []
 
 
@@ -135,13 +139,14 @@ def fetch_recent_commits(owner: str, repo: str, token: str | None = None) -> lis
                 "update_type": "commit",
                 "title": msg.split("\n")[0][:200],
                 "body": msg,
-                "external_url": c.get("html_url", ""),
+                "external_url": (c.get("html_url", ""))[:1000],
                 "url_hash": _hash(c.get("html_url", "")),
                 "published_at": _parse_date(commit_data.get("committer", {}).get("date")),
                 "is_breaking": _is_breaking(msg),
             })
         return commits
     except Exception:
+        logger.exception("fetch_recent_commits failed for %s/%s", owner, repo)
         return []
 
 
@@ -163,17 +168,18 @@ def fetch_merged_prs(owner: str, repo: str, token: str | None = None) -> list[di
             title = pr.get("title", "")
             prs.append({
                 "repo_name": f"{owner}/{repo}",
-                "repo_url": f"https://github.com/{owner}/{repo}",
+                "repo_url": f"https://github.com/{owner}/{repo}"[:1000],
                 "update_type": "pr",
                 "title": title,
                 "body": (pr.get("body") or "")[:2000],
-                "external_url": pr.get("html_url", ""),
+                "external_url": (pr.get("html_url", ""))[:1000],
                 "url_hash": _hash(pr.get("html_url", "")),
                 "published_at": _parse_date(pr.get("merged_at")),
                 "is_breaking": _is_breaking(title),
             })
         return prs
     except Exception:
+        logger.exception("fetch_merged_prs failed for %s/%s", owner, repo)
         return []
 
 

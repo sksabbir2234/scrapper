@@ -15,6 +15,7 @@ import httpx
 from slugify import slugify
 
 from config.settings import get_settings
+from app.scrapers import strip_html
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -84,7 +85,7 @@ def scrape_rss_feed(rss_url: str, source_id: int, source_name: str, category: st
         if hasattr(entry, "content") and entry.content:
             content_parts.append(entry.content[0].get("value", ""))
         
-        content_text = " ".join(filter(None, content_parts)).strip()
+        content_text = strip_html(" ".join(filter(None, content_parts)).strip())
 
         # Append short hash to slug to prevent collisions on same-titled articles
         url_hash = compute_url_hash(url)

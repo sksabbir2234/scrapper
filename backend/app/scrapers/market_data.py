@@ -27,8 +27,9 @@ def fetch_market_snapshot(ttl: int = CACHE_TTL) -> list[dict]:
         try:
             url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}"
             params = {"interval": "1d", "range": "5d"}
-            headers = {"User-Agent": "Mozilla/5.0"}
+            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
             resp = httpx.get(url, params=params, headers=headers, timeout=15)
+            time.sleep(0.5)
             if resp.status_code != 200:
                 results.append({"symbol": symbol, "label": label, "error": True})
                 continue
