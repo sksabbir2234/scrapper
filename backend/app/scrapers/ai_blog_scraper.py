@@ -1,17 +1,20 @@
 """
 AI Blog Scraper — Collects AI-focused articles from public RSS feeds,
 filters by topic relevance, and stores in the Article table.
+
+Topics: "how to use AI", "make money with AI", "AI tools", "AI tutorials",
+        "prompt engineering", "AI productivity", "AI side hustle", "AI automation"
 """
 
 import hashlib
 import logging
-import re
 from datetime import datetime, timezone
 from typing import Optional
 
 import feedparser
 import httpx
 from slugify import slugify
+from sqlalchemy.orm import Session
 
 from config.settings import get_settings
 from app.scrapers import strip_html
@@ -19,9 +22,11 @@ from app.scrapers import strip_html
 logger = logging.getLogger(__name__)
 settings = get_settings()
 
-# ── RSS Sources ──────────────────────────────────────────────────
-
+# ---------------------------------------------------------------------------
+# AI Blog Sources — RSS-first, all free/public
+# ---------------------------------------------------------------------------
 AI_BLOG_SOURCES = [
+    # ── How to Use AI / Tutorials ────────────────────────────────────────
     {"name": "Towards AI", "url": "https://medium.com/feed/towards-artificial-intelligence", "category": "ai_tutorial", "credibility": 0.82},
     {"name": "Towards Data Science", "url": "https://towardsdatascience.com/feed", "category": "ai_tutorial", "credibility": 0.85},
     {"name": "HuggingFace Blog", "url": "https://huggingface.co/blog/feed.xml", "category": "ai_research", "credibility": 0.92},
@@ -30,69 +35,82 @@ AI_BLOG_SOURCES = [
     {"name": "Google AI Blog", "url": "https://blog.research.google/feeds/posts/default", "category": "ai_research", "credibility": 0.93},
     {"name": "The Rundown AI", "url": "https://www.therundown.ai/rss", "category": "ai_news", "credibility": 0.78},
     {"name": "Ben's Bites", "url": "https://www.bensbites.com/feed", "category": "ai_news", "credibility": 0.80},
-    {"name": "FutureTools", "url": "https://www.futuretools.io/rss/news", "category": "ai_money", "credibility": 0.75},
+    # ── Make Money With AI / Business ───────────────────────────────────
+    {"name": "Matt Wolfe (FutureTools)", "url": "https://www.futuretools.io/rss/news", "category": "ai_money", "credibility": 0.75},
     {"name": "The AI Advantage", "url": "https://theaiadvantage.substack.com/feed", "category": "ai_money", "credibility": 0.73},
-    {"name": "Every.to", "url": "https://every.to/feed", "category": "ai_business", "credibility": 0.80},
-    {"name": "PromptingGuide", "url": "https://www.promptingguide.ai/rss.xml", "category": "prompt_engineering", "credibility": 0.83},
-    {"name": "Lil'Log", "url": "https://lilianweng.github.io/index.xml", "category": "ai_research", "credibility": 0.94},
-    {"name": "Zapier Blog", "url": "https://zapier.com/blog/feeds/latest/", "category": "ai_automation", "credibility": 0.79},
+    {"name": "AI Solopreneur", "url": "https://www.aisolopreneur.com/rss", "category": "ai_money", "credibility": 0.72},
+    {"name": "Every.to (AI Writing & Business)", "url": "https://every.to/feed", "category": "ai_business", "credibility": 0.80},
+    # ── Prompt Engineering ───────────────────────────────────────────────
+    {"name": "PromptEngineering.guide", "url": "https://www.promptingguide.ai/rss.xml", "category": "prompt_engineering", "credibility": 0.83},
+    {"name": "Lil'Log (Lilian Weng / OpenAI)", "url": "https://lilianweng.github.io/index.xml", "category": "ai_research", "credibility": 0.94},
+    # ── AI Productivity / Automation ─────────────────────────────────────
+    {"name": "Zapier Blog (AI Automation)", "url": "https://zapier.com/blog/feeds/latest/", "category": "ai_automation", "credibility": 0.79},
+    {"name": "Make.com Blog", "url": "https://www.make.com/en/blog/feed", "category": "ai_automation", "credibility": 0.77},
     {"name": "AI Tool Report", "url": "https://aitoolreport.beehiiv.com/feed", "category": "ai_tools", "credibility": 0.73},
+    # ── General AI Tech News ─────────────────────────────────────────────
     {"name": "VentureBeat AI", "url": "https://venturebeat.com/ai/feed/", "category": "ai_news", "credibility": 0.85},
-    {"name": "MIT Tech Review AI", "url": "https://www.technologyreview.com/topic/artificial-intelligence/feed", "category": "ai_research", "credibility": 0.91},
+    {"name": "MIT Technology Review AI", "url": "https://www.technologyreview.com/topic/artificial-intelligence/feed", "category": "ai_research", "credibility": 0.91},
     {"name": "Wired AI", "url": "https://www.wired.com/feed/tag/artificial-intelligence/latest/rss", "category": "ai_news", "credibility": 0.88},
 ]
 
-# ── Relevance Keywords ──────────────────────────────────────────
-
-_INCLUDE_KEYWORDS = [
-    r"\bhow\s+to\s+use\s+ai\b", r"\bai\s+tutorial\b", r"\bai\s+guide\b",
-    r"\bai\s+tools?\b", r"\bbest\s+ai\s+tools?\b", r"\bmake\s+money\b",
-    r"\bai\s+income\b", r"\bai\s+side\s+hustle\b", r"\bai\s+business\b",
-    r"\bfreelance\s+ai\b", r"\bai\s+productivity\b", r"\bai\s+automation\b",
-    r"\bautomate\s+with\s+ai\b", r"\bai\s+workflow\b", r"\bprompt\s+engineering\b",
-    r"\bsystem\s+prompt\b", r"\bai\s+prompts?\b", r"\bchain\s+of\s+thought\b",
-    r"\bchatgpt\s+tutorial\b", r"\bclaude\s+tutorial\b", r"\bgemini\s+tutorial\b",
-    r"\bllm\b", r"\bgpt-4\b", r"\blarge\s+language\s+model\b",
-    r"\bartificial\s+intelligence\b", r"\bmachine\s+learning\b",
-    r"\bdeep\s+learning\b", r"\bneural\s+network\b", r"\btransformer\b",
-    r"\bfinetun", r"\braG\b", r"\bretrieval.augmented\b",
-    r"\bai\s+agent\b", r"\bautonomous\s+agent\b", r"\bmulti.agent\b",
+# ---------------------------------------------------------------------------
+# Topic filter — keep only AI-relevant articles
+# ---------------------------------------------------------------------------
+RELEVANCE_KEYWORDS = [
+    # How to use AI
+    "how to use ai", "ai tutorial", "ai guide", "getting started with ai",
+    "beginners guide", "ai for beginners", "learn ai", "ai tips",
+    "chatgpt tutorial", "claude tutorial", "gemini tutorial",
+    # Tools
+    "ai tools", "best ai tools", "ai software", "ai apps", "top ai",
+    "new ai tool", "free ai tool", "ai generator",
+    # Make money
+    "make money", "earn money", "ai income", "ai business", "ai side hustle",
+    "passive income ai", "freelance ai", "sell ai", "ai revenue",
+    "monetize ai", "ai entrepreneur", "ai solopreneur",
+    # Productivity / Automation
+    "ai productivity", "ai workflow", "ai automation", "automate with ai",
+    "save time ai", "ai assistant", "ai agent",
+    # Prompt engineering
+    "prompt engineering", "prompt design", "system prompt", "ai prompts",
+    "chain of thought", "few-shot", "zero-shot",
+    # General relevance (broad)
+    "artificial intelligence", "machine learning", "large language model",
+    "llm", "gpt-4", "claude", "gemini", "mistral", "llama",
 ]
 
-_EXCLUDE_KEYWORDS = [
-    r"\bstock\s+market\b", r"\bcryptocurrency\b", r"\bbitcoin\b",
-    r"\bnft\b", r"\bsports\b", r"\bcelebrity\b", r"\bentertainment\b",
-    r"\bgambling\b", r"\bpoker\b", r"\bdating\b",
+EXCLUDE_KEYWORDS = [
+    "stock market", "cryptocurrency", "bitcoin", "ethereum", "nft",
+    "sports", "football", "cricket", "entertainment", "celebrity",
 ]
-
-
-def _hash(text: str) -> str:
-    return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
 def _is_relevant(title: str, summary: str) -> bool:
-    """Return True if the article matches AI inclusion keywords and no exclusion keywords."""
-    text = f"{title} {summary}".lower()
-
-    if any(re.search(p, text, re.IGNORECASE) for p in _EXCLUDE_KEYWORDS):
+    """Check if an article is relevant to AI topics."""
+    text = (title + " " + summary).lower()
+    if any(kw in text for kw in EXCLUDE_KEYWORDS):
         return False
-    if any(re.search(p, text, re.IGNORECASE) for p in _INCLUDE_KEYWORDS):
-        return True
-    return False
+    return any(kw in text for kw in RELEVANCE_KEYWORDS)
+
+
+def _compute_url_hash(url: str) -> str:
+    return hashlib.md5(url.encode()).hexdigest()
 
 
 def _parse_date(entry) -> Optional[datetime]:
-    for attr in ("published_parsed", "updated_parsed"):
+    """Parse published date from feedparser entry."""
+    for attr in ("published_parsed", "updated_parsed", "created_parsed"):
         val = getattr(entry, attr, None)
         if val:
             try:
                 return datetime(*val[:6], tzinfo=timezone.utc)
-            except (ValueError, TypeError):
+            except Exception:
                 pass
     return None
 
 
 def _extract_image(entry) -> Optional[str]:
+    """Extract image URL from feed entry."""
     if hasattr(entry, "media_content") and entry.media_content:
         return entry.media_content[0].get("url")
     if hasattr(entry, "enclosures") and entry.enclosures:
@@ -104,24 +122,6 @@ def _extract_image(entry) -> Optional[str]:
             if hasattr(link, "type") and link.type and link.type.startswith("image"):
                 return link.get("href")
     return None
-
-
-def _fetch_feed(url: str) -> Optional[list]:
-    """Fetch and parse an RSS feed. Returns list of entries or None on error."""
-    headers = {"User-Agent": settings.scraper_user_agent}
-    try:
-        resp = httpx.get(url, headers=headers, timeout=30.0, follow_redirects=True)
-        resp.raise_for_status()
-    except httpx.HTTPError as e:
-        logger.error("Failed to fetch %s: %s", url, e)
-        return None
-
-    feed = feedparser.parse(resp.content)
-    if feed.bozo and not feed.entries:
-        logger.error("Failed to parse feed %s: %s", url, feed.bozo_exception)
-        return None
-
-    return feed.entries
 
 
 def _get_or_create_source(db) -> int:
@@ -148,78 +148,35 @@ def _get_or_create_source(db) -> int:
     return source.id
 
 
-def _scrape_single_feed(feed_cfg: dict) -> list[dict]:
-    """Scrape one feed and return raw article dicts (before DB)."""
-    entries = _fetch_feed(feed_cfg["url"])
-    if entries is None:
-        return []
-
-    items = []
-    for entry in entries:
-        title = (entry.get("title") or "").strip()
-        link = (entry.get("link") or "").strip()
-        if not title or not link:
-            continue
-
-        description_parts = []
-        if hasattr(entry, "summary"):
-            description_parts.append(entry.summary)
-        if hasattr(entry, "description"):
-            description_parts.append(entry.description)
-        if hasattr(entry, "content") and entry.content:
-            description_parts.append(entry.content[0].get("value", ""))
-        summary = strip_html(" ".join(filter(None, description_parts)).strip())
-
-        if not _is_relevant(title, summary):
-            continue
-
-        url_hash = _hash(link)
-        base_slug = slugify(title)[:230]
-        short_hash = url_hash[:8]
-        slug = f"{base_slug}-{short_hash}"
-
-        items.append({
-            "title": title[:500],
-            "slug": slug,
-            "original_url": link[:1000],
-            "url_hash": url_hash,
-            "content_text": summary[:10000],
-            "author": (entry.get("author") or "")[:150],
-            "published_at": _parse_date(entry),
-            "language": "en",
-            "category": feed_cfg.get("category", "ai_news"),
-            "image_url": _extract_image(entry),
-            "source_name": feed_cfg["name"],
-            "credibility": feed_cfg.get("credibility", 0.75),
-        })
-
-    logger.info("AI blog [%s]: %d relevant items from %d entries",
-                feed_cfg["name"], len(items), len(entries))
-    return items
-
-
-def scrape_ai_blogs(db, max_per_source: int = 10, dry_run: bool = False) -> dict:
+# ---------------------------------------------------------------------------
+# Main scraper function
+# ---------------------------------------------------------------------------
+def scrape_ai_blogs(
+    db: Session,
+    max_per_source: int = 10,
+    dry_run: bool = False,
+) -> dict:
     """
-    Scrape all configured AI blog RSS feeds, filter by relevance, and store
-    new articles in the Article table.
+    Scrape AI blog articles from all configured sources.
 
-    Args:
-        db: SQLAlchemy Session
-        max_per_source: Max articles to keep per source feed
-        dry_run: If True, return results without writing to DB
-
-    Returns:
-        Summary dict with counts and optionally article list for dry_run
+    Returns a summary dict:
+      {
+        "total_fetched": int,
+        "total_saved": int,
+        "skipped_duplicate": int,
+        "skipped_irrelevant": int,
+        "errors": list[str],
+        "articles": list[dict]   # populated if dry_run=True
+      }
     """
     from app.models import Article
 
-    result = {
+    summary = {
         "total_fetched": 0,
         "total_saved": 0,
         "skipped_duplicate": 0,
         "skipped_irrelevant": 0,
         "errors": [],
-        "sources_processed": 0,
         "articles": [],
     }
 
@@ -227,95 +184,137 @@ def scrape_ai_blogs(db, max_per_source: int = 10, dry_run: bool = False) -> dict
         source_id = _get_or_create_source(db)
 
     seen_hashes = set()
+    headers = {"User-Agent": settings.scraper_user_agent}
 
     for feed_cfg in AI_BLOG_SOURCES:
         try:
-            items = _scrape_single_feed(feed_cfg)
-            result["total_fetched"] += len(items)
-            result["sources_processed"] += 1
+            resp = httpx.get(feed_cfg["url"], headers=headers, timeout=30.0, follow_redirects=True)
+            resp.raise_for_status()
+            feed = feedparser.parse(resp.content)
+            if feed.bozo and not feed.entries:
+                logger.error("Failed to parse feed %s: %s", feed_cfg["url"], feed.bozo_exception)
+                continue
 
-            for item in items[:max_per_source]:
-                url_hash = item["url_hash"]
+            entries = feed.entries[:max_per_source]
+            logger.info("[ai_blog] %s → %d entries", feed_cfg["name"], len(entries))
 
+            for entry in entries:
+                summary["total_fetched"] += 1
+
+                url = getattr(entry, "link", None) or ""
+                title = (getattr(entry, "title", None) or "Untitled").strip()
+                if not url or not title:
+                    continue
+
+                # Build summary from available content fields
+                description_parts = []
+                if hasattr(entry, "summary"):
+                    description_parts.append(entry.summary)
+                if hasattr(entry, "description"):
+                    description_parts.append(entry.description)
+                if hasattr(entry, "content") and entry.content:
+                    description_parts.append(entry.content[0].get("value", ""))
+                summary_text = strip_html(" ".join(filter(None, description_parts)).strip())
+
+                # Relevance filter
+                if not _is_relevant(title, summary_text):
+                    summary["skipped_irrelevant"] += 1
+                    continue
+
+                url_hash = _compute_url_hash(url)
+                published_at = _parse_date(entry)
+
+                if dry_run:
+                    summary["articles"].append({
+                        "title": title,
+                        "url": url,
+                        "source": feed_cfg["name"],
+                        "category": feed_cfg["category"],
+                        "published_at": published_at.isoformat() if published_at else None,
+                    })
+                    summary["total_saved"] += 1
+                    continue
+
+                # In-batch dedup
                 if url_hash in seen_hashes:
-                    result["skipped_duplicate"] += 1
+                    summary["skipped_duplicate"] += 1
                     continue
                 seen_hashes.add(url_hash)
 
-                if dry_run:
-                    result["articles"].append(item)
-                    result["total_saved"] += 1
-                    continue
-
+                # DB dedup
                 existing = db.query(Article).filter(
                     (Article.url_hash == url_hash) |
-                    (Article.original_url == item["original_url"])
+                    (Article.original_url == url)
                 ).first()
                 if existing:
-                    result["skipped_duplicate"] += 1
+                    summary["skipped_duplicate"] += 1
                     continue
+
+                # Build slug
+                base_slug = slugify(title)[:230]
+                slug = f"{base_slug}-{url_hash[:8]}"
 
                 try:
                     with db.begin_nested():
                         article = Article(
                             source_id=source_id,
-                            title=item["title"],
-                            slug=item["slug"],
-                            original_url=item["original_url"],
-                            url_hash=item["url_hash"],
-                            content_text=item["content_text"],
-                            author=item["author"],
-                            published_at=item["published_at"],
-                            language=item["language"],
-                            category=item["category"],
-                            image_url=item.get("image_url"),
+                            title=title[:500],
+                            slug=slug,
+                            original_url=url[:1000],
+                            url_hash=url_hash,
+                            content_text=summary_text[:10000],
+                            author=(getattr(entry, "author", None) or "")[:150],
+                            published_at=published_at or datetime.now(timezone.utc),
+                            language="en",
+                            category=feed_cfg.get("category", "ai_news"),
+                            image_url=_extract_image(entry),
                         )
                         db.add(article)
                         db.flush()
-                    result["total_saved"] += 1
-                except Exception as e:
-                    result["errors"].append(f"{item['title'][:60]}: {e}")
-                    logger.error("Failed to insert article '%s': %s", item["title"][:60], e)
+                    summary["total_saved"] += 1
+                except Exception as exc:
+                    err = f"{title[:60]}: {exc}"
+                    logger.error("Failed to insert article '%s': %s", title[:60], exc)
+                    summary["errors"].append(err)
 
-        except Exception as e:
-            result["errors"].append(f"{feed_cfg['name']}: {e}")
-            logger.error("Error scraping %s: %s", feed_cfg["name"], e)
+        except Exception as exc:
+            err = f"[{feed_cfg['name']}] {exc}"
+            logger.error(err)
+            summary["errors"].append(err)
 
     if not dry_run:
         try:
             db.commit()
-        except Exception as e:
+        except Exception as exc:
             db.rollback()
-            result["errors"].append(f"Commit failed: {e}")
-            logger.error("Failed to commit AI blog articles: %s", e)
+            summary["errors"].append(f"Commit failed: {exc}")
+            logger.error("Failed to commit AI blog articles: %s", exc)
 
     logger.info(
-        "AI blog scrape complete: fetched=%d, saved=%d, duplicates=%d, errors=%d",
-        result["total_fetched"], result["total_saved"],
-        result["skipped_duplicate"], len(result["errors"]),
+        "[ai_blog] Done. saved=%d skipped_dup=%d skipped_irrelevant=%d errors=%d",
+        summary["total_saved"], summary["skipped_duplicate"],
+        summary["skipped_irrelevant"], len(summary["errors"]),
     )
-    return result
+    return summary
 
 
-def run_ai_blog_scrape(db=None):
-    """Entry point for scheduler. Creates its own DB session if none provided."""
+# ---------------------------------------------------------------------------
+# Scheduler hook
+# ---------------------------------------------------------------------------
+def run_ai_blog_scrape(db: Session = None) -> None:
+    """APScheduler job entry point. Creates its own DB session if none provided."""
     from app.db.database import SessionLocal
 
     own_db = db is None
     if own_db:
         db = SessionLocal()
 
-    start = __import__("time").time()
     try:
-        result = scrape_ai_blogs(db, max_per_source=10)
-        duration = int(__import__("time").time() - start)
-        logger.info(
-            "AI blog scrape: %d saved, %d duplicates, %d errors, %ds",
-            result["total_saved"], result["skipped_duplicate"],
-            len(result["errors"]), duration,
-        )
-    except Exception as e:
-        logger.error("AI blog scrape failed: %s", e)
+        result = scrape_ai_blogs(db, max_per_source=15)
+        logger.info("[scheduler] ai_blog_scrape: saved=%d errors=%d",
+                    result["total_saved"], len(result["errors"]))
+    except Exception as exc:
+        logger.error("[scheduler] ai_blog_scrape failed: %s", exc)
         if not own_db:
             db.rollback()
     finally:
