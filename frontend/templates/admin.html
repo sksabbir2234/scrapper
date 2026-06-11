@@ -10,14 +10,24 @@
 {% block content %}
 
 <!-- Login Form -->
-<div id="admin-login" style="display:none; max-width: 380px; margin: 4rem auto; padding: 2rem;">
-  <div class="card" style="padding: 2rem;">
-    <h2 style="font-family: var(--font-serif); margin-bottom: 1.5rem; text-align: center;">Admin Login</h2>
-    <div style="display: flex; flex-direction: column; gap: 1rem;">
-      <input type="text" id="login-user" placeholder="Username" class="search-input" style="width: 100%; box-sizing: border-box;">
-      <input type="password" id="login-pass" placeholder="Password" class="search-input" style="width: 100%; box-sizing: border-box;">
-      <button class="btn btn-primary" onclick="doLogin()" style="width: 100%;">Sign In</button>
-      <div id="login-error" style="color: var(--danger); font-size: 0.85rem; text-align: center; display: none;"></div>
+<div id="admin-login" style="display:none; max-width: 400px; margin: 5rem auto; padding: 2rem;">
+  <div class="login-card">
+    <div class="login-logo">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+    </div>
+    <h2 class="login-title">Admin Panel</h2>
+    <p class="login-subtitle">Sign in to manage your news aggregator</p>
+    <div class="login-form">
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" id="login-user" placeholder="admin" autocomplete="username">
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="login-pass" placeholder="Enter password" autocomplete="current-password">
+      </div>
+      <button class="btn btn-primary btn-block" onclick="doLogin()">Sign In</button>
+      <div id="login-error" class="login-error"></div>
     </div>
   </div>
 </div>
@@ -26,51 +36,156 @@
 
   <!-- Sidebar -->
   <aside class="admin-sidebar">
-    <div class="admin-sidebar-logo">Admin Panel</div>
+    <div class="admin-sidebar-logo">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      Admin Panel
+    </div>
 
     <div class="admin-sidebar-section">
-      <div class="admin-sidebar-label">Management</div>
-      <button class="admin-nav-link active" data-tab="dashboard"><span class="nav-icon">D</span> Dashboard</button>
-      <button class="admin-nav-link" data-tab="scrapers"><span class="nav-icon">G</span> Scrapers</button>
-      <button class="admin-nav-link" data-tab="analytics"><span class="nav-icon">A</span> Analytics</button>
-      <button class="admin-nav-link" data-tab="sources"><span class="nav-icon">S</span> Sources</button>
-      <button class="admin-nav-link" data-tab="articles"><span class="nav-icon">R</span> Articles</button>
-      <button class="admin-nav-link" data-tab="tags"><span class="nav-icon">T</span> Tags</button>
-      <button class="admin-nav-link" data-tab="logs"><span class="nav-icon">L</span> Logs</button>
+      <div class="admin-sidebar-label">Overview</div>
+      <button class="admin-nav-link active" data-tab="dashboard">
+        <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></span>
+        Dashboard
+        <span class="nav-badge" id="nav-fault-badge" style="display:none"></span>
+      </button>
+      <button class="admin-nav-link" data-tab="health">
+        <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></span>
+        Health
+        <span class="nav-badge nav-badge-ok" id="nav-health-badge" style="display:none"></span>
+      </button>
+    </div>
+
+    <div class="admin-sidebar-section">
+      <div class="admin-sidebar-label">Scraping</div>
+      <button class="admin-nav-link" data-tab="scrapers">
+        <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></span>
+        Scrapers
+      </button>
+      <button class="admin-nav-link" data-tab="sources">
+        <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 11a9 9 0 019 9"/><path d="M4 4a16 16 0 0116 16"/><circle cx="5" cy="19" r="1"/></svg></span>
+        Sources
+      </button>
+      <button class="admin-nav-link" data-tab="ai-content">
+        <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 110 20 10 10 0 010-20z"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></span>
+        AI Content
+      </button>
+      <button class="admin-nav-link" data-tab="radar">
+        <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span>
+        Radar
+      </button>
+    </div>
+
+    <div class="admin-sidebar-section">
+      <div class="admin-sidebar-label">Content</div>
+      <button class="admin-nav-link" data-tab="articles">
+        <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>
+        Articles
+      </button>
+      <button class="admin-nav-link" data-tab="analytics">
+        <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>
+        Analytics
+      </button>
+      <button class="admin-nav-link" data-tab="logs">
+        <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg></span>
+        Logs
+        <span class="nav-badge nav-badge-error" id="nav-error-badge" style="display:none"></span>
+      </button>
     </div>
 
     <div class="scraper-status-widget">
       <div class="scraper-status-row">
         <span class="status-dot online" id="status-dot"></span>
-        <span class="status-label">Scheduler:</span>
+        <span class="status-label">Scheduler</span>
         <span class="status-value" id="scraper-status">Loading...</span>
       </div>
       <div class="scraper-status-row">
-        <span class="status-label">Jobs:</span>
-        <span class="status-value" id="scheduler-job-count">—</span>
+        <span class="status-label">Jobs</span>
+        <span class="status-value" id="scheduler-job-count">--</span>
       </div>
       <div class="scraper-status-row">
-        <span class="status-label">Last run:</span>
-        <span class="status-value" id="last-scrape">—</span>
+        <span class="status-label">Last run</span>
+        <span class="status-value" id="last-scrape">--</span>
       </div>
-      <button onclick="doLogout()" class="btn btn-sm" style="margin-top:0.75rem;width:100%;font-size:0.75rem;">Logout</button>
+      <button onclick="doLogout()" class="btn btn-sm btn-ghost btn-block" style="margin-top:0.75rem;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Logout
+      </button>
     </div>
   </aside>
 
   <!-- Main Content -->
   <div class="admin-main">
 
+    <!-- Fault Banner -->
+    <div class="fault-banner" id="fault-banner" style="display:none;">
+      <div class="fault-banner-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </div>
+      <div class="fault-banner-content">
+        <div class="fault-banner-title" id="fault-title">Issues detected</div>
+        <div class="fault-banner-detail" id="fault-detail"></div>
+      </div>
+      <button class="fault-banner-action" id="fault-action" onclick="showTab('health')">View Details</button>
+      <button class="fault-banner-close" onclick="dismissFault()">&times;</button>
+    </div>
+
     <!-- ═══ DASHBOARD TAB ═══ -->
     <div id="panel-dashboard" class="tab-panel active">
-      <div class="admin-greeting" id="admin-greeting">Loading dashboard...</div>
+      <div class="admin-page-header">
+        <h1 class="admin-page-title">Dashboard</h1>
+        <div class="admin-page-actions">
+          <button class="btn btn-primary btn-sm" onclick="triggerFullScrape()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23,4 23,10 17,10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+            Scrape All
+          </button>
+        </div>
+      </div>
 
       <div class="stats-grid" id="stats-grid">
-        <div class="card stat-card"><div class="stat-value" id="stat-articles">—</div><div class="stat-label">Total Articles</div><div class="stat-delta" id="stat-articles-delta"></div></div>
-        <div class="card stat-card"><div class="stat-value" id="stat-views">—</div><div class="stat-label">Views Today</div><div class="stat-delta" id="stat-views-delta"></div></div>
-        <div class="card stat-card"><div class="stat-value" id="stat-today">—</div><div class="stat-label">Articles Today</div><div class="stat-delta" id="stat-today-delta"></div></div>
-        <div class="card stat-card"><div class="stat-value" id="stat-sources">—</div><div class="stat-label">Active Sources</div></div>
-        <div class="card stat-card"><div class="stat-value" id="stat-rate">—</div><div class="stat-label">Scrape Success</div></div>
-        <div class="card stat-card"><div class="stat-value" id="stat-tags">—</div><div class="stat-label">Total Tags</div></div>
+        <div class="card stat-card">
+          <div class="stat-icon" style="color: var(--accent);">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+          </div>
+          <div class="stat-value" id="stat-articles">--</div>
+          <div class="stat-label">Total Articles</div>
+          <div class="stat-delta" id="stat-articles-delta"></div>
+        </div>
+        <div class="card stat-card">
+          <div class="stat-icon" style="color: var(--success);">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </div>
+          <div class="stat-value" id="stat-views">--</div>
+          <div class="stat-label">Views Today</div>
+        </div>
+        <div class="card stat-card">
+          <div class="stat-icon" style="color: var(--info);">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
+          </div>
+          <div class="stat-value" id="stat-today">--</div>
+          <div class="stat-label">Articles Today</div>
+          <div class="stat-delta up" id="stat-today-delta"></div>
+        </div>
+        <div class="card stat-card">
+          <div class="stat-icon" style="color: var(--accent);">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 11a9 9 0 019 9"/><path d="M4 4a16 16 0 0116 16"/><circle cx="5" cy="19" r="1"/></svg>
+          </div>
+          <div class="stat-value" id="stat-sources">--</div>
+          <div class="stat-label">Active Sources</div>
+        </div>
+        <div class="card stat-card">
+          <div class="stat-icon" style="color: var(--success);">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20,6 9,17 4,12"/></svg>
+          </div>
+          <div class="stat-value" id="stat-rate">--</div>
+          <div class="stat-label">Success Rate</div>
+        </div>
+        <div class="card stat-card">
+          <div class="stat-icon" style="color: var(--warning);">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+          </div>
+          <div class="stat-value" id="stat-tags">--</div>
+          <div class="stat-label">Total Tags</div>
+        </div>
       </div>
 
       <!-- Category breakdown -->
@@ -87,9 +202,9 @@
             <div class="quick-action-label">News Scrapers</div>
             <div class="quick-action-btns">
               <button class="btn btn-primary" onclick="triggerFullScrape()">Scrape All Sources</button>
-              <label style="font-size: 0.85rem; color: var(--text-light); cursor: pointer;"><input type="checkbox" id="q-summarize"> AI Summary</label>
-              <label style="font-size: 0.85rem; color: var(--text-light); cursor: pointer;"><input type="checkbox" id="q-classify"> Auto Category</label>
-              <label style="font-size: 0.85rem; color: var(--text-light); cursor: pointer;"><input type="checkbox" id="q-tags"> Extract Tags</label>
+              <label class="quick-action-check"><input type="checkbox" id="q-summarize"> AI Summary</label>
+              <label class="quick-action-check"><input type="checkbox" id="q-classify"> Auto Category</label>
+              <label class="quick-action-check"><input type="checkbox" id="q-tags"> Extract Tags</label>
             </div>
           </div>
           <div class="quick-action-group">
@@ -98,9 +213,44 @@
               <button class="btn btn-ghost" onclick="triggerScraper('finance')">Finance Education</button>
               <button class="btn btn-ghost" onclick="triggerScraper('prompts')">AI Prompts</button>
               <button class="btn btn-ghost" onclick="triggerScraper('radar')">OS Radar</button>
+              <button class="btn btn-ghost" onclick="triggerScraper('ai-blogs')">AI Blogs</button>
             </div>
           </div>
         </div>
+      </div>
+
+      <!-- Recent Errors -->
+      <div class="card" style="padding: 1.25rem; margin-top: 1rem;" id="recent-errors-card">
+        <div class="section-title" style="margin-bottom: 0.75rem; display: flex; align-items: center; gap: 8px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+          Recent Errors
+        </div>
+        <div id="recent-errors-list"></div>
+      </div>
+    </div>
+
+    <!-- ═══ HEALTH TAB ═══ -->
+    <div id="panel-health" class="tab-panel">
+      <h2 class="admin-page-title">System Health</h2>
+
+      <!-- Feature Status -->
+      <div class="card" style="padding: 1.25rem; margin-bottom: 1rem;">
+        <div class="section-title" style="margin-bottom: 1rem;">Feature Availability</div>
+        <div class="health-grid" id="health-features">
+          <div class="health-loading">Checking features...</div>
+        </div>
+      </div>
+
+      <!-- Source Health Matrix -->
+      <div class="card" style="padding: 1.25rem; margin-bottom: 1rem;">
+        <div class="section-title" style="margin-bottom: 1rem;">Source Health Matrix</div>
+        <div id="source-health-matrix"></div>
+      </div>
+
+      <!-- Error Rate Summary -->
+      <div class="card" style="padding: 1.25rem;">
+        <div class="section-title" style="margin-bottom: 1rem;">Error Rate (Last 24h)</div>
+        <div id="error-rate-summary"></div>
       </div>
     </div>
 
@@ -108,8 +258,7 @@
     <div id="panel-scrapers" class="tab-panel">
       <h2 class="admin-page-title">Scraper Scheduler</h2>
       <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">All registered scheduler jobs. New scrapers appear here automatically.</p>
-
-      <div class="scraper-category-grid" id="scraper-categories">
+      <div id="scraper-categories">
         <div class="chart-empty">Loading scheduler jobs...</div>
       </div>
     </div>
@@ -117,8 +266,6 @@
     <!-- ═══ ANALYTICS TAB ═══ -->
     <div id="panel-analytics" class="tab-panel">
       <h2 class="admin-page-title">Analytics</h2>
-
-      <!-- Views chart (full width) -->
       <div class="card chart-card charts-grid-main">
         <div class="chart-header">
           <span class="chart-title">Daily Views</span>
@@ -131,8 +278,6 @@
         <div class="chart-container chart-container-lg"><canvas id="chart-views"></canvas></div>
         <div class="chart-empty" id="empty-views" style="display:none">No view data yet</div>
       </div>
-
-      <!-- 2-column charts -->
       <div class="charts-grid-2" style="margin-top: 1rem;">
         <div class="card chart-card">
           <div class="chart-header">
@@ -145,15 +290,12 @@
           <div class="chart-container chart-container-md"><canvas id="chart-sources"></canvas></div>
           <div class="chart-empty" id="empty-sources" style="display:none">No article data yet</div>
         </div>
-
         <div class="card chart-card">
           <div class="chart-header"><span class="chart-title">Category Distribution</span></div>
           <div class="chart-container chart-container-md"><canvas id="chart-categories"></canvas></div>
           <div class="chart-empty" id="empty-categories" style="display:none">No categories yet</div>
         </div>
       </div>
-
-      <!-- Engagement + Activity -->
       <div class="charts-grid-2" style="margin-top: 1rem;">
         <div class="card chart-card">
           <div class="chart-header">
@@ -166,7 +308,6 @@
           <div class="chart-container chart-container-md"><canvas id="chart-engagement"></canvas></div>
           <div class="chart-empty" id="empty-engagement" style="display:none">No view data yet</div>
         </div>
-
         <div class="card chart-card">
           <div class="chart-header">
             <span class="chart-title">Activity Feed</span>
@@ -220,14 +361,51 @@
       <div id="articles-pagination" style="margin-top:1rem; display: flex; gap: 4px; justify-content: center;"></div>
     </div>
 
-    <!-- ═══ TAGS TAB ═══ -->
-    <div id="panel-tags" class="tab-panel">
-      <h2 class="admin-page-title">Tags</h2>
+    <!-- ═══ RADAR TAB ═══ -->
+    <div id="panel-radar" class="tab-panel">
+      <h2 class="admin-page-title">OS Radar</h2>
+      <div class="table-toolbar">
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+          <input type="text" class="search-input" id="radar-url-input" placeholder="Add GitHub repo URL..." style="max-width: 400px;">
+          <button class="btn btn-primary btn-sm" onclick="addRadarRepo()">Add to Radar</button>
+        </div>
+        <button class="btn btn-ghost" onclick="runRadarStrategy()">Run Discovery</button>
+      </div>
+      <div class="card" style="padding: 1.25rem; margin-bottom: 1rem;">
+        <div class="section-title" style="margin-bottom: 0.75rem;">Radar Stats</div>
+        <div class="stats-grid" style="margin-bottom: 0;" id="radar-stats"></div>
+      </div>
       <div class="admin-table-wrap">
         <table class="admin-table">
-          <thead><tr><th>Tag</th><th>Articles</th><th>Actions</th></tr></thead>
-          <tbody id="tags-body"></tbody>
+          <thead><tr>
+            <th>Project</th><th>Score</th><th>Stars</th><th>Language</th><th>Status</th><th>Actions</th>
+          </tr></thead>
+          <tbody id="radar-body"></tbody>
         </table>
+      </div>
+    </div>
+
+    <!-- ═══ AI CONTENT TAB ═══ -->
+    <div id="panel-ai-content" class="tab-panel">
+      <h2 class="admin-page-title">AI Content</h2>
+      <div class="ai-content-grid">
+        <!-- AI Blogs -->
+        <div class="card" style="padding: 1.25rem;">
+          <div class="section-title" style="margin-bottom: 1rem;">AI Blog Aggregator</div>
+          <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Scrape 20+ AI research blogs and tutorials automatically.</p>
+          <div style="display: flex; align-items: center; gap: 1rem;">
+            <button class="btn btn-primary" onclick="triggerScraper('ai-blogs')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23,4 23,10 17,10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+              Scrape AI Blogs
+            </button>
+            <span id="ai-blog-status" style="font-size: 0.85rem; color: var(--text-muted);"></span>
+          </div>
+        </div>
+        <!-- AI Features -->
+        <div class="card" style="padding: 1.25rem;">
+          <div class="section-title" style="margin-bottom: 1rem;">AI Features Status</div>
+          <div id="ai-features-status"></div>
+        </div>
       </div>
     </div>
 
@@ -237,6 +415,11 @@
       <div class="table-toolbar">
         <button class="btn btn-ghost btn-sm" id="pause-btn" onclick="togglePause()">Auto-refresh: ON</button>
         <select class="search-input" id="log-limit" onchange="loadLogs()" style="max-width: 100px;"><option value="20">20</option><option value="50" selected>50</option><option value="100">100</option></select>
+        <select class="search-input" id="log-filter" onchange="loadLogs()" style="max-width: 120px;">
+          <option value="all">All</option>
+          <option value="errors">Errors Only</option>
+          <option value="success">Success Only</option>
+        </select>
       </div>
       <div class="admin-table-wrap">
         <table class="admin-table">
@@ -294,6 +477,17 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="radar-strategy-modal" style="display:none">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-title">Run Radar Discovery</div>
+    <p style="color: var(--text-light); margin-bottom: 1rem;">Select a discovery strategy:</p>
+    <div style="display: flex; flex-direction: column; gap: 0.5rem;" id="radar-strategies"></div>
+    <div class="form-actions" style="margin-top: 1.5rem;">
+      <button class="btn btn-ghost" onclick="closeModal('radar-strategy-modal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
@@ -304,471 +498,563 @@ var logInterval = null;
 var currentArticlePage = 1;
 
 // ─── Auth ───
-function getToken() {
-    return localStorage.getItem('admin_token');
-}
+function getToken() { return localStorage.getItem('admin_token'); }
 
 function doLogin() {
-    var user = document.getElementById('login-user').value;
-    var pass = document.getElementById('login-pass').value;
-    var errEl = document.getElementById('login-error');
-    errEl.style.display = 'none';
-
-    fetch('/admin/login', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({username: user, password: pass})
-    }).then(function(r) { return r.json().then(function(d) { return {ok: r.ok, data: d}; }); })
-    .then(function(res) {
-        if (!res.ok) {
-            errEl.textContent = res.data.detail || 'Login failed';
-            errEl.style.display = 'block';
-            return;
-        }
-        localStorage.setItem('admin_token', res.data.token);
-        showAdmin();
-    });
+  var user = document.getElementById('login-user').value;
+  var pass = document.getElementById('login-pass').value;
+  var errEl = document.getElementById('login-error');
+  errEl.style.display = 'none';
+  fetch('/admin/login', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({username: user, password: pass})
+  }).then(function(r) { return r.json().then(function(d) { return {ok: r.ok, data: d}; }); })
+  .then(function(res) {
+    if (!res.ok) { errEl.textContent = res.data.detail || 'Login failed'; errEl.style.display = 'block'; return; }
+    localStorage.setItem('admin_token', res.data.token);
+    showAdmin();
+  });
 }
 
-function doLogout() {
-    localStorage.removeItem('admin_token');
-    location.reload();
-}
+function doLogout() { localStorage.removeItem('admin_token'); location.reload(); }
 
 function showAdmin() {
-    document.getElementById('admin-login').style.display = 'none';
-    document.getElementById('admin-app').style.display = 'flex';
-    loadStats();
-    loadSchedulerJobs();
+  document.getElementById('admin-login').style.display = 'none';
+  document.getElementById('admin-app').style.display = 'flex';
+  loadStats();
+  loadSchedulerJobs();
+  checkFaults();
 }
 
 function showLogin() {
-    document.getElementById('admin-login').style.display = 'block';
-    document.getElementById('admin-app').style.display = 'none';
+  document.getElementById('admin-login').style.display = 'block';
+  document.getElementById('admin-app').style.display = 'none';
 }
 
 function apiFetch(url, opts) {
-    opts = opts || {};
-    opts.headers = opts.headers || {};
-    var token = getToken();
-    if (token) opts.headers['Authorization'] = 'Bearer ' + token;
-    if (opts.body && typeof opts.body === 'object') {
-        opts.headers['Content-Type'] = 'application/json';
-        opts.body = JSON.stringify(opts.body);
-    }
-    return fetch(url, opts).then(function(r) {
-        if (r.status === 401) { doLogout(); }
-        return r;
-    });
+  opts = opts || {};
+  opts.headers = opts.headers || {};
+  var token = getToken();
+  if (token) opts.headers['Authorization'] = 'Bearer ' + token;
+  if (opts.body && typeof opts.body === 'object') {
+    opts.headers['Content-Type'] = 'application/json';
+    opts.body = JSON.stringify(opts.body);
+  }
+  return fetch(url, opts).then(function(r) {
+    if (r.status === 401) doLogout();
+    return r;
+  });
 }
 
 // ─── Sidebar Navigation ───
 document.querySelectorAll('.admin-nav-link[data-tab]').forEach(function(link) {
-    link.addEventListener('click', function() {
-        var tab = this.getAttribute('data-tab');
-        document.querySelectorAll('.admin-nav-link').forEach(function(l) { l.classList.remove('active'); });
-        this.classList.add('active');
-        document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
-        document.getElementById('panel-' + tab).classList.add('active');
-        if (tab === 'dashboard') loadStats();
-        if (tab === 'scrapers') { loadSchedulerJobs(); startScraperRefresh(); } else { stopScraperRefresh(); }
-        if (tab === 'analytics' && typeof initCharts === 'function') initCharts();
-        if (tab === 'sources') loadSources();
-        if (tab === 'articles') loadArticles();
-        if (tab === 'tags') loadTags();
-        if (tab === 'logs') { loadLogs(); startLogRefresh(); } else { stopLogRefresh(); }
-    });
+  link.addEventListener('click', function() {
+    showTab(this.getAttribute('data-tab'));
+  });
 });
+
+function showTab(tab) {
+  document.querySelectorAll('.admin-nav-link').forEach(function(l) { l.classList.remove('active'); });
+  document.querySelector('.admin-nav-link[data-tab="' + tab + '"]').classList.add('active');
+  document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+  document.getElementById('panel-' + tab).classList.add('active');
+  if (tab === 'dashboard') { loadStats(); checkFaults(); }
+  if (tab === 'health') loadHealthTab();
+  if (tab === 'scrapers') { loadSchedulerJobs(); startScraperRefresh(); } else { stopScraperRefresh(); }
+  if (tab === 'analytics' && typeof initCharts === 'function') initCharts();
+  if (tab === 'sources') loadSources();
+  if (tab === 'articles') loadArticles();
+  if (tab === 'radar') loadRadar();
+  if (tab === 'ai-content') loadAIContent();
+  if (tab === 'logs') { loadLogs(); startLogRefresh(); } else { stopLogRefresh(); }
+}
+
+// ─── Fault Detection ───
+var faultDismissed = false;
+
+async function checkFaults() {
+  if (faultDismissed) return;
+  var issues = [];
+  try {
+    var r = await apiFetch('/admin/logs?limit=10');
+    if (r.ok) {
+      var logs = await r.json();
+      var errorLogs = logs.filter(function(l) { return l.errors; });
+      if (errorLogs.length >= 3) {
+        issues.push(errorLogs.length + ' recent scrape errors');
+      }
+      if (errorLogs.length > 0) {
+        var failingSources = [];
+        errorLogs.forEach(function(l) { if (failingSources.indexOf(l.source_name) === -1) failingSources.push(l.source_name); });
+        if (failingSources.length > 0) {
+          issues.push(failingSources.length + ' source(s) failing: ' + failingSources.slice(0, 3).join(', '));
+        }
+      }
+    }
+  } catch(e) {}
+
+  try {
+    var sr = await apiFetch('/admin/status');
+    if (sr.ok) {
+      var status = await sr.json();
+      if (status.features) {
+        Object.entries(status.features).forEach(function(entry) {
+          if (!entry[1].available) issues.push(entry[0] + ' is unavailable');
+        });
+      }
+    }
+  } catch(e) {}
+
+  var banner = document.getElementById('fault-banner');
+  var badge = document.getElementById('nav-fault-badge');
+  if (issues.length > 0) {
+    banner.style.display = 'flex';
+    document.getElementById('fault-title').textContent = issues.length + ' issue' + (issues.length > 1 ? 's' : '') + ' detected';
+    document.getElementById('fault-detail').textContent = issues.join(' | ');
+    badge.style.display = 'inline-flex';
+    badge.textContent = issues.length;
+  } else {
+    banner.style.display = 'none';
+    badge.style.display = 'none';
+  }
+
+  // Update error badge on Logs nav
+  var errBadge = document.getElementById('nav-error-badge');
+  try {
+    var lr = await apiFetch('/admin/logs?limit=5');
+    if (lr.ok) {
+      var logs2 = await lr.json();
+      var errs = logs2.filter(function(l) { return l.errors; }).length;
+      if (errs > 0) { errBadge.style.display = 'inline-flex'; errBadge.textContent = errs; }
+      else { errBadge.style.display = 'none'; }
+    }
+  } catch(e) {}
+}
+
+function dismissFault() {
+  faultDismissed = true;
+  document.getElementById('fault-banner').style.display = 'none';
+  document.getElementById('nav-fault-badge').style.display = 'none';
+}
 
 // ─── Dashboard ───
 async function loadStats() {
-    var r = await apiFetch('/admin/stats');
-    if (!r.ok) return;
-    var d = await r.json();
-    document.getElementById('stat-articles').textContent = d.total_articles || 0;
-    document.getElementById('stat-today').textContent = d.articles_today || 0;
-    document.getElementById('stat-today-delta').textContent = '+' + (d.articles_today || 0) + ' today';
-    document.getElementById('stat-today-delta').className = 'stat-delta up';
-    document.getElementById('stat-sources').textContent = (d.active_sources || 0) + '/' + (d.total_sources || 0);
-    document.getElementById('stat-rate').textContent = (d.success_rate || 0) + '%';
-    document.getElementById('stat-tags').textContent = d.total_tags || 0;
-    if (d.last_scrape) {
-        var ago = timeAgo(d.last_scrape);
-        document.getElementById('last-scrape').textContent = ago;
-    }
-
-    // Category chart
+  var r = await apiFetch('/admin/stats');
+  if (!r.ok) return;
+  var d = await r.json();
+  document.getElementById('stat-articles').textContent = d.total_articles || 0;
+  document.getElementById('stat-today').textContent = d.articles_today || 0;
+  document.getElementById('stat-today-delta').textContent = '+' + (d.articles_today || 0) + ' today';
+  document.getElementById('stat-sources').textContent = (d.active_sources || 0) + '/' + (d.total_sources || 0);
+  document.getElementById('stat-rate').textContent = (d.success_rate || 0) + '%';
+  document.getElementById('stat-tags').textContent = d.total_tags || 0;
+  if (d.last_scrape) document.getElementById('last-scrape').textContent = timeAgo(d.last_scrape);
+  if (d.category_counts) {
     var chart = document.getElementById('category-chart');
     chart.innerHTML = '';
-    var cats = d.category_counts || {};
-    var entries = Object.entries(cats);
-    if (entries.length === 0) {
-        chart.innerHTML = '<span style="color: var(--text-muted); font-size: 0.85rem;">No categories yet</span>';
-    } else {
-        entries.forEach(function(entry) {
-            chart.innerHTML += '<div style="display: flex; align-items: center; gap: 6px; background: var(--bg-subtle); padding: 6px 12px; border-radius: var(--radius-pill); font-size: 0.85rem;"><span>' + esc(entry[0]) + '</span><span style="font-weight: 700; color: var(--accent);">' + entry[1] + '</span></div>';
-        });
-    }
+    var entries = Object.entries(d.category_counts);
+    if (entries.length === 0) { chart.innerHTML = '<span style="color:var(--text-muted);font-size:0.85rem;">No categories yet</span>'; }
+    else { entries.forEach(function(e) { chart.innerHTML += '<div class="category-pill"><span>' + esc(e[0]) + '</span><span class="category-count">' + e[1] + '</span></div>'; }); }
+  }
+  try {
+    var vr = await apiFetch('/admin/analytics/views?days=1');
+    if (vr.ok) { var vd = await vr.json(); if (vd.data && vd.data.length > 0) document.getElementById('stat-views').textContent = vd.data[0].total_views || 0; else document.getElementById('stat-views').textContent = '0'; }
+  } catch(e) { document.getElementById('stat-views').textContent = '0'; }
 
-    // Try loading views
-    try {
-        var vr = await apiFetch('/admin/analytics/views?days=1');
-        if (vr.ok) {
-            var vd = await vr.json();
-            if (vd.data && vd.data.length > 0) {
-                document.getElementById('stat-views').textContent = vd.data[0].total_views || 0;
-            } else {
-                document.getElementById('stat-views').textContent = '0';
-            }
-        }
-    } catch(e) { document.getElementById('stat-views').textContent = '0'; }
+  // Load recent errors for dashboard
+  loadRecentErrors();
+}
+
+async function loadRecentErrors() {
+  try {
+    var r = await apiFetch('/admin/logs?limit=20');
+    if (!r.ok) return;
+    var logs = await r.json();
+    var errors = logs.filter(function(l) { return l.errors; }).slice(0, 5);
+    var container = document.getElementById('recent-errors-list');
+    if (errors.length === 0) {
+      container.innerHTML = '<div style="color:var(--success);font-size:0.85rem;display:flex;align-items:center;gap:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20,6 9,17 4,12"/></svg> No recent errors</div>';
+      return;
+    }
+    container.innerHTML = errors.map(function(l) {
+      return '<div class="error-item"><span class="error-source">' + esc(l.source_name) + '</span><span class="error-time">' + timeAgo(l.scraped_at) + '</span><span class="error-msg">' + esc(l.errors.substring(0, 120)) + '</span></div>';
+    }).join('');
+  } catch(e) {}
 }
 
 async function triggerFullScrape() {
-    var opts = {
-        summarize: document.getElementById('q-summarize').checked,
-        classify: document.getElementById('q-classify').checked,
-        tags: document.getElementById('q-tags').checked,
-    };
-    var r = await apiFetch('/admin/scrape/trigger', { method: 'POST', body: opts });
-    var d = await r.json();
-    alert(d.message + '\n\nCheck the Logs tab to see results.');
+  var opts = {
+    summarize: document.getElementById('q-summarize').checked,
+    classify: document.getElementById('q-classify').checked,
+    tags: document.getElementById('q-tags').checked,
+  };
+  var r = await apiFetch('/admin/scrape/trigger', { method: 'POST', body: opts });
+  var d = await r.json();
+  alert(d.message + '\n\nCheck the Logs tab to see results.');
+}
+
+// ─── Health Tab ───
+async function loadHealthTab() {
+  // Load feature status
+  var featuresEl = document.getElementById('health-features');
+  try {
+    var r = await apiFetch('/admin/status');
+    if (r.ok) {
+      var status = await r.json();
+      if (status.features) {
+        featuresEl.innerHTML = Object.entries(status.features).map(function(entry) {
+          var name = entry[0];
+          var feat = entry[1];
+          var icon = feat.available ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2"><polyline points="20,6 9,17 4,12"/></svg>' : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
+          var statusClass = feat.available ? 'health-available' : 'health-unavailable';
+          return '<div class="health-item ' + statusClass + '">' + icon + '<span class="health-name">' + esc(name) + '</span><span class="health-status">' + (feat.available ? 'Available' : 'Unavailable') + '</span></div>';
+        }).join('');
+      }
+    }
+  } catch(e) { featuresEl.innerHTML = '<div class="health-loading">Failed to check features</div>'; }
+
+  // Source health
+  var matrixEl = document.getElementById('source-health-matrix');
+  try {
+    var sr = await apiFetch('/admin/sources');
+    if (sr.ok) {
+      var sources = await sr.json();
+      matrixEl.innerHTML = '<div class="source-health-grid">' + sources.map(function(s) {
+        var healthClass = 'sh-healthy';
+        if (s.health === 'stale') healthClass = 'sh-stale';
+        if (s.health === 'failing') healthClass = 'sh-failing';
+        if (s.health === 'never') healthClass = 'sh-never';
+        return '<div class="source-health-item ' + healthClass + '"><div class="sh-dot"></div><div class="sh-name">' + esc(s.name) + '</div><div class="sh-status">' + s.health + '</div></div>';
+      }).join('') + '</div>';
+    }
+  } catch(e) { matrixEl.innerHTML = '<div class="health-loading">Failed to load sources</div>'; }
+
+  // Error rate
+  var errorEl = document.getElementById('error-rate-summary');
+  try {
+    var lr = await apiFetch('/admin/logs?limit=50');
+    if (lr.ok) {
+      var logs = await lr.json();
+      var total = logs.length;
+      var errors = logs.filter(function(l) { return l.errors; }).length;
+      var rate = total > 0 ? Math.round(errors / total * 100) : 0;
+      var rateClass = rate < 10 ? 'rate-good' : rate < 30 ? 'rate-warn' : 'rate-bad';
+      errorEl.innerHTML = '<div class="error-rate-display"><div class="error-rate-number ' + rateClass + '">' + rate + '%</div><div class="error-rate-label">' + errors + ' errors out of ' + total + ' recent scrapes</div></div>';
+    }
+  } catch(e) { errorEl.innerHTML = '<div class="health-loading">Failed to load logs</div>'; }
 }
 
 // ─── Sources ───
 async function loadSources() {
-    var r = await apiFetch('/admin/sources');
-    if (!r.ok) return;
-    var sources = await r.json();
-    var tbody = document.getElementById('sources-body');
-    tbody.innerHTML = sources.map(function(s) {
-        var healthClass = 'healthy';
-        if (s.health === 'stale') healthClass = 'stale';
-        if (s.health === 'failing') healthClass = 'failing';
-        if (s.health === 'never') healthClass = 'never';
-        return '<tr>' +
-            '<td class="table-cell-primary">' + esc(s.name) + '<br><small style="color:var(--text-muted);font-size:0.75rem;">' + esc(s.rss_url) + '</small></td>' +
-            '<td>' + (s.category || '—') + '</td>' +
-            '<td>' + s.credibility_score + '</td>' +
-            '<td>' + s.scrape_interval_min + 'm</td>' +
-            '<td>' + s.article_count + '</td>' +
-            '<td><span class="health-dot ' + healthClass + '"></span> ' + s.health + '</td>' +
-            '<td>' + (s.is_active ? '<span class="badge badge-success">Active</span>' : '<span class="badge badge-neutral">Off</span>') + '</td>' +
-            '<td class="table-actions">' +
-                '<button class="btn btn-sm btn-primary" onclick="scrapeSource(' + s.id + ')">Run</button>' +
-                '<button class="btn btn-sm btn-ghost" onclick="toggleSource(' + s.id + ')">' + (s.is_active ? 'Off' : 'On') + '</button>' +
-                '<button class="btn btn-sm btn-ghost" onclick="editSource(' + s.id + ')">Edit</button>' +
-                '<button class="btn btn-sm btn-danger" onclick="confirmDeleteSource(' + s.id + ',\'' + esc(s.name).replace(/'/g, "\\'") + '\',' + s.article_count + ')">Del</button>' +
-            '</td>' +
-        '</tr>';
-    }).join('');
+  var r = await apiFetch('/admin/sources');
+  if (!r.ok) return;
+  var sources = await r.json();
+  document.getElementById('sources-body').innerHTML = sources.map(function(s) {
+    var h = s.health || 'never';
+    return '<tr>' +
+      '<td class="table-cell-primary">' + esc(s.name) + '<br><small style="color:var(--text-muted);font-size:0.75rem;">' + esc(s.rss_url) + '</small></td>' +
+      '<td>' + (s.category || '--') + '</td>' +
+      '<td>' + s.credibility_score + '</td>' +
+      '<td>' + s.scrape_interval_min + 'm</td>' +
+      '<td>' + s.article_count + '</td>' +
+      '<td><span class="health-dot ' + h + '"></span> ' + h + '</td>' +
+      '<td>' + (s.is_active ? '<span class="badge badge-success">Active</span>' : '<span class="badge badge-neutral">Off</span>') + '</td>' +
+      '<td class="table-actions">' +
+        '<button class="btn btn-sm btn-primary" onclick="scrapeSource(' + s.id + ')">Run</button>' +
+        '<button class="btn btn-sm btn-ghost" onclick="toggleSource(' + s.id + ')">' + (s.is_active ? 'Off' : 'On') + '</button>' +
+        '<button class="btn btn-sm btn-ghost" onclick="editSource(' + s.id + ')">Edit</button>' +
+        '<button class="btn btn-sm btn-danger" onclick="confirmDeleteSource(' + s.id + ',\'' + esc(s.name).replace(/'/g, "\\'") + '\',' + s.article_count + ')">Del</button>' +
+      '</td></tr>';
+  }).join('');
 }
 
 function openAddSourceModal() {
-    document.getElementById('source-modal-title').textContent = 'Add Source';
-    document.getElementById('source-form').reset();
-    document.getElementById('src-id').value = '';
-    document.getElementById('source-modal').style.display = 'flex';
+  document.getElementById('source-modal-title').textContent = 'Add Source';
+  document.getElementById('source-form').reset();
+  document.getElementById('src-id').value = '';
+  document.getElementById('source-modal').style.display = 'flex';
 }
 
 async function editSource(id) {
-    var r = await apiFetch('/admin/sources');
-    var sources = await r.json();
-    var s = sources.find(function(x) { return x.id === id; });
-    if (!s) return;
-    document.getElementById('source-modal-title').textContent = 'Edit Source';
-    document.getElementById('src-id').value = s.id;
-    document.getElementById('src-name').value = s.name;
-    document.getElementById('src-domain').value = s.domain;
-    document.getElementById('src-rss').value = s.rss_url;
-    document.getElementById('src-category').value = s.category || '';
-    document.getElementById('src-country').value = s.country_code || '';
-    document.getElementById('src-credibility').value = s.credibility_score;
-    document.getElementById('src-interval').value = s.scrape_interval_min;
-    document.getElementById('src-type').value = s.scrape_type;
-    document.getElementById('source-modal').style.display = 'flex';
+  var r = await apiFetch('/admin/sources');
+  var sources = await r.json();
+  var s = sources.find(function(x) { return x.id === id; });
+  if (!s) return;
+  document.getElementById('source-modal-title').textContent = 'Edit Source';
+  document.getElementById('src-id').value = s.id;
+  document.getElementById('src-name').value = s.name;
+  document.getElementById('src-domain').value = s.domain;
+  document.getElementById('src-rss').value = s.rss_url;
+  document.getElementById('src-category').value = s.category || '';
+  document.getElementById('src-country').value = s.country_code || '';
+  document.getElementById('src-credibility').value = s.credibility_score;
+  document.getElementById('src-interval').value = s.scrape_interval_min;
+  document.getElementById('src-type').value = s.scrape_type;
+  document.getElementById('source-modal').style.display = 'flex';
 }
 
 async function saveSource(e) {
-    e.preventDefault();
-    var id = document.getElementById('src-id').value;
-    var data = {
-        name: document.getElementById('src-name').value,
-        domain: document.getElementById('src-domain').value,
-        rss_url: document.getElementById('src-rss').value,
-        category: document.getElementById('src-category').value || null,
-        country_code: document.getElementById('src-country').value || null,
-        credibility_score: parseInt(document.getElementById('src-credibility').value),
-        scrape_interval_min: parseInt(document.getElementById('src-interval').value),
-        scrape_type: document.getElementById('src-type').value,
-    };
-    var method = id ? 'PUT' : 'POST';
-    var url = id ? '/admin/sources/' + id : '/admin/sources';
-    var r = await apiFetch(url, { method: method, body: data });
-    if (r.ok) { closeModal('source-modal'); loadSources(); } else { alert('Error saving source'); }
+  e.preventDefault();
+  var id = document.getElementById('src-id').value;
+  var data = {
+    name: document.getElementById('src-name').value,
+    domain: document.getElementById('src-domain').value,
+    rss_url: document.getElementById('src-rss').value,
+    category: document.getElementById('src-category').value || null,
+    country_code: document.getElementById('src-country').value || null,
+    credibility_score: parseInt(document.getElementById('src-credibility').value),
+    scrape_interval_min: parseInt(document.getElementById('src-interval').value),
+    scrape_type: document.getElementById('src-type').value,
+  };
+  var method = id ? 'PUT' : 'POST';
+  var url = id ? '/admin/sources/' + id : '/admin/sources';
+  var r = await apiFetch(url, { method: method, body: data });
+  if (r.ok) { closeModal('source-modal'); loadSources(); } else { alert('Error saving source'); }
 }
 
-async function toggleSource(id) {
-    await apiFetch('/admin/sources/' + id + '/toggle', { method: 'POST' });
-    loadSources();
-}
+async function toggleSource(id) { await apiFetch('/admin/sources/' + id + '/toggle', { method: 'POST' }); loadSources(); }
 
 async function scrapeSource(id) {
-    var r = await apiFetch('/admin/sources/' + id + '/scrape', { method: 'POST' });
-    var d = await r.json();
-    alert(d.message);
+  var r = await apiFetch('/admin/sources/' + id + '/scrape', { method: 'POST' });
+  var d = await r.json();
+  alert(d.message);
 }
 
 async function bulkSources(action) {
-    await apiFetch('/admin/sources/bulk', { method: 'POST', body: { action: action } });
-    loadSources();
+  await apiFetch('/admin/sources/bulk', { method: 'POST', body: { action: action } });
+  loadSources();
 }
 
 function confirmDeleteSource(id, name, articleCount) {
-    document.getElementById('confirm-message').innerHTML =
-        'Delete <strong>' + name + '</strong>?<br>This will remove ' + articleCount + ' articles.';
-    document.getElementById('confirm-action').onclick = async function() {
-        await apiFetch('/admin/sources/' + id, { method: 'DELETE' });
-        closeModal('confirm-modal');
-        loadSources();
-    };
-    document.getElementById('confirm-modal').style.display = 'flex';
+  document.getElementById('confirm-message').innerHTML = 'Delete <strong>' + name + '</strong>?<br>This will remove ' + articleCount + ' articles.';
+  document.getElementById('confirm-action').onclick = async function() {
+    await apiFetch('/admin/sources/' + id, { method: 'DELETE' });
+    closeModal('confirm-modal');
+    loadSources();
+  };
+  document.getElementById('confirm-modal').style.display = 'flex';
 }
 
 // ─── Articles ───
 async function loadArticles(page) {
-    currentArticlePage = page || 1;
-    var search = document.getElementById('art-search').value;
-    var category = document.getElementById('art-category').value;
-    var params = new URLSearchParams({ page: currentArticlePage, search: search, category: category });
-    var r = await apiFetch('/admin/articles?' + params);
-    if (!r.ok) return;
-    var d = await r.json();
-    var tbody = document.getElementById('articles-body');
-    tbody.innerHTML = d.articles.map(function(a) {
-        return '<tr>' +
-            '<td><input type="checkbox" class="art-check" value="' + a.id + '" onchange="updateBulkBtn()"></td>' +
-            '<td class="table-cell-primary"><a href="/articles/' + a.slug + '" target="_blank" style="color: var(--text);">' + esc(a.title) + '</a></td>' +
-            '<td>' + esc(a.source_name) + '</td>' +
-            '<td>' + (a.category || '—') + '</td>' +
-            '<td>' + (a.published_at ? new Date(a.published_at).toLocaleDateString() : '—') + '</td>' +
-            '<td><button class="btn btn-sm btn-danger" onclick="deleteArticle(' + a.id + ')">Del</button></td>' +
-        '</tr>';
-    }).join('');
-
-    var pag = '';
-    for (var i = 1; i <= d.total_pages; i++) {
-        pag += '<button class="btn btn-sm ' + (i === currentArticlePage ? 'btn-primary' : 'btn-ghost') + '" onclick="loadArticles(' + i + ')">' + i + '</button>';
-    }
-    document.getElementById('articles-pagination').innerHTML = pag;
+  currentArticlePage = page || 1;
+  var search = document.getElementById('art-search').value;
+  var category = document.getElementById('art-category').value;
+  var params = new URLSearchParams({ page: currentArticlePage, search: search, category: category });
+  var r = await apiFetch('/admin/articles?' + params);
+  if (!r.ok) return;
+  var d = await r.json();
+  document.getElementById('articles-body').innerHTML = d.articles.map(function(a) {
+    return '<tr><td><input type="checkbox" class="art-check" value="' + a.id + '" onchange="updateBulkBtn()"></td>' +
+      '<td class="table-cell-primary"><a href="/articles/' + a.slug + '" target="_blank" style="color:var(--text);">' + esc(a.title) + '</a></td>' +
+      '<td>' + esc(a.source_name) + '</td><td>' + (a.category || '--') + '</td>' +
+      '<td>' + (a.published_at ? new Date(a.published_at).toLocaleDateString() : '--') + '</td>' +
+      '<td><button class="btn btn-sm btn-danger" onclick="deleteArticle(' + a.id + ')">Del</button></td></tr>';
+  }).join('');
+  var pag = '';
+  for (var i = 1; i <= d.total_pages; i++) {
+    pag += '<button class="btn btn-sm ' + (i === currentArticlePage ? 'btn-primary' : 'btn-ghost') + '" onclick="loadArticles(' + i + ')">' + i + '</button>';
+  }
+  document.getElementById('articles-pagination').innerHTML = pag;
 }
 
-async function deleteArticle(id) {
-    await apiFetch('/admin/articles/' + id, { method: 'DELETE' });
-    loadArticles(currentArticlePage);
-}
+async function deleteArticle(id) { await apiFetch('/admin/articles/' + id, { method: 'DELETE' }); loadArticles(currentArticlePage); }
 
 function toggleSelectAll() {
-    var checked = document.getElementById('art-select-all').checked;
-    document.querySelectorAll('.art-check').forEach(function(c) { c.checked = checked; });
-    updateBulkBtn();
+  var checked = document.getElementById('art-select-all').checked;
+  document.querySelectorAll('.art-check').forEach(function(c) { c.checked = checked; });
+  updateBulkBtn();
 }
 
 function updateBulkBtn() {
-    var checked = document.querySelectorAll('.art-check:checked');
-    document.getElementById('bulk-delete-btn').style.display = checked.length > 0 ? 'inline-flex' : 'none';
+  var checked = document.querySelectorAll('.art-check:checked');
+  document.getElementById('bulk-delete-btn').style.display = checked.length > 0 ? 'inline-flex' : 'none';
 }
 
 async function bulkDeleteArticles() {
-    var ids = Array.from(document.querySelectorAll('.art-check:checked')).map(function(c) { return parseInt(c.value); });
-    if (!ids.length) return;
-    if (!confirm('Delete ' + ids.length + ' articles?')) return;
-    await apiFetch('/admin/articles/bulk-delete', { method: 'POST', body: { article_ids: ids } });
-    loadArticles(currentArticlePage);
+  var ids = Array.from(document.querySelectorAll('.art-check:checked')).map(function(c) { return parseInt(c.value); });
+  if (!ids.length) return;
+  if (!confirm('Delete ' + ids.length + ' articles?')) return;
+  await apiFetch('/admin/articles/bulk-delete', { method: 'POST', body: { article_ids: ids } });
+  loadArticles(currentArticlePage);
 }
 
 // ─── Tags ───
 async function loadTags() {
-    var r = await apiFetch('/admin/tags');
-    if (!r.ok) return;
-    var tags = await r.json();
-    document.getElementById('tags-body').innerHTML = tags.map(function(t) {
-        return '<tr>' +
-            '<td><a href="/tags/' + t.slug + '" target="_blank" style="color: var(--text);">' + esc(t.name) + '</a></td>' +
-            '<td>' + t.count + '</td>' +
-            '<td><button class="btn btn-sm btn-danger" onclick="deleteTag(' + t.id + ')">Del</button></td>' +
-        '</tr>';
-    }).join('');
+  var r = await apiFetch('/admin/tags');
+  if (!r.ok) return;
+  var tags = await r.json();
+  document.getElementById('tags-body').innerHTML = tags.map(function(t) {
+    return '<tr><td><a href="/tags/' + t.slug + '" target="_blank" style="color:var(--text);">' + esc(t.name) + '</a></td><td>' + t.count + '</td><td><button class="btn btn-sm btn-danger" onclick="deleteTag(' + t.id + ')">Del</button></td></tr>';
+  }).join('');
 }
 
-async function deleteTag(id) {
-    if (!confirm('Delete this tag?')) return;
-    await apiFetch('/admin/tags/' + id, { method: 'DELETE' });
-    loadTags();
+async function deleteTag(id) { if (!confirm('Delete this tag?')) return; await apiFetch('/admin/tags/' + id, { method: 'DELETE' }); loadTags(); }
+
+// ─── Radar ───
+async function loadRadar() {
+  // Stats
+  try {
+    var sr = await apiFetch('/admin/radar/stats');
+    if (sr.ok) {
+      var stats = await sr.json();
+      document.getElementById('radar-stats').innerHTML =
+        '<div class="card stat-card"><div class="stat-value">' + (stats.total_discovered || 0) + '</div><div class="stat-label">Discovered</div></div>' +
+        '<div class="card stat-card"><div class="stat-value">' + (stats.promoted || 0) + '</div><div class="stat-label">Promoted</div></div>' +
+        '<div class="card stat-card"><div class="stat-value">' + (stats.avg_score || 0) + '</div><div class="stat-label">Avg Score</div></div>';
+    }
+  } catch(e) {}
+
+  // Projects list (from sources if available, otherwise empty)
+  document.getElementById('radar-body').innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);">Use "Run Discovery" to find new projects</td></tr>';
+}
+
+async function addRadarRepo() {
+  var url = document.getElementById('radar-url-input').value.trim();
+  if (!url) { alert('Enter a GitHub URL'); return; }
+  var r = await apiFetch('/admin/radar/add', { method: 'POST', body: { url: url } });
+  var d = await r.json();
+  if (r.ok) { alert(d.message || 'Added to radar'); document.getElementById('radar-url-input').value = ''; loadRadar(); }
+  else { alert('Error: ' + (d.detail || 'Failed')); }
+}
+
+function runRadarStrategy() {
+  var strategies = [
+    { id: 'star_accelerators', name: 'Star Accelerators', desc: 'Repos gaining stars fast' },
+    { id: 'fresh_active', name: 'Fresh & Active', desc: 'New repos with recent commits' },
+    { id: 'rising_stars', name: 'Rising Stars', desc: 'Emerging projects' },
+    { id: 'trending_languages', name: 'Trending Languages', desc: 'By language category' },
+    { id: 'deep_search', name: 'Deep Search', desc: 'Topic-based deep dive' },
+    { id: 'topic_deep_dive', name: 'Topic Deep Dive', desc: 'Specific topic exploration' },
+    { id: 'fork_signals', name: 'Fork Signals', desc: 'Fork-based discovery' },
+  ];
+  document.getElementById('radar-strategies').innerHTML = strategies.map(function(s) {
+    return '<button class="btn btn-ghost btn-block" onclick="executeRadarStrategy(\'' + s.id + '\')" style="text-align:left;padding:12px;"><strong>' + esc(s.name) + '</strong><br><small style="color:var(--text-muted);">' + esc(s.desc) + '</small></button>';
+  }).join('');
+  document.getElementById('radar-strategy-modal').style.display = 'flex';
+}
+
+async function executeRadarStrategy(strategy) {
+  closeModal('radar-strategy-modal');
+  var r = await apiFetch('/admin/radar/run?strategy=' + strategy, { method: 'POST' });
+  var d = await r.json();
+  if (r.ok) alert(d.message || 'Radar discovery started');
+  else alert('Error: ' + (d.detail || 'Failed'));
+}
+
+// ─── AI Content ───
+async function loadAIContent() {
+  try {
+    var r = await apiFetch('/admin/status');
+    if (r.ok) {
+      var status = await r.json();
+      var el = document.getElementById('ai-features-status');
+      if (status.features) {
+        el.innerHTML = Object.entries(status.features).map(function(entry) {
+          var name = entry[0];
+          var feat = entry[1];
+          var icon = feat.available ? '<span class="ai-feat-available">Available</span>' : '<span class="ai-feat-unavailable">Unavailable</span>';
+          return '<div class="ai-feat-item"><span class="ai-feat-name">' + esc(name) + '</span>' + icon + '</div>';
+        }).join('');
+      }
+    }
+  } catch(e) {}
 }
 
 // ─── Logs ───
 async function loadLogs() {
-    var limit = document.getElementById('log-limit').value;
-    var r = await apiFetch('/admin/logs?limit=' + limit);
-    if (!r.ok) return;
-    var logs = await r.json();
-    document.getElementById('logs-body').innerHTML = logs.map(function(l, idx) {
-        var statusBadge = l.errors ?
-            '<span class="badge badge-danger">Error</span>' :
-            '<span class="badge badge-success">OK</span>';
-        var errorBtn = l.errors ?
-            '<button class="btn btn-sm btn-ghost" onclick="toggleLogError(' + idx + ')">Show</button>' :
-            '—';
-        return '<tr class="' + (l.errors ? 'row-error' : '') + '">' +
-            '<td class="table-cell-primary">' + esc(l.source_name) + '</td>' +
-            '<td>' + l.articles_found + '</td>' +
-            '<td>' + l.articles_inserted + '</td>' +
-            '<td>' + l.articles_skipped + '</td>' +
-            '<td>' + (l.duration_seconds || 0) + 's</td>' +
-            '<td>' + (l.scraped_at ? timeAgo(l.scraped_at) : '—') + '</td>' +
-            '<td>' + statusBadge + '</td>' +
-            '<td>' + errorBtn + '</td>' +
-        '</tr>' +
-        (l.errors ? '<tr class="log-error-row" id="log-err-' + idx + '"><td colspan="8"><div class="log-error-detail">' + esc(l.errors) + '</div></td></tr>' : '');
-    }).join('');
+  var limit = document.getElementById('log-limit').value;
+  var filter = document.getElementById('log-filter').value;
+  var r = await apiFetch('/admin/logs?limit=' + limit);
+  if (!r.ok) return;
+  var logs = await r.json();
+  if (filter === 'errors') logs = logs.filter(function(l) { return l.errors; });
+  if (filter === 'success') logs = logs.filter(function(l) { return !l.errors; });
+  document.getElementById('logs-body').innerHTML = logs.map(function(l, idx) {
+    var statusBadge = l.errors ? '<span class="badge badge-danger">Error</span>' : '<span class="badge badge-success">OK</span>';
+    var errorBtn = l.errors ? '<button class="btn btn-sm btn-ghost" onclick="toggleLogError(' + idx + ')">Show</button>' : '--';
+    return '<tr class="' + (l.errors ? 'row-error' : '') + '">' +
+      '<td class="table-cell-primary">' + esc(l.source_name) + '</td>' +
+      '<td>' + l.articles_found + '</td><td>' + l.articles_inserted + '</td><td>' + l.articles_skipped + '</td>' +
+      '<td>' + (l.duration_seconds || 0) + 's</td>' +
+      '<td>' + (l.scraped_at ? timeAgo(l.scraped_at) : '--') + '</td>' +
+      '<td>' + statusBadge + '</td><td>' + errorBtn + '</td></tr>' +
+      (l.errors ? '<tr class="log-error-row" id="log-err-' + idx + '"><td colspan="8"><div class="log-error-detail">' + esc(l.errors) + '</div></td></tr>' : '');
+  }).join('');
 }
 
-function toggleLogError(idx) {
-    var row = document.getElementById('log-err-' + idx);
-    if (row) row.classList.toggle('open');
-}
-
-function startLogRefresh() {
-    stopLogRefresh();
-    logInterval = setInterval(function() { if (!logsPaused) loadLogs(); }, 10000);
-}
+function toggleLogError(idx) { var row = document.getElementById('log-err-' + idx); if (row) row.classList.toggle('open'); }
+function startLogRefresh() { stopLogRefresh(); logInterval = setInterval(function() { if (!logsPaused) loadLogs(); }, 10000); }
 function stopLogRefresh() { if (logInterval) { clearInterval(logInterval); logInterval = null; } }
-function togglePause() {
-    logsPaused = !logsPaused;
-    var btn = document.getElementById('pause-btn');
-    btn.textContent = logsPaused ? 'Auto-refresh: PAUSED' : 'Auto-refresh: ON';
+function togglePause() { logsPaused = !logsPaused; document.getElementById('pause-btn').textContent = logsPaused ? 'Auto-refresh: PAUSED' : 'Auto-refresh: ON'; }
+
+// ─── Scrapers Tab ───
+var scraperRefreshInterval = null;
+
+async function loadSchedulerJobs() {
+  var r = await apiFetch('/admin/scheduler/jobs');
+  if (!r.ok) return;
+  var d = await r.json();
+  var container = document.getElementById('scraper-categories');
+  var groups = {};
+  var categoryLabels = { sources: 'RSS Sources', github: 'GitHub Watch', finance: 'Finance Education', prompts: 'AI Prompts', seo: 'SEO Pipeline', radar: 'OS Radar', 'ai-blogs': 'AI Blogs', other: 'Other' };
+  d.jobs.forEach(function(job) { var cat = job.category || 'other'; if (!groups[cat]) groups[cat] = []; groups[cat].push(job); });
+  var html = '';
+  var order = ['sources', 'github', 'finance', 'prompts', 'seo', 'radar', 'ai-blogs', 'other'];
+  order.forEach(function(cat) {
+    if (!groups[cat]) return;
+    var jobs = groups[cat];
+    html += '<div class="card" style="padding:1.25rem;margin-bottom:1rem;"><div class="section-title" style="margin-bottom:0.75rem;">' + esc(categoryLabels[cat] || cat) + ' <span class="badge badge-neutral">' + jobs.length + '</span></div>';
+    html += '<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Job Name</th><th>Schedule</th><th>Next Run</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
+    jobs.forEach(function(job) {
+      var nextRun = job.next_run_time ? timeAgo(job.next_run_time) : '--';
+      var statusBadge = job.running ? '<span class="badge badge-warning">Running</span>' : '<span class="badge badge-success">Idle</span>';
+      html += '<tr><td class="table-cell-primary">' + esc(job.name) + '</td><td><span class="badge badge-info">' + esc(job.trigger_type) + '</span> ' + esc(job.schedule) + '</td><td>' + nextRun + '</td><td>' + statusBadge + '</td><td><button class="btn btn-sm btn-primary" onclick="runSchedulerJob(\'' + esc(job.id) + '\')">Run Now</button></td></tr>';
+    });
+    html += '</tbody></table></div></div>';
+  });
+  container.innerHTML = html || '<div class="chart-empty">No scheduler jobs found</div>';
+  document.getElementById('scraper-status').textContent = 'Active';
+  document.getElementById('scheduler-job-count').textContent = d.total + ' jobs';
+}
+
+async function runSchedulerJob(jobId) {
+  var r = await apiFetch('/admin/scheduler/jobs/' + encodeURIComponent(jobId) + '/run', { method: 'POST' });
+  var d = await r.json();
+  if (r.ok) loadSchedulerJobs(); else alert('Error: ' + (d.detail || 'Failed to trigger job'));
+}
+
+function startScraperRefresh() { stopScraperRefresh(); scraperRefreshInterval = setInterval(loadSchedulerJobs, 30000); }
+function stopScraperRefresh() { if (scraperRefreshInterval) { clearInterval(scraperRefreshInterval); scraperRefreshInterval = null; } }
+
+// ─── Quick Action Triggers ───
+async function triggerScraper(type) {
+  var endpoints = { finance: '/admin/scrape/finance', prompts: '/admin/scrape/prompts', radar: '/admin/radar/run?strategy=star_accelerators', 'ai-blogs': '/admin/scrape/ai-blogs' };
+  var url = endpoints[type];
+  if (!url) return;
+  var r = await apiFetch(url, { method: 'POST' });
+  var d = await r.json();
+  if (r.ok) alert(d.message || type + ' scraper triggered'); else alert('Error: ' + (d.detail || 'Failed'));
 }
 
 // ─── Helpers ───
 function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 function esc(s) { if (!s) return ''; var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 function debounce(fn, ms) { var t; return function() { var args = arguments; var ctx = this; clearTimeout(t); t = setTimeout(function() { fn.apply(ctx, args); }, ms); }; }
-
 function timeAgo(isoStr) {
-    if (!isoStr) return '—';
-    var diff = (Date.now() - new Date(isoStr).getTime()) / 1000;
-    if (diff < 60) return Math.floor(diff) + 's ago';
-    if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
-    if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
-    return Math.floor(diff / 86400) + 'd ago';
+  if (!isoStr) return '--';
+  var diff = (Date.now() - new Date(isoStr).getTime()) / 1000;
+  if (diff < 60) return Math.floor(diff) + 's ago';
+  if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+  if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+  return Math.floor(diff / 86400) + 'd ago';
 }
 
-// ─── Scrapers Tab ───
-var scraperRefreshInterval = null;
-
-async function loadSchedulerJobs() {
-    var r = await apiFetch('/admin/scheduler/jobs');
-    if (!r.ok) return;
-    var d = await r.json();
-    var container = document.getElementById('scraper-categories');
-
-    // Group by category
-    var groups = {};
-    var categoryLabels = {
-        sources: 'RSS Sources',
-        github: 'GitHub Watch',
-        finance: 'Finance Education',
-        prompts: 'AI Prompts',
-        seo: 'SEO Pipeline',
-        radar: 'OS Radar',
-        other: 'Other'
-    };
-    d.jobs.forEach(function(job) {
-        var cat = job.category || 'other';
-        if (!groups[cat]) groups[cat] = [];
-        groups[cat].push(job);
-    });
-
-    var html = '';
-    var order = ['sources', 'github', 'finance', 'prompts', 'seo', 'radar', 'other'];
-    order.forEach(function(cat) {
-        if (!groups[cat]) return;
-        var jobs = groups[cat];
-        html += '<div class="card" style="padding: 1.25rem; margin-bottom: 1rem;">';
-        html += '<div class="section-title" style="margin-bottom: 0.75rem;">' + esc(categoryLabels[cat] || cat) + ' <span class="badge badge-neutral">' + jobs.length + '</span></div>';
-        html += '<div class="admin-table-wrap"><table class="admin-table">';
-        html += '<thead><tr><th>Job Name</th><th>Schedule</th><th>Next Run</th><th>Status</th><th>Actions</th></tr></thead>';
-        html += '<tbody>';
-        jobs.forEach(function(job) {
-            var nextRun = job.next_run_time ? timeAgo(job.next_run_time) : '—';
-            var statusBadge = job.running ?
-                '<span class="badge badge-warning">Running</span>' :
-                '<span class="badge badge-success">Idle</span>';
-            html += '<tr>' +
-                '<td class="table-cell-primary">' + esc(job.name) + '</td>' +
-                '<td><span class="badge badge-info">' + esc(job.trigger_type) + '</span> ' + esc(job.schedule) + '</td>' +
-                '<td>' + nextRun + '</td>' +
-                '<td>' + statusBadge + '</td>' +
-                '<td><button class="btn btn-sm btn-primary" onclick="runSchedulerJob(\'' + esc(job.id) + '\')">Run Now</button></td>' +
-                '</tr>';
-        });
-        html += '</tbody></table></div></div>';
-    });
-
-    container.innerHTML = html || '<div class="chart-empty">No scheduler jobs found</div>';
-
-    // Update sidebar widget
-    document.getElementById('scraper-status').textContent = 'Active';
-    document.getElementById('scheduler-job-count').textContent = d.total + ' jobs';
-}
-
-async function runSchedulerJob(jobId) {
-    var r = await apiFetch('/admin/scheduler/jobs/' + encodeURIComponent(jobId) + '/run', { method: 'POST' });
-    var d = await r.json();
-    if (r.ok) {
-        loadSchedulerJobs();
-    } else {
-        alert('Error: ' + (d.detail || 'Failed to trigger job'));
-    }
-}
-
-function startScraperRefresh() {
-    stopScraperRefresh();
-    scraperRefreshInterval = setInterval(loadSchedulerJobs, 30000);
-}
-function stopScraperRefresh() {
-    if (scraperRefreshInterval) { clearInterval(scraperRefreshInterval); scraperRefreshInterval = null; }
-}
-
-// ─── Quick Action Scraper Triggers ───
-async function triggerScraper(type) {
-    var endpoints = {
-        finance: '/admin/scrape/finance',
-        prompts: '/admin/scrape/prompts',
-        radar: '/admin/radar/run?strategy=star_accelerators'
-    };
-    var url = endpoints[type];
-    if (!url) return;
-    var r = await apiFetch(url, { method: 'POST' });
-    var d = await r.json();
-    if (r.ok) {
-        alert(d.message || type + ' scraper triggered');
-    } else {
-        alert('Error: ' + (d.detail || 'Failed'));
-    }
-}
-
-// Init — check token on load
+// Init
 if (getToken()) {
-    // Verify token is still valid
-    fetch('/admin/verify', { headers: {'Authorization': 'Bearer ' + getToken()} })
-        .then(function(r) {
-            if (r.ok) { showAdmin(); }
-            else { showLogin(); }
-        });
-} else {
-    showLogin();
-}
+  fetch('/admin/verify', { headers: {'Authorization': 'Bearer ' + getToken()} })
+    .then(function(r) { if (r.ok) showAdmin(); else showLogin(); });
+} else { showLogin(); }
 </script>
 {% endblock %}
