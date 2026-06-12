@@ -69,6 +69,17 @@ let currentOffset = 0;
 const PAGE_SIZE = 20;
 let totalArticles = 0;
 
+function escapeHtml(s) {
+    if (!s) return '';
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+}
+function truncate(s, n) {
+    if (!s) return '';
+    return s.length > n ? escapeHtml(s.substring(0, n)) + '...' : escapeHtml(s);
+}
+
 const CATEGORY_LABELS = {
     ai_tutorial: 'Tutorial',
     ai_news: 'News',
